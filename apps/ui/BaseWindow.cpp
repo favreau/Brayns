@@ -149,6 +149,7 @@ BaseWindow::BaseWindow(
     assert(_manipulator);
 }
 
+
 BaseWindow::~BaseWindow( )
 {
 }
@@ -287,6 +288,7 @@ void BaseWindow::display( )
         ssProcData.depthType = GL_FLOAT;
 
         _screenSpaceProcessor.draw( ssProcData );
+
     }
 
     float* buffer = renderOutput.depthBuffer.data();

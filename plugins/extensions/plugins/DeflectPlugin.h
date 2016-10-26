@@ -89,6 +89,13 @@ private:
         unsigned long* imageData,
         bool swapXAxis);
 
+    /** Handles touch events provided by DisplayCluster
+     *
+     * @param handledEvents Events populated by deflect
+     * @return True if Deflect is available, false otherwise.
+     */
+    bool _handleTouchEvents( HandledEvents& handledEvents );
+
     float _theta;
     float _phi;
     Vector3f _previousTouchPosition;

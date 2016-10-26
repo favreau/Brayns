@@ -97,6 +97,7 @@ private:
     bool _pan = false;
     bool _pinch = false;
     std::unique_ptr< deflect::Stream > _stream;
+    bool _pressed;
     ::lexis::render::Stream _params;
     std::string _previousHost;
     Image _lastImage;

@@ -80,6 +80,11 @@ public:
     /** @copydoc Scene::reset */
     void reset() final;
 
+    floats& getSpheresData( const size_t material ) final
+    {
+        return _serializedSpheresData[material];
+    }
+
 private:
 
     void _processVolumeAABBGeometry();
@@ -92,6 +97,7 @@ private:
 
     optix::Context& _context;
     optix::GeometryGroup _geometryGroup;
+    optix::GeometryGroup _meshGroup;
     std::vector< optix::GeometryInstance > _geometryInstances;
     std::vector< optix::Material > _optixMaterials;
     optix::Buffer _lightBuffer;

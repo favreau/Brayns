@@ -303,35 +303,4 @@ bool DeflectPlugin::_handleTouchEvents( HandledEvents& handledEvents )
     return true;
 }
 
-bool DeflectPlugin::_handleTouchEvents( HandledEvents& handledEvents )
-{
-    if(!_stream || !_stream->isRegisteredForEvents())
-        return false;
-
-    /* increment rotation angle according to interaction, or by a constant rate
-     * if interaction is not enabled. Note that mouse position is in normalized
-     * window coordinates: (0,0) to (1,1)
-     * Note: there is a risk of missing events since we only process the
-     * latest state available. For more advanced applications, event
-     * processing should be done in a separate thread.
-     */
-    while(_stream->hasEvent())
-    {
-        const deflect::Event& event = _stream->getEvent();
-        if(event.type == deflect::Event::EVT_CLOSE)
-        {
-            BRAYNS_INFO << "Received close..." << std::endl;
-            handledEvents.closeApplication = true;
-        }
-
-        handledEvents.pressed = (event.type == deflect::Event::EVT_PRESS);
-
-        if (event.type == deflect::Event::EVT_WHEEL)
-            handledEvents.wheelDelta = Vector2f(event.dx, event.dy);
-
-        handledEvents.position = Vector2f(event.mouseX, event.mouseY);
-    }
-    return true;
-}
-
 }

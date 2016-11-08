@@ -209,6 +209,8 @@ public:
     */
     BRAYNS_API virtual void reset();
 
+    virtual floats& getSpheresData( const size_t material ) = 0;
+
 protected:
 
     // Parameters

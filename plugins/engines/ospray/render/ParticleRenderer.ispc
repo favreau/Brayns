@@ -70,6 +70,7 @@ inline vec3f ParticleRenderer_shadeRay(
     varying int depth = 0;
     varying float path_opacity = 0.f;
     varying float opacity = 0.f;
+    varying bool checked = false;
 
     while( path_opacity < 1.f && depth < NB_MAX_REBOUNDS )
     {
@@ -119,12 +120,16 @@ inline vec3f ParticleRenderer_shadeRay(
             }
             else
             {
-                if( depth == 0 )
-                    sample.z = ray.primID;
 
                 // Get simulation value from geometry
                 const vec4f simulationValue =
                     getSimulationValue( self, dg, ray.primID );
+
+                if( !checked && simulationValue.w > 0.f )
+                {
+                    checked = true;
+                    sample.z = ray.primID;
+                }
 
                 // Spike value is different from zero, meaning that the neuron is activated and
                 // neuron color should be considered. If the spike value is zero, the

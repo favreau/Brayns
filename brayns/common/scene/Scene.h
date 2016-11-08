@@ -204,6 +204,9 @@ public:
     */
     BRAYNS_API TransferFunction& getTransferFunction() { return _transferFunction; }
 
+    virtual floats& getSpheresData( const size_t material ) = 0;
+
+
 protected:
 
     // Parameters

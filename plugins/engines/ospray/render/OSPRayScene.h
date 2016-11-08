@@ -69,6 +69,11 @@ public:
 
     OSPModel* modelImpl( const size_t timestamp );
 
+    floats& getSpheresData( const size_t material ) final
+    {
+        return _serializedSpheresData[material];
+    }
+
 private:
 
     OSPTexture2D _createTexture2D(const std::string& textureName);
@@ -101,6 +106,8 @@ private:
     std::map< size_t, std::map< size_t, size_t > > _timestampSpheresIndices;
     std::map< size_t, std::map< size_t, size_t > > _timestampCylindersIndices;
     std::map< size_t, std::map< size_t, size_t > > _timestampConesIndices;
+
+    std::map<size_t, OSPGeometry> _extendedSpheres;
 
     float _currentTimestamp;
 };

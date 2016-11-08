@@ -77,6 +77,11 @@ public:
     /** @copydoc Scene::commitTransferFunctionData */
     void commitTransferFunctionData() final;
 
+    floats& getSpheresData( const size_t material ) final
+    {
+        return _serializedSpheresData[material];
+    }
+
 private:
 
     void _processVolumeAABBGeometry();

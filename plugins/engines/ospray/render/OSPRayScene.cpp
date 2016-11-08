@@ -320,28 +320,28 @@ void OSPRayScene::_buildParametricOSPGeometry( const size_t materialId )
         {
             if( timestampSpheresIndex.first <= model.first )
             {
-                OSPGeometry extendedSpheres =
-                    ospNewGeometry("extendedspheres");
+                if( _extendedSpheres.find( materialId ) == _extendedSpheres.end() )
+                    _extendedSpheres[ materialId ] = ospNewGeometry("extendedspheres");
                 OSPData data = ospNewData( spheresBufferSize, OSP_FLOAT,
                     &_serializedSpheresData[materialId][0],
                     OSP_DATA_SHARED_BUFFER );
 
-                ospSetObject(extendedSpheres,
+                ospSetObject(_extendedSpheres[ materialId ],
                     "extendedspheres", data );
-                ospSet1i(extendedSpheres, "bytes_per_extended_sphere",
+                ospSet1i(_extendedSpheres[ materialId ], "bytes_per_extended_sphere",
                     Sphere::getSerializationSize() * sizeof(float));
-                ospSet1i(extendedSpheres,
+                ospSet1i(_extendedSpheres[ materialId ],
                     "offset_radius", 3 * sizeof(float));
-                ospSet1i(extendedSpheres,
+                ospSet1i(_extendedSpheres[ materialId ],
                     "offset_timestamp", 4 * sizeof(float));
-                ospSet1i(extendedSpheres,
+                ospSet1i(_extendedSpheres[ materialId ],
                     "offset_value", 5 * sizeof(float));
 
                 if(_ospMaterials[materialId])
-                    ospSetMaterial( extendedSpheres, _ospMaterials[materialId]);
+                    ospSetMaterial( _extendedSpheres[ materialId ], _ospMaterials[materialId]);
 
-                ospCommit( extendedSpheres );
-                ospAddGeometry( model.second, extendedSpheres );
+                ospCommit( _extendedSpheres[ materialId ] );
+                ospAddGeometry( model.second, _extendedSpheres[ materialId ] );
             }
         }
     }

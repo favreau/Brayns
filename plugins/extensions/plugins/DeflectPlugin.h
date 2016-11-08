@@ -33,6 +33,7 @@ namespace brayns
 #ifdef BRAYNS_USE_ZEROEQ
 class ZeroEQPlugin;
 #endif
+struct HandledEvents;
 
 class DeflectPlugin : public ExtensionPlugin
 {

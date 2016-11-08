@@ -25,6 +25,7 @@
 #include <brayns/common/log.h>
 #include <brayns/parameters/ParametersManager.h>
 #include <brayns/common/scene/Scene.h>
+#include <brayns/common/renderer/FrameBuffer.h>
 #include <brayns/common/input/KeyboardHandler.h>
 
 namespace
@@ -64,6 +65,9 @@ void BraynsViewer::_registerKeyboardShortcuts()
     keyHandler.registerKeyboardShortcut(
         'x', "Set timestamp to " + std::to_string( DEFAULT_TEST_TIMESTAMP ),
         std::bind( &BraynsViewer::_defaultTimestamp, this ));
+    keyHandler.registerKeyboardShortcut(
+        'm', "Mark neuron ",
+        std::bind( &BraynsViewer::_markNeuron, this ));
 }
 
 void BraynsViewer::_gradientMaterials()
@@ -92,6 +96,14 @@ void BraynsViewer::_defaultTimestamp()
     sceneParams.setTimestamp( DEFAULT_TEST_TIMESTAMP );
 }
 
+void BraynsViewer::_markNeuron()
+{
+    floats& spheres = _brayns->getScene().getSpheresData( 0 );
+    uint64_t radius_index = _gid * Sphere::getSerializationSize() + 3;
+    spheres[radius_index] *= 2.f;
+    BRAYNS_INFO << "Marked " << _gid << std::endl;
+}
+
 void BraynsViewer::display( )
 {
     if( _timestampIncrement != 0.f )
@@ -112,6 +124,9 @@ void BraynsViewer::display( )
     size_t ts = _brayns->getParametersManager().getSceneParameters().getTimestamp();
     if( ts != std::numeric_limits<size_t>::max() )
         ss << " (frame " << ts << ")";
+    const std::string& renderer = _brayns->getParametersManager().getRenderingParameters().getRenderer();
+    if( _gid != std::numeric_limits< uint64_t >::max() && renderer == "particlerenderer" )
+        ss << " Neuron GID = " << _gid;
     if( _brayns->getParametersManager().getApplicationParameters( ).
         isBenchmarking( ))
     {

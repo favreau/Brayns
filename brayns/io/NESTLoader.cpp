@@ -94,11 +94,17 @@ void NESTLoader::importCircuit( const std::string& filepath, Scene& scene, size_
     nbMaterials = materials.size();
 
     size_t i = 0;
+    BRAYNS_INFO << "==========< Color map Begin >==========" << std::endl;
     for( auto& material: materials )
     {
+        std::cout
+            << material.second.x() << " "
+            << material.second.y() << " "
+            << material.second.z() << std::endl;
         material.second.w() = i;
         ++i;
     }
+    BRAYNS_INFO << "==========<  Color map End  >==========" << std::endl;
     BRAYNS_INFO << "Number of materials: " << nbMaterials << std::endl;
 
     PrimitivesMap& primitives = scene.getPrimitives();

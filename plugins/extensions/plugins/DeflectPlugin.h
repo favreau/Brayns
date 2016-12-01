@@ -33,7 +33,6 @@ namespace brayns
 #ifdef BRAYNS_USE_ZEROEQ
 class ZeroEQPlugin;
 #endif
-struct HandledEvents;
 
 struct Image
 {
@@ -59,13 +58,6 @@ public:
 
     /** @copydoc ExtensionPlugin::execute */
     BRAYNS_API void run( ) final;
-
-    /** Handles touch events provided by DisplayCluster
-     *
-     * @param handledEvents Events populated by deflect
-     * @return True if Deflect is available, false otherwise.
-     */
-    bool _handleTouchEvents( HandledEvents& handledEvents );
 
 private:
     struct HandledEvents
@@ -105,7 +97,6 @@ private:
     bool _pan = false;
     bool _pinch = false;
     std::unique_ptr< deflect::Stream > _stream;
-    bool _pressed;
     ::lexis::render::Stream _params;
     std::string _previousHost;
     Image _lastImage;

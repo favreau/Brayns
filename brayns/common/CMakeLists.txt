@@ -17,6 +17,7 @@ set(BRAYNSCOMMON_SOURCES
   camera/FlyingModeManipulator.cpp
   camera/InspectCenterManipulator.cpp
   scene/Scene.cpp
+  geometry/Plane.cpp
   geometry/Primitive.cpp
   geometry/Geometry.cpp
   geometry/Sphere.cpp
@@ -39,6 +40,7 @@ set(BRAYNSCOMMON_PUBLIC_HEADERS
   camera/InspectCenterManipulator.h
   engine/Engine.h
   exceptions.h
+  geometry/Plane.h
   geometry/Cone.h
   geometry/Cylinder.h
   geometry/Geometry.h

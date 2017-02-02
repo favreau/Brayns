@@ -20,6 +20,7 @@
 
 #include <brayns/common/log.h>
 #include <brayns/common/scene/Scene.h>
+#include <brayns/common/geometry/Sphere.h>
 #include <fstream>
 
 #include "XYZBLoader.h"

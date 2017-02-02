@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016, EPFL/Blue Brain Project
+/* Copyright (c) 2015-2017, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Cyrille Favreau <cyrille.favreau@epfl.ch>
  *
@@ -18,38 +18,40 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
+#ifndef PLANE_H
+#define PLANE_H
+
+#include "Primitive.h"
 
 #include <brayns/api.h>
-
-#include <cstddef>
-#include <vector>
+#include <brayns/common/types.h>
 
 namespace brayns
 {
 
-enum GeometryType
+class Plane : public Primitive
 {
-    GT_UNDEFINED = 0,
-    GT_SPHERE,
-    GT_CYLINDER,
-    GT_CONE,
-    GT_TRIANGLES_MESH,
-    GT_PLANE
-};
 
-class Geometry
-{
 public:
-    BRAYNS_API Geometry();
-    BRAYNS_API virtual ~Geometry() {}
 
-    BRAYNS_API GeometryType getGeometryType() const { return _geometryType; }
+    BRAYNS_API Plane(
+        size_t materialId,
+        const Vector3f& normal,
+        float distance);
+
+    BRAYNS_API const Vector3f& getNormal() const { return _normal; }
+    BRAYNS_API float getDistance() const { return _distance; }
+
+    BRAYNS_API virtual size_t serializeData(floats& serializedData);
+    BRAYNS_API static size_t getSerializationSize();
 
 protected:
-    GeometryType _geometryType;
+
+    Vector3f _normal;
+    float _distance;
+
 };
 
 }
-#endif // GEOMETRY_H
+
+#endif // PLANE_H

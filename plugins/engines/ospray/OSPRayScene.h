@@ -106,15 +106,21 @@ private:
     std::map< float, size_t > _timestamps;
 
     std::map< size_t, floats > _serializedSpheresData;
-    std::map< size_t, floats > _serializedCylindersData;
-    std::map< size_t, floats > _serializedConesData;
     std::map< size_t, size_t > _serializedSpheresDataSize;
+
+    std::map< size_t, floats > _serializedCylindersData;
     std::map< size_t, size_t > _serializedCylindersDataSize;
+
+    std::map< size_t, floats > _serializedConesData;
     std::map< size_t, size_t > _serializedConesDataSize;
+
+    std::map< size_t, floats > _serializedPlanesData;
+    std::map< size_t, size_t > _serializedPlanesDataSize;
 
     std::map< size_t, std::map< size_t, size_t > > _timestampSpheresIndices;
     std::map< size_t, std::map< size_t, size_t > > _timestampCylindersIndices;
     std::map< size_t, std::map< size_t, size_t > > _timestampConesIndices;
+    std::map< size_t, std::map< size_t, size_t > > _timestampPlanesIndices;
 
     float _currentTimestamp;
 };

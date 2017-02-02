@@ -120,6 +120,11 @@ typedef std::shared_ptr<Cone> ConePtr;
 typedef std::vector<ConePtr> Cones;
 typedef std::map<size_t, Cones> ConesMap;
 
+class Plane;
+typedef std::shared_ptr<Plane> PlanePtr;
+typedef std::vector<PlanePtr> Planes;
+typedef std::map<size_t, Planes> PlanesMap;
+
 class TrianglesMesh;
 typedef std::map<size_t, TrianglesMesh> TrianglesMeshMap;
 

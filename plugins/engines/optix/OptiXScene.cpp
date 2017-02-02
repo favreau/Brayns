@@ -26,6 +26,11 @@
 #include <brayns/common/light/PointLight.h>
 #include <brayns/parameters/ParametersManager.h>
 #include <brayns/common/volume/VolumeHandler.h>
+#include <brayns/common/geometry/Sphere.h>
+#include <brayns/common/geometry/Cylinder.h>
+#include <brayns/common/geometry/Cone.h>
+#include <brayns/common/geometry/Plane.h>
+#include <brayns/common/geometry/TrianglesMesh.h>
 #include <brayns/io/TextureLoader.h>
 
 #include <plugins/engines/optix/cuda/braynsOptiXCudaPlugin_generated_Spheres.cu.ptx.h>

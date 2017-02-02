@@ -26,6 +26,11 @@
 #include <brayns/io/TransferFunctionLoader.h>
 #include <brayns/io/NESTLoader.h>
 #include <brayns/common/volume/VolumeHandler.h>
+#include <brayns/common/geometry/Sphere.h>
+#include <brayns/common/geometry/Cylinder.h>
+#include <brayns/common/geometry/Cone.h>
+#include <brayns/common/geometry/Plane.h>
+#include <brayns/common/geometry/TrianglesMesh.h>
 
 #include <servus/uri.h>
 
@@ -265,6 +270,20 @@ void Scene::buildDefault( )
     _materials[material]->setEmission( 5.f );
 
     BRAYNS_INFO << "Bounding Box: " << _bounds << std::endl;
+
+#if 1
+    const float d = 0.1f;
+    /*
+    _primitives[0].push_back( PlanePtr( new Plane( 0, Vector3f( 0.f,-1.f, 0.f ), d )));
+    _primitives[0].push_back( PlanePtr( new Plane( 0, Vector3f( 0.f, 1.f, 0.f ), d )));
+    */
+    _primitives[0].push_back( PlanePtr( new Plane( 0, Vector3f(-1.f, 0.f, 0.f ), d )));
+    /*
+    _primitives[0].push_back( PlanePtr( new Plane( 0, Vector3f( 1.f, 0.f, 0.f ), d )));
+    _primitives[0].push_back( PlanePtr( new Plane( 0, Vector3f( 0.f, 0.f,-1.f ), d )));
+    _primitives[0].push_back( PlanePtr( new Plane( 0, Vector3f( 0.f, 0.f, 1.f ), d )));
+    */
+#endif
 }
 
 void Scene::buildEnvironment( )

@@ -175,6 +175,7 @@ set(BRAYNSOSPRAYPLUGIN_ISPC_SOURCES
   ispc/render/utils/AbstractRenderer.ispc
   ispc/render/utils/RandomGenerator.ispc
   ispc/render/utils/SkyBox.ispc
+  ispc/geometry/Planes.ispc
   ispc/geometry/ExtendedCylinders.ispc
   ispc/geometry/ExtendedCones.ispc
   ispc/geometry/ExtendedSpheres.ispc
@@ -188,6 +189,7 @@ set(BRAYNSOSPRAYPLUGIN_ISPC_SOURCES
 set(BRAYNSOSPRAYENGINEPLUGIN_SOURCES
   ispc/camera/ClippedPerspectiveCamera.cpp
   ispc/render/utils/AbstractRenderer.cpp
+  ispc/geometry/Planes.cpp
   ispc/geometry/ExtendedCones.cpp
   ispc/geometry/ExtendedCylinders.cpp
   ispc/geometry/ExtendedSpheres.cpp
@@ -206,6 +208,7 @@ set(BRAYNSOSPRAYENGINEPLUGIN_SOURCES
 set(BRAYNSOSPRAYENGINEPLUGIN_PUBLIC_HEADERS
   ispc/camera/ClippedPerspectiveCamera.h
   ispc/render/utils/AbstractRenderer.h
+  ispc/geometry/Planes.h
   ispc/geometry/ExtendedCones.h
   ispc/geometry/ExtendedCylinders.h
   ispc/geometry/ExtendedSpheres.h

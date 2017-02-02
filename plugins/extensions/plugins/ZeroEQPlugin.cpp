@@ -265,6 +265,7 @@ void ZeroEQPlugin::_setupSubscriber()
 
 void ZeroEQPlugin::_cameraUpdated()
 {
+    BRAYNS_ERROR << "ZeroEQPlugin::_cameraUpdated" << std::endl;
     _engine->getFrameBuffer().clear();
     _engine->getCamera().commit();
 }
@@ -1040,14 +1041,14 @@ bool ZeroEQPlugin::_requestVolumeHistogram()
 
 void ZeroEQPlugin::_clipPlanesUpdated()
 {
-    const auto& bounds = _engine->getScene().getWorldBounds();
-    const auto& size = bounds.getSize();
+    //const auto& bounds = _engine->getScene().getWorldBounds();
+    //const auto& size = bounds.getSize();
     ClipPlanes clipPlanes;
 
     for( const auto& plane: _clipPlanes.getPlanesVector( ))
     {
         const auto& normal = plane.getNormal();
-        const auto distance = plane.getD() * size.find_max();
+        const auto distance = plane.getD(); // * size.find_max();
         clipPlanes.push_back( Vector4f( normal[0], normal[1], normal[2], distance));
     }
     if( clipPlanes.size() == 6 )

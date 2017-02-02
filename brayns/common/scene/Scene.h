@@ -25,10 +25,6 @@
 #include <brayns/common/types.h>
 #include <brayns/common/material/Texture2D.h>
 #include <brayns/common/material/Material.h>
-#include <brayns/common/geometry/Sphere.h>
-#include <brayns/common/geometry/Cylinder.h>
-#include <brayns/common/geometry/Cone.h>
-#include <brayns/common/geometry/TrianglesMesh.h>
 #include <brayns/common/transferFunction/TransferFunction.h>
 #include <brayns/common/simulation/AbstractSimulationHandler.h>
 

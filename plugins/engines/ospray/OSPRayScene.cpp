@@ -24,6 +24,11 @@
 #include <brayns/common/log.h>
 #include <brayns/parameters/SceneParameters.h>
 #include <brayns/parameters/GeometryParameters.h>
+#include <brayns/common/geometry/Sphere.h>
+#include <brayns/common/geometry/Cylinder.h>
+#include <brayns/common/geometry/Cone.h>
+#include <brayns/common/geometry/Plane.h>
+#include <brayns/common/geometry/TrianglesMesh.h>
 #include <brayns/common/material/Texture2D.h>
 #include <brayns/common/light/PointLight.h>
 #include <brayns/common/light/DirectionalLight.h>
@@ -83,10 +88,13 @@ void OSPRayScene::reset()
     _serializedSpheresDataSize.clear();
     _serializedCylindersDataSize.clear();
     _serializedConesDataSize.clear();
+    _serializedPlanesData.clear();
+    _serializedPlanesDataSize.clear();
 
     _timestampSpheresIndices.clear();
     _timestampCylindersIndices.clear();
     _timestampConesIndices.clear();
+    _timestampPlanesIndices.clear();
 }
 
 void OSPRayScene::commit()
@@ -581,6 +589,38 @@ void OSPRayScene::_buildParametricOSPGeometry( const size_t materialId )
            }
        }
     }
+
+    // Planes
+    for( const auto& timestampPlanesIndex: _timestampPlanesIndices[materialId] )
+    {
+        const size_t planesBufferSize =
+            timestampPlanesIndex.second * Plane::getSerializationSize();
+
+        for( const auto& model: _models )
+        {
+            if( timestampPlanesIndex.first <= model.first )
+            {
+                OSPGeometry planes = ospNewGeometry("planes");
+                assert(planes);
+
+                OSPData data = ospNewData(
+                    planesBufferSize, OSP_FLOAT,
+                    &_serializedPlanesData[materialId][0],
+                    OSP_DATA_SHARED_BUFFER );
+
+                ospSetObject( planes, "planes", data );
+                ospSet1i( planes, "bytes_per_plane", Plane::getSerializationSize() * sizeof(float));
+                ospSet1i( planes, "materialID", materialId );
+                ospSet1i( planes, "offset_distance", 3 * sizeof(float));
+
+                if( _ospMaterials[materialId] )
+                    ospSetMaterial( planes, _ospMaterials[materialId] );
+
+                ospCommit( planes );
+                ospAddGeometry( model.second, planes );
+            }
+        }
+    }
 }
 
 void OSPRayScene::buildGeometry()
@@ -627,6 +667,7 @@ void OSPRayScene::buildGeometry()
         size_t sphereCount = 0;
         size_t cylinderCount = 0;
         size_t coneCount = 0;
+        size_t planeCount = 0;
         if( _primitives.find( materialId ) != _primitives.end( ))
         {
             for( const PrimitivePtr& primitive: _primitives[materialId] )
@@ -658,6 +699,15 @@ void OSPRayScene::buildGeometry()
                         ++coneCount;
                         _timestampConesIndices[materialId][ts] = coneCount;
                     }
+                    break;
+                    case GT_PLANE:
+                    {
+                        primitive->serializeData(_serializedPlanesData[materialId]);
+                        ++_serializedPlanesDataSize[materialId];
+                        ++planeCount;
+                        _timestampPlanesIndices[materialId][ts] = planeCount;
+                    }
+                    break;
                     default:
                         break;
                 }
@@ -682,11 +732,13 @@ void OSPRayScene::buildGeometry()
     size_t totalNbSpheres = 0;
     size_t totalNbCylinders = 0;
     size_t totalNbCones = 0;
+    size_t totalNbPlanes = 0;
     for( size_t i = 0; i < _materials.size(); ++i )
     {
         totalNbSpheres += _serializedSpheresDataSize[i];
         totalNbCylinders += _serializedCylindersDataSize[i];
         totalNbCones += _serializedConesDataSize[i];
+        totalNbPlanes += _serializedPlanesDataSize[i];
     }
 
     BRAYNS_INFO << "--------------------" << std::endl;
@@ -694,6 +746,7 @@ void OSPRayScene::buildGeometry()
     BRAYNS_INFO << "Spheres  : " << totalNbSpheres << std::endl;
     BRAYNS_INFO << "Cylinders: " << totalNbCylinders << std::endl;
     BRAYNS_INFO << "Cones    : " << totalNbCones << std::endl;
+    BRAYNS_INFO << "Planes   : " << totalNbPlanes << std::endl;
     BRAYNS_INFO << "Vertices : " << totalNbVertices << std::endl;
     BRAYNS_INFO << "Indices  : " << totalNbIndices << std::endl;
     BRAYNS_INFO << "--------------------" << std::endl;

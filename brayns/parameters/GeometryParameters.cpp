@@ -60,6 +60,7 @@ const std::string PARAM_MOLECULAR_SYSTEM_CONFIG = "molecular-system-config";
 const std::string PARAM_METABALLS_GRIDSIZE = "metaballs-grid-size";
 const std::string PARAM_METABALLS_THRESHOLD = "metaballs-threshold";
 const std::string PARAM_METABALLS_SAMPLES_FROM_SOMA = "metaballs-samples-from-soma";
+const std::string PARAM_GUID = "guid";
 
 const std::string COLOR_SCHEMES[8] = {
     "none", "neuron-by-id", "neuron-by-type", "neuron-by-segment-type",
@@ -93,6 +94,7 @@ GeometryParameters::GeometryParameters()
     , _metaballsGridSize( 0 )
     , _metaballsThreshold( 1.f )
     , _metaballsSamplesFromSoma( 3 )
+    , _guid( std::numeric_limits<uint64_t>::max( ))
 {
     _parameters.add_options()
         ( PARAM_MORPHOLOGY_FOLDER.c_str(), po::value< std::string >(),
@@ -166,7 +168,9 @@ GeometryParameters::GeometryParameters()
             "Metaballs threshold [float]" )
         ( PARAM_METABALLS_SAMPLES_FROM_SOMA.c_str(), po::value< size_t >(),
             "Number of morphology samples (or segments) from soma used by "
-            "automated meshing [int]" );
+            "automated meshing [int]" )
+        ( PARAM_GUID.c_str(), po::value< uint64_t >(),
+            "Neuron GUID [int64]" );
 }
 
 bool GeometryParameters::_parse( const po::variables_map& vm )
@@ -273,6 +277,8 @@ bool GeometryParameters::_parse( const po::variables_map& vm )
         _metaballsThreshold = vm[ PARAM_METABALLS_THRESHOLD ].as< float >();
     if( vm.count( PARAM_METABALLS_SAMPLES_FROM_SOMA ))
         _metaballsSamplesFromSoma = vm[ PARAM_METABALLS_SAMPLES_FROM_SOMA ].as< size_t >();
+    if( vm.count( PARAM_GUID ))
+        _guid = vm[ PARAM_GUID ].as< uint64_t >();
 
     return true;
 }
@@ -316,6 +322,11 @@ void GeometryParameters::print()
         _target << std::endl;
     BRAYNS_INFO << "Report                     : " <<
         _report << std::endl;
+    BRAYNS_INFO << "GUID                       : ";
+    if( _guid == std::numeric_limits< uint64_t >::max( ))
+        std::cout << "All" << std::endl;
+    else
+        std::cout << _guid << std::endl;
     BRAYNS_INFO << "- Non-simulated cells      : " <<
         _nonSimulatedCells << std::endl;
     BRAYNS_INFO << "- Start simulation time    : " <<

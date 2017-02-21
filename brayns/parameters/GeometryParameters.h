@@ -98,6 +98,9 @@ public:
     /** Circuit compartment report */
     std::string getReport( ) const { return _report; }
 
+    /** Neuron GUID */
+    uint64_t getGUID( ) const { return _guid; }
+
     /** Radius multiplier applied to spheres, cones and cylinders.
      * @param value Radius multiplier. Multiplies the radius contained in the
      *        data source by the specified value.
@@ -213,6 +216,7 @@ protected:
     size_t _metaballsGridSize;
     float _metaballsThreshold;
     size_t _metaballsSamplesFromSoma;
+    uint64_t _guid;
 
 };
 

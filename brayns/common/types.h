@@ -25,10 +25,10 @@
 
 #include <boost/program_options.hpp>
 
-#include <memory>
-#include <map>
-#include <vector>
 #include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 
 typedef ::int64_t int64;
 typedef ::uint64_t uint64;
@@ -42,63 +42,56 @@ typedef ::int64_t index_t;
 
 #define BRAYNS_USE_NETWORKING (BRAYNS_USE_LIBJPEGTURBO && BRAYNS_USE_ZEROEQ)
 
-namespace brayns
-{
+namespace brayns {
 
 // Forward declarations
 class Brayns;
-typedef std::shared_ptr< Brayns > BraynsPtr;
+typedef std::shared_ptr<Brayns> BraynsPtr;
 
 class Engine;
-typedef std::shared_ptr< Engine > EnginePtr;
-typedef std::map< std::string, EnginePtr > EngineMap;
+typedef std::shared_ptr<Engine> EnginePtr;
+typedef std::map<std::string, EnginePtr> EngineMap;
 
 class Scene;
-typedef std::shared_ptr< Scene > ScenePtr;
+typedef std::shared_ptr<Scene> ScenePtr;
 
 class AbstractManipulator;
-typedef std::shared_ptr< AbstractManipulator > AbstractManipulatorPtr;
+typedef std::shared_ptr<AbstractManipulator> AbstractManipulatorPtr;
 
 class Camera;
-typedef std::shared_ptr< Camera > CameraPtr;
+typedef std::shared_ptr<Camera> CameraPtr;
 
 class TransferFunction;
-typedef std::shared_ptr< TransferFunction > TransferFunctionPtr;
+typedef std::shared_ptr<TransferFunction> TransferFunctionPtr;
 
-enum class RendererType
-{
-    basic,
-    proximity,
-    simulation,
-    particle
-};
-typedef std::vector< RendererType > RendererTypes;
+enum class RendererType { basic, proximity, simulation, particle };
+typedef std::vector<RendererType> RendererTypes;
 
 class Renderer;
-typedef std::shared_ptr< Renderer > RendererPtr;
-typedef std::map< RendererType, RendererPtr > RendererMap;
-typedef std::vector< RendererPtr > Renderers;
+typedef std::shared_ptr<Renderer> RendererPtr;
+typedef std::map<RendererType, RendererPtr> RendererMap;
+typedef std::vector<RendererPtr> Renderers;
 
 class FrameBuffer;
-typedef std::shared_ptr< FrameBuffer > FrameBufferPtr;
+typedef std::shared_ptr<FrameBuffer> FrameBufferPtr;
 
 class ApplicationParameters;
-typedef std::shared_ptr< ApplicationParameters > ApplicationParametersPtr;
+typedef std::shared_ptr<ApplicationParameters> ApplicationParametersPtr;
 
 class GeometryParameters;
-typedef std::shared_ptr< GeometryParameters > GeometryParametersPtr;
+typedef std::shared_ptr<GeometryParameters> GeometryParametersPtr;
 
 class RenderingParameters;
-typedef std::shared_ptr< RenderingParameters > RenderingParametersPtr;
+typedef std::shared_ptr<RenderingParameters> RenderingParametersPtr;
 
 class VolumeParameters;
-typedef std::shared_ptr< VolumeParameters > VolumeParametersPtr;
+typedef std::shared_ptr<VolumeParameters> VolumeParametersPtr;
 
 class ExtensionController;
 typedef std::shared_ptr<ExtensionController> ExtensionControllerPtr;
 
 class Geometry;
-typedef std::vector< Geometry* > Geometries;
+typedef std::vector<Geometry *> Geometries;
 
 class Primitive;
 typedef std::shared_ptr<Primitive> PrimitivePtr;
@@ -132,42 +125,42 @@ typedef std::shared_ptr<Texture2D> Texture2DPtr;
 typedef std::map<std::string, Texture2DPtr> TexturesMap;
 
 class Light;
-typedef std::shared_ptr< Light > LightPtr;
-typedef std::vector< LightPtr > Lights;
-typedef std::map< size_t, LightPtr > LightsMap;
+typedef std::shared_ptr<Light> LightPtr;
+typedef std::vector<LightPtr> Lights;
+typedef std::map<size_t, LightPtr> LightsMap;
 
 class DirectionalLight;
-typedef std::shared_ptr< DirectionalLight > DirectionalLightPtr;
+typedef std::shared_ptr<DirectionalLight> DirectionalLightPtr;
 
 class PointLight;
-typedef std::shared_ptr< PointLight > PointLightPtr;
+typedef std::shared_ptr<PointLight> PointLightPtr;
 
 class AbstractSimulationHandler;
-typedef std::shared_ptr< AbstractSimulationHandler > AbstractSimulationHandlerPtr;
+typedef std::shared_ptr<AbstractSimulationHandler> AbstractSimulationHandlerPtr;
 
 class CircuitSimulationHandler;
-typedef std::shared_ptr< CircuitSimulationHandler > CircuitSimulationHandlerPtr;
+typedef std::shared_ptr<CircuitSimulationHandler> CircuitSimulationHandlerPtr;
 
 class Brayns;
 class SpikeSimulationHandler;
-typedef std::shared_ptr< SpikeSimulationHandler > SpikeSimulationHandlerPtr;
+typedef std::shared_ptr<SpikeSimulationHandler> SpikeSimulationHandlerPtr;
 
 class VolumeHandler;
-typedef std::shared_ptr< VolumeHandler > VolumeHandlerPtr;
+typedef std::shared_ptr<VolumeHandler> VolumeHandlerPtr;
 
-typedef std::vector< std::string > strings;
-typedef std::vector< float > floats;
-typedef std::vector< int > ints;
-typedef std::vector< unsigned int > uints;
-typedef std::vector< int8_t > int8_ts;
-typedef std::vector< uint8_t > uint8_ts;
-typedef std::vector< int16_t > int16_ts;
-typedef std::vector< uint16_t > uint16_ts;
-typedef std::vector< int32_t > int32_ts;
-typedef std::vector< uint32_t > uint32_ts;
-typedef std::vector< int64_t > int64_ts;
-typedef std::vector< uint64_t > uint64_ts;
-typedef std::vector< size_t > size_ts;
+typedef std::vector<std::string> strings;
+typedef std::vector<float> floats;
+typedef std::vector<int> ints;
+typedef std::vector<unsigned int> uints;
+typedef std::vector<int8_t> int8_ts;
+typedef std::vector<uint8_t> uint8_ts;
+typedef std::vector<int16_t> int16_ts;
+typedef std::vector<uint16_t> uint16_ts;
+typedef std::vector<int32_t> int32_ts;
+typedef std::vector<uint32_t> uint32_ts;
+typedef std::vector<int64_t> int64_ts;
+typedef std::vector<uint64_t> uint64_ts;
+typedef std::vector<size_t> size_ts;
 
 class AbstractParameters;
 class ApplicationParameters;
@@ -176,27 +169,26 @@ class RenderingParameters;
 class SceneParameters;
 
 class ParametersManager;
-typedef std::shared_ptr< ParametersManager > ParametersManagerPtr;
+typedef std::shared_ptr<ParametersManager> ParametersManagerPtr;
 
 class ExtensionPlugin;
-typedef std::shared_ptr< ExtensionPlugin > ExtensionPluginPtr;
-typedef std::vector< ExtensionPluginPtr > ExtensionPlugins;
+typedef std::shared_ptr<ExtensionPlugin> ExtensionPluginPtr;
+typedef std::vector<ExtensionPluginPtr> ExtensionPlugins;
 
 class ExtensionPluginFactory;
-typedef std::unique_ptr< ExtensionPluginFactory > ExtensionPluginFactoryPtr;
+typedef std::unique_ptr<ExtensionPluginFactory> ExtensionPluginFactoryPtr;
 
 class ZeroEQPlugin;
-typedef std::shared_ptr< ZeroEQPlugin > ZeroEQPluginPtr;
+typedef std::shared_ptr<ZeroEQPlugin> ZeroEQPluginPtr;
 
 class DeflectPlugin;
-typedef std::shared_ptr< DeflectPlugin > DeflectPluginPtr;
+typedef std::shared_ptr<DeflectPlugin> DeflectPluginPtr;
 
 class KeyboardHandler;
-typedef std::shared_ptr< KeyboardHandler > KeyboardHandlerPtr;
+typedef std::shared_ptr<KeyboardHandler> KeyboardHandlerPtr;
 
 /** Define the frame buffer format */
-enum FrameBufferFormat
-{
+enum FrameBufferFormat {
   FBF_RGBA_NONE,
   FBF_RGBA_I8,
   FBF_BGRA_I8,
@@ -205,74 +197,59 @@ enum FrameBufferFormat
 };
 
 /** Define the color scheme to be applied to the geometry */
-enum class ColorScheme
-{
-    none = 0,
-    neuron_by_id = 1,
-    neuron_by_type = 2,
-    neuron_by_segment_type = 3,
-    protein_by_id = 4,
-    protein_atoms = 5,
-    protein_chains = 6,
-    protein_residues = 7
+enum class ColorScheme {
+  none = 0,
+  neuron_by_id = 1,
+  neuron_by_type = 2,
+  neuron_by_segment_type = 3,
+  protein_by_id = 4,
+  protein_atoms = 5,
+  protein_chains = 6,
+  protein_residues = 7
 };
 
 /** Define the environment that is added to the default scene */
-enum class SceneEnvironment
-{
-    none,
-    ground,
-    wall,
-    bounding_box
-};
+enum class SceneEnvironment { none, ground, wall, bounding_box };
 
 /** Define light types */
-enum LightType
-{
-    LT_POINT = 0,
-    LT_DIRECTIONAL,
+enum LightType {
+  LT_POINT = 0,
+  LT_DIRECTIONAL,
 };
 
 /** Geometry quality */
-enum class GeometryQuality
-{
-    low,
-    medium,
-    high
-};
+enum class GeometryQuality { low, medium, high };
 
 /** Morphology element types */
-enum MorphologySectionType
-{
-    MST_UNDEFINED = 0x00,
-    MST_SOMA = 0x01,
-    MST_AXON = 0x02,
-    MST_DENDRITE = 0x04,
-    MST_APICAL_DENDRITE = 0x08,
-    MST_ALL = 0xff
+enum MorphologySectionType {
+  MST_UNDEFINED = 0x00,
+  MST_SOMA = 0x01,
+  MST_AXON = 0x02,
+  MST_DENDRITE = 0x04,
+  MST_APICAL_DENDRITE = 0x08,
+  MST_ALL = 0xff
 };
 
 /** Transfer function attributes */
-enum TransferFunctionAttribute
-{
-    TF_UNDEFINED,
-    TF_RED,
-    TF_GREEN,
-    TF_BLUE,
-    TF_ALPHA,
-    TF_EMISSION
+enum TransferFunctionAttribute {
+  TF_UNDEFINED,
+  TF_RED,
+  TF_GREEN,
+  TF_BLUE,
+  TF_ALPHA,
+  TF_EMISSION
 };
 
 /**
- * @brief The Histogram struct contains the range as well as the values of the simulation histogram
+ * @brief The Histogram struct contains the range as well as the values of the
+ * simulation histogram
  *        for a given simulation frame, determined by the timestamp
  */
-struct Histogram
-{
-    uint64_ts values;
-    Vector2f range;
-    float timestamp;
-    bool empty() const { return values.empty(); }
+struct Histogram {
+  uint64_ts values;
+  Vector2f range;
+  float timestamp;
+  bool empty() const { return values.empty(); }
 };
 
 /** Some 'special' materials are used by Brayns to acomplish specific features
@@ -280,98 +257,68 @@ struct Histogram
  */
 const size_t NO_MATERIAL = -1;
 const size_t NB_MAX_MATERIALS = 200;
-const size_t NB_SYSTEM_MATERIALS = 5;
+const size_t NB_SYSTEM_MATERIALS = 7;
 const size_t MATERIAL_SYSTEM = NB_MAX_MATERIALS - NB_SYSTEM_MATERIALS - 1;
 const size_t MATERIAL_SKYBOX = MATERIAL_SYSTEM + 0;
 const size_t MATERIAL_BOUNDING_BOX = MATERIAL_SYSTEM + 1;
 const size_t MATERIAL_SIMULATION = MATERIAL_SYSTEM + 2;
 const size_t MATERIAL_INVISIBLE = MATERIAL_SYSTEM + 3;
 const size_t MATERIAL_SELECTION = MATERIAL_SYSTEM + 4;
+const size_t MATERIAL_AFFERENT_SYNAPSE = MATERIAL_SYSTEM + 5;
+const size_t MATERIAL_EFFERENT_SYNAPSE = MATERIAL_SYSTEM + 6;
 const std::string TEXTURE_NAME_SKYBOX = "SKYBOX";
 const std::string TEXTURE_NAME_SIMULATION = "SIMULATION";
 
 /** Defines how materials should be created */
-enum MaterialType
-{
-    MT_DEFAULT,        // Random colors
-    MT_RANDOM,         // Random materials including transparency, reflection,
-                       // and light emission
-    MT_SHADES_OF_GREY, // 255 shades of grey
-    MT_GRADIENT,       // Gradient from red to yellow
-    MT_PASTEL_COLORS,  // Random pastel colors
+enum MaterialType {
+  MT_DEFAULT,        // Random colors
+  MT_RANDOM,         // Random materials including transparency, reflection,
+                     // and light emission
+  MT_SHADES_OF_GREY, // 255 shades of grey
+  MT_GRADIENT,       // Gradient from red to yellow
+  MT_PASTEL_COLORS,  // Random pastel colors
 };
 
-enum class ShadingType
-{
-    none,
-    diffuse,
-    electron,
+enum class ShadingType {
+  none,
+  diffuse,
+  electron,
 };
 
-enum class MeshQuality
-{
-    low = 0,
-    medium,
-    high
-};
+enum class MeshQuality { low = 0, medium, high };
 
-enum class CameraType
-{
-    perspective,
-    stereo,
-    orthographic,
-    panoramic,
-    clipped
-};
+enum class CameraType { perspective, stereo, orthographic, panoramic, clipped };
 
-enum class CameraStereoMode
-{
-    none = 0,
-    left,
-    right,
-    side_by_side
-};
+enum class CameraStereoMode { none = 0, left, right, side_by_side };
 
-enum class TimestampMode
-{
-    unchanged,
-    modulo,
-    bounded
-};
+enum class TimestampMode { unchanged, modulo, bounded };
 
 /**
  * The different modes for moving the camera.
  */
-enum class CameraMode
-{
-    flying,
-    inspect
-};
+enum class CameraMode { flying, inspect };
 
 /** A clip plane is defined by a normal and a distance expressed
  * in absolute value of the coordinate system. Values are stored
  * in a Vector4, with the following order: nx, ny, nz and d
  */
-typedef std::vector< Vector4f > ClipPlanes;
+typedef std::vector<Vector4f> ClipPlanes;
 
-struct RenderInput
-{
-    Vector2i windowSize;
-    Matrix4f modelview;
-    Matrix4f projection;
+struct RenderInput {
+  Vector2i windowSize;
+  Matrix4f modelview;
+  Matrix4f projection;
 
-    Vector3f position;
-    Vector3f target;
-    Vector3f up;
+  Vector3f position;
+  Vector3f target;
+  Vector3f up;
 };
 
-struct RenderOutput
-{
-    uint8_ts colorBuffer;
-    floats depthBuffer;
-    FrameBufferFormat colorBufferFormat;
+struct RenderOutput {
+  uint8_ts colorBuffer;
+  floats depthBuffer;
+  FrameBufferFormat colorBufferFormat;
 };
-
 }
 
 #endif // TYPES_H

@@ -88,6 +88,10 @@ bool MolecularSystemReader::_createScene(
     {
         BRAYNS_PROGRESS( proteinCount, _nbProteins );
 
+        // Scale mesh to match PDB units. PDB are in angstrom, and positions are
+        // in micrometers
+        const float scale = 0.0001f;
+
         const auto& protein = _proteins.find( proteinPosition.first );
         if( !_proteinFolder.empty( ))
             // Load PDB files
@@ -95,7 +99,7 @@ bool MolecularSystemReader::_createScene(
             {
                 const auto pdbFilename = _proteinFolder + '/' + protein->second + ".pdb";
                 ProteinLoader loader( _geometryParameters );
-                loader.importPDBFile( pdbFilename, position, proteinCount, scene );
+                loader.importPDBFile( pdbFilename, position, proteinCount, scene, scale );
                 ++proteinCount;
             }
 
@@ -109,9 +113,6 @@ bool MolecularSystemReader::_createScene(
                     proteinCount % (NB_MAX_MATERIALS - NB_SYSTEM_MATERIALS) :
                     NO_MATERIAL;
 
-                // Scale mesh to match PDB units. PDB are in angstrom, and positions are
-                // in micrometers
-                const float scale = 0.0001f;
                 meshLoader.importMeshFromFile(
                     objFilename, scene, quality,
                     position, Vector3f( scale, scale, scale ), material );

@@ -92,6 +92,7 @@ void FlyingModeManipulator::_strafeRight()
 void FlyingModeManipulator::_flyForward()
 {
     translate( Vector3f::forward() * getWheelSpeed(), true );
+    std::cout << _camera << std::endl;
 }
 
 void FlyingModeManipulator::_flyBackwards()

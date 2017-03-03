@@ -320,7 +320,8 @@ bool ProteinLoader::importPDBFile(
     const std::string &filename,
     const Vector3f& position,
     const size_t proteinIndex,
-    Scene& scene)
+    Scene& scene,
+    const float scale )
 {
     int index(0);
     std::ifstream file(filename.c_str());
@@ -436,8 +437,8 @@ bool ProteinLoader::importPDBFile(
                 }
 
                 SpherePtr sphere(new Sphere(
-                    0, Vector3f( position + 0.01f * atom.position ), // convert from nanometers
-                    0.0001f * atom.radius *                          // convert from angstrom
+                    0, position + scale * atom.position, // convert from nanometers
+                    scale * 0.01f * atom.radius *              // convert from angstrom
                         _geometryParameters.getRadiusMultiplier(),
                     0.f, 0.f));
 

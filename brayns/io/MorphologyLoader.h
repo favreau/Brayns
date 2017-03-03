@@ -128,7 +128,8 @@ private:
         ConesMap& cones,
         Boxf& bounds,
         const size_t simulationOffset,
-        float& maxDistanceToSoma);
+        float& maxDistanceToSoma,
+        float& minRadius);
 
     bool _importMorphologyAsMesh(
         const servus::URI& source,

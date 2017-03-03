@@ -44,13 +44,15 @@ public:
      * @param position Position of protein in space
      * @param proteinIndex Index of the protein when more than one is loaded
      * @param scene Resulting scene
+     * @param scale How to scale the imported protein
      * @return true if PDB file was successufully loaded, false otherwize
      */
     bool importPDBFile(
         const std::string &filename,
         const Vector3f& position,
         const size_t proteinIndex,
-        Scene& scene);
+        Scene& scene,
+        const float scale = 1.f );
 
     /** Returns the RGB composants for a given atom index, and according to the
      * JMol scheme

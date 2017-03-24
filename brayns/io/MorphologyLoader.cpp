@@ -30,6 +30,19 @@
 
 #include <algorithm>
 
+#ifdef BRAYNS_USE_BRION
+#include <brain/brain.h>
+#include <brion/brion.h>
+#endif
+
+#ifdef EXPORT_TO_FILE
+std::ofstream _outputFile;
+#endif
+
+namespace {
+const float factor = 1.f;
+}
+
 namespace brayns {
 
 MorphologyLoader::MorphologyLoader(const GeometryParameters &geometryParameters)
@@ -38,8 +51,8 @@ MorphologyLoader::MorphologyLoader(const GeometryParameters &geometryParameters)
 #ifdef BRAYNS_USE_BRION
 
 #ifdef EXPORT_TO_FILE
-void MorphologyLoader::_writeToFile(const Vector3f &position,
-                                    const float radius) {
+void _writeToFile(SpheresMap &spheres, const size_t material, Boxf &bounds,
+                  const Vector3f &position, const float radius) {
   float f = position.x();
   _outputFile.write((char *)&f, sizeof(float));
   f = position.y();
@@ -50,6 +63,56 @@ void MorphologyLoader::_writeToFile(const Vector3f &position,
   _outputFile.write((char *)&f, sizeof(float));
   f = 1.f;
   _outputFile.write((char *)&f, sizeof(float));
+  spheres[material].push_back(
+      SpherePtr(new Sphere(material, position, radius, 0.f, 0.f)));
+  bounds.merge(position);
+}
+
+void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
+                    const Vector3f &from, const float r1, const Vector3f &to,
+                    const float r2) {
+  Vector3f dir = to - from;
+  const float d = dir.length();
+  dir = normalize(dir);
+
+  //_writeToFile(spheres, material, bounds, from, r1);
+  _writeToFile(spheres, material, bounds, to, r2);
+
+  if (r1 + r2 > d) {
+    const float R = (r1 + r2) / 2.f;
+    float pos = d / 2.f;
+    const Vector3f P = from + pos * dir;
+    _writeToFile(spheres, material, bounds, P, R);
+    return;
+  }
+
+  const float scale_initial = 1.f - (r1 - r2) / (d * factor - r2);
+
+  float delta_e = 0;
+  if (r1 != r2) {
+    const float number =
+        std::floor(std::log(r2 / r1) / std::log(scale_initial));
+    const float error = r1 * (std::pow(scale_initial, std::floor(number)) -
+                              std::pow(scale_initial, number)) /
+                        (factor * (1.f - scale_initial));
+    delta_e = error / std::floor(number);
+  }
+
+  float pos = 0.f;
+  size_t i = 1;
+  float scale_pos = 1;
+  float scale_radius = scale_initial;
+  pos = scale_pos * r1 / factor;
+  while (d - pos >= r2 / factor) {
+    const float R = scale_radius * r1;
+    const Vector3f P = from + pos * dir;
+    _writeToFile(spheres, material, bounds, P, R);
+
+    scale_pos = std::pow(scale_initial, i);
+    scale_radius = std::pow(scale_initial, i + 1);
+    pos = pos + scale_pos * r1 / factor + delta_e;
+    i = i + 1;
+  }
 }
 #endif
 
@@ -155,16 +218,14 @@ bool MorphologyLoader::_importMorphologyAsMesh(const servus::URI &source,
   return true;
 }
 
-void MorphologyLoader::_createSpines(const brain::Circuit &circuit,
-                                     const brain::GIDSet &gids,
-                                     const size_t gid, const float radius,
-                                     SpheresMap &spheres,
+void _createSpines(const brain::Circuit &circuit, const brain::GIDSet &gids,
+                   const size_t gid, const float radius, SpheresMap &spheres,
 #ifdef EXPORT_TO_FILE
-                                     CylindersMap &,
+                   CylindersMap &,
 #else
-                                     CylindersMap &cylinders,
+                   CylindersMap &cylinders,
 #endif
-                                     Boxf &bounds) {
+                   Boxf &bounds) {
   return;
   BRAYNS_INFO << "Create spines" << std::endl;
 
@@ -187,10 +248,8 @@ void MorphologyLoader::_createSpines(const brain::Circuit &circuit,
         Vector3f dir = (to - from) / 10.f;
         float r = (2.f * radius) / 10.f;
         for (float b = 0.f; b < 10.f; b += 1.f) {
-          _writeToFile(from + dir * b, 4.f * radius - r * b);
-          spheres[MATERIAL_AFFERENT_SYNAPSE].push_back(
-              SpherePtr(new Sphere(MATERIAL_AFFERENT_SYNAPSE, from + dir * b,
-                                   4.f * radius - r * b, 0.f, 0.f)));
+          _writeToFile(spheres, MATERIAL_AFFERENT_SYNAPSE, bounds,
+                       from + dir * b, 4.f * radius - r * b);
         }
 #else
         spheres[MATERIAL_AFFERENT_SYNAPSE].push_back(SpherePtr(new Sphere(
@@ -223,10 +282,8 @@ void MorphologyLoader::_createSpines(const brain::Circuit &circuit,
         Vector3f dir = (to - from) / 10.f;
         float r = (2.f * radius) / 10.f;
         for (float b = 0; b < 10.f; b += 1.f) {
-          _writeToFile(from + dir * b, 2.f * radius + r * b);
-          spheres[MATERIAL_EFFERENT_SYNAPSE].push_back(
-              SpherePtr(new Sphere(MATERIAL_EFFERENT_SYNAPSE, from + dir * b,
-                                   2.f * radius + r * b, 0.f, 0.f)));
+          _writeToFile(spheres, MATERIAL_EFFERENT_SYNAPSE, bounds,
+                       from + dir * b, 2.f * radius + r * b);
         }
 #else
         spheres[MATERIAL_EFFERENT_SYNAPSE].push_back(SpherePtr(new Sphere(
@@ -245,7 +302,9 @@ bool MorphologyLoader::importMorphology(const servus::URI &uri,
                                         const int morphologyIndex,
                                         Scene &scene) {
 #ifdef EXPORT_TO_FILE
-  _outputFile.open("morphology.bin", std::ios::out | std::ios::binary);
+  std::stringstream s;
+  s << uri << ".bin";
+  _outputFile.open(s.str(), std::ios::out | std::ios::binary);
 #endif
 
   bool returnValue = true;
@@ -324,51 +383,26 @@ bool MorphologyLoader::_importMorphology(
       const brain::neuron::Soma &soma = morphology.getSoma();
       somaPosition = soma.getCentroid();
       const float somaRadius = soma.getMeanRadius();
+      _writeToFile(spheres, material, bounds, somaPosition, somaRadius / 2.f);
 
       // Profile
       const auto &profilePoints = soma.getProfilePoints();
       const float innerSphereRadius = 2.f * somaRadius / profilePoints.size();
 
-      BRAYNS_INFO << "Adding " << profilePoints.size() << " profile points"
-                  << std::endl;
-
       if (false) {
-        // Big balls
-        Vector3f v0 = profilePoints[0] - somaPosition;
-        Vector3f v1 = profilePoints[1] - somaPosition;
-        Vector3f v2 = v0.cross(v1);
-        Vector3f center = somaPosition + v2 * 0.25f;
-        const float bigBallsRadius = innerSphereRadius * 6.f;
-        _writeToFile(center, bigBallsRadius);
-        spheres[material].push_back(SpherePtr(
-            new Sphere(material, center, bigBallsRadius, 0.f, offset)));
-        center = somaPosition - v2 * 0.25f;
-        _writeToFile(center, bigBallsRadius);
-        spheres[material].push_back(SpherePtr(
-            new Sphere(material, center, bigBallsRadius, 0.f, offset)));
-      }
+        BRAYNS_INFO << "Adding " << profilePoints.size() << " profile points"
+                    << std::endl;
 
-      if (false) {
         // Filled profile
         for (const auto &profilePoint : profilePoints) {
           const Vector3f point = {profilePoint.x(), profilePoint.y(),
                                   profilePoint.z()};
-          /*
-          _writeToFile(point, innerSphereRadius);
-          spheres[material].push_back(SpherePtr(
-              new Sphere(material, point, innerSphereRadius, 0.f, offset)));
-          bounds.merge(point);
-          */
-
           const size_t nbBalls = 8;
           const Vector3f dir = point - somaPosition;
           const Vector3f step = dir / float(nbBalls);
           for (size_t j = 1; j < nbBalls; ++j) {
             const Vector3f center = somaPosition + step * j;
-            _writeToFile(center, innerSphereRadius);
-            spheres[material].push_back(SpherePtr(
-                new Sphere(material, center, innerSphereRadius, 0.f, offset)));
-            bounds.merge(center);
+            _writeToFile(spheres, material, bounds, center, innerSphereRadius);
           }
         }
       }
@@ -377,26 +411,10 @@ bool MorphologyLoader::_importMorphology(
       const auto &children = soma.getChildren();
       for (const auto &child : children) {
         const auto &samples = child.getSamples();
-        const size_t index = 0; // std::min( 3, int(samples.size()-1));
-        const Vector3f position = {samples[index].x(), samples[index].y(),
-                                   samples[index].z()};
-        const Vector3f dir = position - somaPosition;
-        const size_t nbBalls = dir.length() / float(0.5f * samples[0].w());
-        if (nbBalls > 1) {
-          const Vector3f step = dir / float(nbBalls);
-          const float stepRadius =
-              0.5f * (samples[index].w() - somaRadius) / float(nbBalls);
-          for (size_t j = 1; j < nbBalls; ++j) {
-            const Vector3f point = somaPosition + float(j) * step;
-            const float rnd = 1.f + float(rand() % 200) / 1000.f;
-            const float radius = (0.5f * somaRadius + j * stepRadius) * rnd;
-            // const float radius = innerSphereRadius;
-            _writeToFile(point, radius);
-            spheres[material].push_back(
-                SpherePtr(new Sphere(material, point, radius, 0.f, offset)));
-            bounds.merge(point);
-          }
-        }
+        const Vector3f sample = {samples[0].x(), samples[0].y(),
+                                 samples[0].z()};
+        _createSpheres(spheres, material, bounds, somaPosition,
+                       somaRadius / 2.f, sample, samples[0].w() / 2.f);
       }
     }
 #else
@@ -444,6 +462,9 @@ bool MorphologyLoader::_importMorphology(
 
         const float originRadius = samples[s - 1].w() / 2.f;
         const float targetRadius = samples[s].w() / 2.f;
+        _createSpheres(spheres, material, bounds, origin, originRadius, target,
+                       targetRadius);
+        /*
 
         const Vector3f dir = target - origin;
         const size_t nbBalls =
@@ -458,7 +479,7 @@ bool MorphologyLoader::_importMorphology(
             const Vector3f point = origin + float(j) * step;
             const float rnd = 1.f + float(rand() % 200) / 1000.f;
             const float radius = (originRadius + j * stepRadius) * rnd;
-            _writeToFile(point, radius);
+            _writeToFile(spheres, material, bounds, point, radius);
             minRadius = std::min(minRadius, radius);
 
             spheres[material].push_back(
@@ -466,6 +487,7 @@ bool MorphologyLoader::_importMorphology(
             bounds.merge(point);
           }
         }
+        */
       }
       continue;
 #endif

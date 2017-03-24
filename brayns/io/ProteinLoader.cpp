@@ -314,7 +314,7 @@ void ProteinLoader::_writeToFile(const Vector3f &position, const float radius) {
   _outputFile.write((char *)&f, sizeof(float));
   f = radius;
   _outputFile.write((char *)&f, sizeof(float));
-  f = 1.f;
+  f = radius;
   _outputFile.write((char *)&f, sizeof(float));
 }
 #endif

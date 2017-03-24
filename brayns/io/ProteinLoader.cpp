@@ -433,7 +433,9 @@ bool ProteinLoader::importPDBFile(const std::string &filename,
                 _geometryParameters.getRadiusMultiplier(),
             0.f, 0.f));
 #ifdef EXPORT_TO_FILE
-        _writeToFile(atom.position, atom.radius);
+        _writeToFile(position + 0.01f * atom.position,
+                     0.0001f * atom.radius *
+                         _geometryParameters.getRadiusMultiplier());
 #endif
 
         switch (colorScheme) {

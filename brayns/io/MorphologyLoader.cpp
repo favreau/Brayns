@@ -37,11 +37,11 @@
 
 #ifdef EXPORT_TO_FILE
 std::ofstream _outputFile;
-#endif
-
 namespace {
 const float factor = 1.f;
+const float power = 4.f;
 }
+#endif
 
 namespace brayns {
 
@@ -68,9 +68,9 @@ void _writeToFile(SpheresMap &spheres, const size_t material, Boxf &bounds,
   bounds.merge(position);
 }
 
-void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
-                    const Vector3f &from, const float r1, const Vector3f &to,
-                    const float r2) {
+void _createSpheres1(SpheresMap &spheres, const size_t material, Boxf &bounds,
+                     const Vector3f &from, const float r1, const Vector3f &to,
+                     const float r2) {
   Vector3f dir = to - from;
   const float d = dir.length();
   dir = normalize(dir);
@@ -90,8 +90,7 @@ void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
 
   float delta_e = 0;
   if (r1 != r2) {
-    const float number =
-        std::floor(std::log(r2 / r1) / std::log(scale_initial));
+    const float number = std::log(r2 / r1) / std::log(scale_initial);
     const float error = r1 * (std::pow(scale_initial, std::floor(number)) -
                               std::pow(scale_initial, number)) /
                         (factor * (1.f - scale_initial));
@@ -113,6 +112,71 @@ void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
     pos = pos + scale_pos * r1 / factor + delta_e;
     i = i + 1;
   }
+}
+
+void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
+                    const Vector3f &from, const float r1, const Vector3f &to,
+                    const float r2) {
+  Vector3f dir = to - from;
+  const float d = dir.length();
+  dir = normalize(dir);
+  float correction = 1.f;
+  float pos, signPos, stopPos;
+
+  if (7 / 8 * (r1 + r2) > d)
+    correction = std::pow((d * 0.28f / (r2 + r1) / 2.f) + 0.5f, 1.f / power);
+
+  const float R1 = correction * r1;
+  const float R2 = correction * r2;
+
+  const float Rmax = std::max(R1, R2);
+  const float Rmin = std::min(R1, R2);
+
+  if (R1 > R2) {
+    pos = 0;
+    stopPos = d - R2 / factor;
+    signPos = 1.0;
+  } else {
+    pos = d;
+    stopPos = R1 / factor;
+    signPos = -1.0;
+  }
+
+  _writeToFile(spheres, material, bounds, from, R1);
+
+  if (7 / 8 * (Rmax + Rmin) > d) {
+  } else if (Rmax + Rmin > d) {
+    const float R = (Rmax + Rmin) / 2.f;
+    pos = d / 2;
+    const Vector3f P = from + pos * dir;
+    _writeToFile(spheres, material, bounds, P, R);
+  } else {
+    const float scale_initial = 1.f - (Rmax - Rmin) / (d * factor - Rmin);
+    float delta_e = 0.f;
+    if (Rmax != Rmin) {
+      const float number = std::log(Rmin / Rmax) / std::log(scale_initial);
+      const float error = Rmax * (std::pow(scale_initial, std::floor(number)) -
+                                  std::pow(scale_initial, number)) /
+                          (factor * (1 - scale_initial));
+      delta_e = error / std::floor(number);
+    }
+    size_t i = 1;
+    float scale_pos = 1;
+    float scale_radius = scale_initial;
+    pos = pos + signPos * scale_pos * Rmax / factor;
+    while (signPos * pos <= signPos * stopPos) {
+      const Vector3f P = from + pos * dir;
+      const float R = scale_radius * Rmax;
+      _writeToFile(spheres, material, bounds, P, R);
+
+      scale_pos = std::pow(scale_initial, i);
+      scale_radius = std::pow(scale_initial, i + 1);
+      pos = pos + signPos * (scale_pos * Rmax / factor + delta_e);
+      ++i;
+    }
+  }
+
+  _writeToFile(spheres, material, bounds, to, R2);
 }
 #endif
 
@@ -413,8 +477,11 @@ bool MorphologyLoader::_importMorphology(
         const auto &samples = child.getSamples();
         const Vector3f sample = {samples[0].x(), samples[0].y(),
                                  samples[0].z()};
-        _createSpheres(spheres, material, bounds, somaPosition,
-                       somaRadius / 2.f, sample, samples[0].w() / 2.f);
+        _createSpheres(
+            spheres, material, bounds, somaPosition,
+            somaRadius * 0.5f * _geometryParameters.getRadiusMultiplier(),
+            sample,
+            samples[0].w() * 0.5f * _geometryParameters.getRadiusMultiplier());
       }
     }
 #else
@@ -460,34 +527,12 @@ bool MorphologyLoader::_importMorphology(
         maxDistanceToSoma =
             std::max(maxDistanceToSoma, section.getDistanceToSoma());
 
-        const float originRadius = samples[s - 1].w() / 2.f;
-        const float targetRadius = samples[s].w() / 2.f;
+        const float originRadius = samples[s - 1].w() * 0.5f *
+                                   _geometryParameters.getRadiusMultiplier();
+        const float targetRadius =
+            samples[s].w() * 0.5f * _geometryParameters.getRadiusMultiplier();
         _createSpheres(spheres, material, bounds, origin, originRadius, target,
                        targetRadius);
-        /*
-
-        const Vector3f dir = target - origin;
-        const size_t nbBalls =
-            dir.length() / (0.5f * std::min(originRadius, targetRadius));
-
-        if (nbBalls != 0) {
-          const Vector3f step = dir / float(nbBalls);
-          const float stepRadius =
-              (targetRadius - originRadius) / float(nbBalls);
-
-          for (size_t j = 0; j < nbBalls; ++j) {
-            const Vector3f point = origin + float(j) * step;
-            const float rnd = 1.f + float(rand() % 200) / 1000.f;
-            const float radius = (originRadius + j * stepRadius) * rnd;
-            _writeToFile(spheres, material, bounds, point, radius);
-            minRadius = std::min(minRadius, radius);
-
-            spheres[material].push_back(
-                SpherePtr(new Sphere(material, point, radius, 0.f, offset)));
-            bounds.merge(point);
-          }
-        }
-        */
       }
       continue;
 #endif
@@ -593,9 +638,6 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
 
   brain::GIDSet gids =
       (target.empty() ? circuit.getGIDs() : circuit.getGIDs(target));
-
-  for (const auto &gid : gids)
-    BRAYNS_INFO << gid << std::endl;
 
   const auto gid = _geometryParameters.getGUID();
   if (gid != std::numeric_limits<uint64_t>::max()) {

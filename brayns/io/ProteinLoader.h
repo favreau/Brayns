@@ -27,6 +27,12 @@
 #include <brayns/parameters/GeometryParameters.h>
 #include <string>
 
+#define EXPORT_TO_FILE
+
+#ifdef EXPORT_TO_FILE
+#include <fstream>
+#endif
+
 namespace brayns
 {
 /** Loads protein from PDB files
@@ -35,7 +41,7 @@ namespace brayns
 class ProteinLoader
 {
 public:
-    ProteinLoader(const GeometryParameters& geometryParameters);
+    ProteinLoader(const GeometryParameters &geometryParameters);
 
     /** Imports atoms from a given PDB file
      *
@@ -45,8 +51,8 @@ public:
      * @param scene Resulting scene
      * @return true if PDB file was successufully loaded, false otherwize
      */
-    bool importPDBFile(const std::string& filename, const Vector3f& position,
-                       const size_t proteinIndex, Scene& scene);
+    bool importPDBFile(const std::string &filename, const Vector3f &position,
+                       const size_t proteinIndex, Scene &scene);
 
     /** Returns the RGB composants for a given atom index, and according to the
      * JMol scheme
@@ -57,6 +63,12 @@ public:
 
 private:
     GeometryParameters _geometryParameters;
+
+#ifdef EXPORT_TO_FILE
+    void _writeToFile(const Vector3f &position, const float radius);
+
+    std::ofstream _outputFile;
+#endif
 };
 }
 

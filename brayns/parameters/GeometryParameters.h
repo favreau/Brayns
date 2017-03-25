@@ -168,6 +168,8 @@ public:
 
     /** Metaballs enabled? */
     bool useMetaballs() const { return _metaballsGridSize != 0; }
+    /** Neuron GID? */
+    uint64_t getNeuronGID() const { return _neuronGID; }
 protected:
     bool _parse(const po::variables_map& vm) final;
 
@@ -204,6 +206,7 @@ protected:
     size_t _metaballsGridSize;
     float _metaballsThreshold;
     size_t _metaballsSamplesFromSoma;
+    uint64_t _neuronGID;
 };
 }
 #endif // GEOMETRYPARAMETERS_H

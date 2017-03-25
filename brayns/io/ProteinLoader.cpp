@@ -305,14 +305,30 @@ static AtomicRadius atomic_radii[colorMapSize] = // atomic radii in microns
      {"OXT", 25.f, 112},
      {"P", 25.f, 113}};
 
-ProteinLoader::ProteinLoader(const GeometryParameters& geometryParameters)
+ProteinLoader::ProteinLoader(const GeometryParameters &geometryParameters)
     : _geometryParameters(geometryParameters)
 {
 }
 
-bool ProteinLoader::importPDBFile(const std::string& filename,
-                                  const Vector3f& position,
-                                  const size_t proteinIndex, Scene& scene)
+#ifdef EXPORT_TO_FILE
+void ProteinLoader::_writeToFile(const Vector3f &position, const float radius)
+{
+    float f = position.x();
+    _outputFile.write((char *)&f, sizeof(float));
+    f = position.y();
+    _outputFile.write((char *)&f, sizeof(float));
+    f = position.z();
+    _outputFile.write((char *)&f, sizeof(float));
+    f = radius;
+    _outputFile.write((char *)&f, sizeof(float));
+    f = 1.f;
+    _outputFile.write((char *)&f, sizeof(float));
+}
+#endif
+
+bool ProteinLoader::importPDBFile(const std::string &filename,
+                                  const Vector3f &position,
+                                  const size_t proteinIndex, Scene &scene)
 {
     int index(0);
     std::ifstream file(filename.c_str());
@@ -323,6 +339,9 @@ bool ProteinLoader::importPDBFile(const std::string& filename,
     }
     else
     {
+#ifdef EXPORT_TO_FILE
+        _outputFile.open(filename + ".bin", std::ios::out | std::ios::binary);
+#endif
         while (file.good())
         {
             std::string line;
@@ -439,6 +458,9 @@ bool ProteinLoader::importPDBFile(const std::string& filename,
                     0.0001f * atom.radius *          // convert from angstrom
                         _geometryParameters.getRadiusMultiplier(),
                     0.f, 0.f));
+#ifdef EXPORT_TO_FILE
+                _writeToFile(atom.position, atom.radius);
+#endif
 
                 switch (colorScheme)
                 {
@@ -457,6 +479,9 @@ bool ProteinLoader::importPDBFile(const std::string& filename,
             }
         }
         file.close();
+#ifdef EXPORT_TO_FILE
+        _outputFile.close();
+#endif
     }
 
     return true;

@@ -465,11 +465,12 @@ private:
         for (const auto& file : files)
         {
             BRAYNS_PROGRESS(progress, files.size());
-            size_t material =
+            size_t material = 10;
+            /*
                 geometryParameters.getColorScheme() == ColorScheme::neuron_by_id
                     ? progress % (NB_MAX_MATERIALS - NB_SYSTEM_MATERIALS)
                     : NO_MATERIAL;
-
+            */
             MeshQuality quality;
             switch (geometryParameters.getGeometryQuality())
             {

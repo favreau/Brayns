@@ -30,13 +30,8 @@
 #include <fstream>
 #include <vector>
 
-//#define EXPORT_TO_FILE
+#define EXPORT_TO_FILE
 //#define BRAYNS_USE_BRION
-
-#ifdef BRAYNS_USE_BRION
-#include <brain/brain.h>
-#include <brion/brion.h>
-#endif
 
 namespace brayns
 {
@@ -130,19 +125,7 @@ private:
     size_t _getMaterialFromSectionType(size_t morphologyIndex,
                                        size_t sectionType);
 
-    void _createSpines(const brain::Circuit &circuit, const brain::GIDSet &gids,
-                       const size_t gid, const float radius,
-                       SpheresMap &spheres, CylindersMap &cylinders,
-                       Boxf &bounds);
-
     const GeometryParameters &_geometryParameters;
-
-#ifdef EXPORT_TO_FILE
-
-    void _writeToFile(const Vector3f &position, const float radius);
-
-    std::ofstream _outputFile;
-#endif
 };
 }
 

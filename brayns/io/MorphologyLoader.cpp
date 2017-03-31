@@ -398,7 +398,7 @@ bool MorphologyLoader::importMorphology(const servus::URI &uri,
 #ifdef EXPORT_TO_FILE
 bool MorphologyLoader::_importMorphology(
     const servus::URI &source, const size_t morphologyIndex,
-    const Matrix4f &transformation,
+    const Matrix4f & /*transformation*/,
     const SimulationInformation *simulationInformation, SpheresMap &spheres,
     CylindersMap &cylinders, ConesMap &cones, Boxf &bounds,
     const size_t simulationOffset, float &maxDistanceToSoma, float &minRadius,
@@ -418,7 +418,8 @@ bool MorphologyLoader::_importMorphology(
     {
         Vector3f translation = {0.f, 0.f, 0.f};
 
-        brain::neuron::Morphology morphology(source, transformation);
+        // brain::neuron::Morphology morphology(source, transformation);
+        brain::neuron::Morphology morphology(source);
         brain::neuron::SectionTypes sectionTypes;
 
         const MorphologyLayout &layout =
@@ -677,13 +678,6 @@ bool MorphologyLoader::_importMorphology(
 bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
                                      const std::string &target, Scene &scene)
 {
-#ifdef EXPORT_TO_FILE
-    std::stringstream circuitFilename;
-    circuitFilename << circuitConfig << "_" << target << ".bin";
-    std::ofstream outputFile;
-    outputFile.open(circuitFilename.str(), std::ios::out | std::ios::binary);
-#endif
-
     const std::string &filename = circuitConfig.getPath();
     const brion::BlueConfig bc(filename);
     const brain::Circuit circuit(bc);
@@ -697,6 +691,18 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
         gids.clear();
         gids.insert(gid);
     }
+
+#ifdef EXPORT_TO_FILE
+    std::stringstream circuitFilename;
+    circuitFilename << circuitConfig;
+    if (!target.empty())
+        circuitFilename << "_" << target;
+    if (gid != std::numeric_limits<uint64_t>::max())
+        circuitFilename << "_" << gid;
+    circuitFilename << ".bin";
+    std::ofstream outputFile;
+    outputFile.open(circuitFilename.str(), std::ios::out | std::ios::binary);
+#endif
 
     if (gids.empty())
     {

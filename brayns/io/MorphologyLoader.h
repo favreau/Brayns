@@ -30,7 +30,7 @@
 #include <fstream>
 #include <vector>
 
-//#define EXPORT_TO_FILE
+#define EXPORT_TO_FILE
 //#define BRAYNS_USE_BRION
 
 namespace brayns

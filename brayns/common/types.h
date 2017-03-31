@@ -284,7 +284,7 @@ struct Histogram
  *  such as skyboxes.
  */
 const size_t NO_MATERIAL = std::numeric_limits<size_t>::max();
-const size_t NB_MAX_MATERIALS = 200;
+const size_t NB_MAX_MATERIALS = 2000;
 const size_t NB_SYSTEM_MATERIALS = 7;
 const size_t MATERIAL_SYSTEM = NB_MAX_MATERIALS - NB_SYSTEM_MATERIALS - 1;
 const size_t MATERIAL_SKYBOX = MATERIAL_SYSTEM + 0;

@@ -43,10 +43,10 @@ void MeshLoader::clear()
 }
 
 bool MeshLoader::importMeshFromFile(const std::string& filename, Scene& scene,
-                                    MeshQuality meshQuality,
-                                    const Vector3f& position,
-                                    const Vector3f& scale,
-                                    const size_t defaultMaterial)
+                                    GeometryQuality geometryQuality,
+                                    const Matrix4f& transformation,
+                                    const size_t defaultMaterial,
+                                    const float importAsWireframe)
 {
     const boost::filesystem::path file = filename;
     Assimp::Importer importer;
@@ -58,12 +58,12 @@ bool MeshLoader::importMeshFromFile(const std::string& filename, Scene& scene,
     }
 
     size_t quality;
-    switch (meshQuality)
+    switch (geometryQuality)
     {
-    case MeshQuality::medium:
+    case GeometryQuality::medium:
         quality = aiProcessPreset_TargetRealtime_Quality;
         break;
-    case MeshQuality::high:
+    case GeometryQuality::high:
         quality = aiProcessPreset_TargetRealtime_MaxQuality;
         break;
     default:
@@ -100,67 +100,128 @@ bool MeshLoader::importMeshFromFile(const std::string& filename, Scene& scene,
     if (defaultMaterial == NO_MATERIAL)
         _createMaterials(scene, aiScene, filepath.parent_path().string());
 
-    size_t nbVertices = 0;
-    size_t nbFaces = 0;
-    auto& triangleMeshes = scene.getTriangleMeshes();
-    for (size_t m = 0; m < aiScene->mNumMeshes; ++m)
+    if (importAsWireframe != 0.f)
     {
-        aiMesh* mesh = aiScene->mMeshes[m];
-        size_t materialId = (defaultMaterial == NO_MATERIAL)
-                                ? mesh->mMaterialIndex
-                                : defaultMaterial;
-
-        nbVertices += mesh->mNumVertices;
-        for (size_t i = 0; i < mesh->mNumVertices; ++i)
+        for (size_t m = 0; m < aiScene->mNumMeshes; ++m)
         {
-            aiVector3D v = mesh->mVertices[i];
-            const Vector3f vertex = position + scale * Vector3f(v.x, v.y, v.z);
-            triangleMeshes[materialId].getVertices().push_back(vertex);
-            scene.getWorldBounds().merge(vertex);
+            aiMesh* mesh = aiScene->mMeshes[m];
+            const size_t materialId = (defaultMaterial == NO_MATERIAL)
+                                          ? mesh->mMaterialIndex
+                                          : defaultMaterial;
 
-            if (mesh->HasNormals())
+            for (size_t i = 0; i < mesh->mNumVertices; ++i)
             {
-                v = mesh->mNormals[i];
-                const Vector3f normal = {v.x, v.y, v.z};
-                triangleMeshes[materialId].getNormals().push_back(normal);
+                aiVector3D v = mesh->mVertices[i];
+                const Vector4f vertex =
+                    transformation * Vector4f(v.x, v.y, v.z, 1.f);
+                const Vector3f transformedVertex = {vertex.x(), vertex.y(),
+                                                    vertex.z()};
+                auto& spheres = scene.getSpheres();
+                spheres[materialId].push_back(
+                    SpherePtr(new Sphere(materialId, transformedVertex,
+                                         importAsWireframe, 0.f, 0.f)));
+                scene.getWorldBounds().merge(transformedVertex);
             }
 
-            if (mesh->HasTextureCoords(0))
+            for (size_t f = 0; f < mesh->mNumFaces; ++f)
             {
-                v = mesh->mTextureCoords[0][i];
-                const Vector2f texCoord(v.x, -v.y);
-                triangleMeshes[materialId].getTextureCoordinates().push_back(
-                    texCoord);
+                if (mesh->mFaces[f].mNumIndices == 3)
+                {
+                    const auto v1 =
+                        mesh->mVertices[mesh->mFaces[f].mIndices[0]];
+                    const Vector3f tv1 = {v1.x, v1.y, v1.z};
+                    const auto v2 =
+                        mesh->mVertices[mesh->mFaces[f].mIndices[1]];
+                    const Vector3f tv2 = {v2.x, v2.y, v2.z};
+                    const auto v3 =
+                        mesh->mVertices[mesh->mFaces[f].mIndices[2]];
+                    const Vector3f tv3 = {v3.x, v3.y, v3.z};
+                    auto& cylinders = scene.getCylinders();
+                    cylinders[materialId].push_back(
+                        CylinderPtr(new Cylinder(materialId, tv1, tv2,
+                                                 importAsWireframe, 0.f, 0.f)));
+                    cylinders[materialId].push_back(
+                        CylinderPtr(new Cylinder(materialId, tv2, tv3,
+                                                 importAsWireframe, 0.f, 0.f)));
+                    cylinders[materialId].push_back(
+                        CylinderPtr(new Cylinder(materialId, tv3, tv1,
+                                                 importAsWireframe, 0.f, 0.f)));
+                }
             }
         }
-        bool nonTriangulatedFaces = false;
-        nbFaces += mesh->mNumFaces;
-        for (size_t f = 0; f < mesh->mNumFaces; ++f)
-        {
-            if (mesh->mFaces[f].mNumIndices == 3)
-            {
-                const Vector3ui ind = Vector3ui(
-                    _meshIndex[materialId] + mesh->mFaces[f].mIndices[0],
-                    _meshIndex[materialId] + mesh->mFaces[f].mIndices[1],
-                    _meshIndex[materialId] + mesh->mFaces[f].mIndices[2]);
-                triangleMeshes[materialId].getIndices().push_back(ind);
-            }
-            else
-                nonTriangulatedFaces = true;
-        }
-        if (nonTriangulatedFaces)
-            BRAYNS_WARN
-                << "Some faces are not triangulated and have been removed"
-                << std::endl;
-
-        if (_meshIndex.find(materialId) == _meshIndex.end())
-            _meshIndex[materialId] = 0;
-
-        _meshIndex[materialId] += mesh->mNumVertices;
     }
+    else
+    {
+        size_t nbVertices = 0;
+        size_t nbFaces = 0;
+        auto& triangleMeshes = scene.getTriangleMeshes();
+        for (size_t m = 0; m < aiScene->mNumMeshes; ++m)
+        {
+            aiMesh* mesh = aiScene->mMeshes[m];
+            size_t materialId = (defaultMaterial == NO_MATERIAL)
+                                    ? mesh->mMaterialIndex
+                                    : defaultMaterial;
 
-    BRAYNS_DEBUG << "Loaded " << nbVertices << " vertices and " << nbFaces
-                 << " faces" << std::endl;
+            nbVertices += mesh->mNumVertices;
+            for (size_t i = 0; i < mesh->mNumVertices; ++i)
+            {
+                aiVector3D v = mesh->mVertices[i];
+                const Vector4f vertex =
+                    transformation * Vector4f(v.x, v.y, v.z, 1.f);
+                const Vector3f transformedVertex = {vertex.x(), vertex.y(),
+                                                    vertex.z()};
+                triangleMeshes[materialId].getVertices().push_back(
+                    transformedVertex);
+                scene.getWorldBounds().merge(transformedVertex);
+
+                if (mesh->HasNormals())
+                {
+                    v = mesh->mNormals[i];
+                    const Vector4f normal =
+                        transformation * Vector4f(v.x, v.y, v.z, 0.f);
+                    const Vector3f transformedNormal = {normal.x(), normal.y(),
+                                                        normal.z()};
+                    triangleMeshes[materialId].getNormals().push_back(
+                        transformedNormal);
+                }
+
+                if (mesh->HasTextureCoords(0))
+                {
+                    v = mesh->mTextureCoords[0][i];
+                    const Vector2f texCoord(v.x, -v.y);
+                    triangleMeshes[materialId]
+                        .getTextureCoordinates()
+                        .push_back(texCoord);
+                }
+            }
+            bool nonTriangulatedFaces = false;
+            nbFaces += mesh->mNumFaces;
+            for (size_t f = 0; f < mesh->mNumFaces; ++f)
+            {
+                if (mesh->mFaces[f].mNumIndices == 3)
+                {
+                    const Vector3ui ind = Vector3ui(
+                        _meshIndex[materialId] + mesh->mFaces[f].mIndices[0],
+                        _meshIndex[materialId] + mesh->mFaces[f].mIndices[1],
+                        _meshIndex[materialId] + mesh->mFaces[f].mIndices[2]);
+                    triangleMeshes[materialId].getIndices().push_back(ind);
+                }
+                else
+                    nonTriangulatedFaces = true;
+            }
+            if (nonTriangulatedFaces)
+                BRAYNS_WARN
+                    << "Some faces are not triangulated and have been removed"
+                    << std::endl;
+
+            if (_meshIndex.find(materialId) == _meshIndex.end())
+                _meshIndex[materialId] = 0;
+
+            _meshIndex[materialId] += mesh->mNumVertices;
+        }
+        BRAYNS_DEBUG << "Loaded " << nbVertices << " vertices and " << nbFaces
+                     << " faces" << std::endl;
+    }
 
     return true;
 }

@@ -100,8 +100,9 @@ inline vec3f SimulationRenderer_shadeRay(
                 pathOpacity = 1.f - volumetricValue.w;
             sample.z = 1.f - log(zDepth) / 10.f;
             moreRebounds = false;
+            ++depth;
         }
-        else
+        else if (ray.geomID == 3) // only render triangles
         {
             // Intersection found
 
@@ -127,9 +128,12 @@ inline vec3f SimulationRenderer_shadeRay(
 
             varying vec3f lightEmission = make_vec3f(0.f);
             vec4f simulationValue = make_vec4f(0.f);
-            // Get simulation value from geometry ID
-            if (self->simulationData)
-                simulationValue = getSimulationValue(self, dg, lightEmission);
+
+            if (dg.st.x != 0.f)
+                // Get simulation value from geometry ID
+                if (self->simulationData)
+                    simulationValue =
+                        getSimulationValue(self, dg, lightEmission);
 
             localSimulationColor = lightEmission + make_vec3f(simulationValue);
             localSimulationIntensity = simulationValue.w;
@@ -223,7 +227,6 @@ inline vec3f SimulationRenderer_shadeRay(
                     }
                 }
             }
-
             if (localOpacity > 0.01f)
             {
                 varying vec3f indirectShadingColor = make_vec3f(0.f);
@@ -240,20 +243,18 @@ inline vec3f SimulationRenderer_shadeRay(
                 {
                     bool ok = false;
                     int spp = 0;
-                    while (!ok && spp < 32)
+                    while (!ok && spp < 1)
                     {
                         // Get color from closest skeleton
                         varying Ray colorRay;
                         colorRay.org = intersection;
-
                         vec3f randomDirection =
-                            getRandomVector(sample, ray.dir,
+                            getRandomVector(sample, localNormal,
                                             self->abstract.randomNumber + spp);
                         colorRay.dir = randomDirection;
-                        colorRay.t0 = ray.t + self->abstract.super.epsilon;
+                        colorRay.t0 = self->abstract.super.epsilon;
                         colorRay.time = ray.time;
-                        colorRay.t =
-                            ray.t + self->abstract.super.epsilon * 1000.f;
+                        colorRay.t = ray.t + self->abstract.super.epsilon * 4.f;
                         colorRay.primID = -1;
                         colorRay.geomID = -1;
                         colorRay.instID = -1;
@@ -272,11 +273,11 @@ inline vec3f SimulationRenderer_shadeRay(
                             if (colorDg.st.x != 0.f && self->simulationData)
                             {
                                 varying vec3f lightEmission = make_vec3f(0.f);
-                                localDiffuseColor =
-                                    localDiffuseColor +
-                                    make_vec3f(
-                                        getSimulationValue(self, colorDg,
-                                                           lightEmission));
+                                localDiffuseColor = make_vec3f(
+                                    getSimulationValue(self, colorDg,
+                                                       lightEmission));
+                                // colorDg.color = make_vec4f(localShadedColor,
+                                // 1);
                                 ok = true;
                             }
                         }
@@ -476,8 +477,20 @@ inline vec3f SimulationRenderer_shadeRay(
             ray.primID = -1;
             ray.geomID = -1;
             ray.instID = -1;
+            ++depth;
         }
-        ++depth;
+        else
+        {
+            // Next ray
+            tend -= ray.t;
+            if (tend < 0.f)
+                break;
+            ray.t0 = ray.t + self->abstract.super.epsilon;
+            ray.t = tend;
+            ray.primID = -1;
+            ray.geomID = -1;
+            ray.instID = -1;
+        }
     }
     // Z-Depth
     if (depth >= NB_MAX_REBOUNDS)

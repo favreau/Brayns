@@ -459,7 +459,7 @@ private:
         auto& scene = _engine->getScene();
 
         strings filters = {".obj", ".dae", ".fbx", ".ply", ".lwo",
-                           ".stl", ".3ds", ".ase", ".ifc"};
+                           ".stl", ".3ds", ".ase", ".ifc", ".off"};
         strings files = parseFolder(folder, filters);
         size_t progress = 0;
         for (const auto& file : files)
@@ -469,24 +469,16 @@ private:
                 geometryParameters.getColorScheme() == ColorScheme::neuron_by_id
                     ? progress % (NB_MAX_MATERIALS - NB_SYSTEM_MATERIALS)
                     : NO_MATERIAL;
-            MeshQuality quality;
-            switch (geometryParameters.getGeometryQuality())
-            {
-            case GeometryQuality::medium:
-                quality = MeshQuality::medium;
-                break;
-            case GeometryQuality::high:
-                quality = MeshQuality::high;
-                break;
-            default:
-                quality = MeshQuality::low;
-                break;
-            }
 
-            if (!_meshLoader.importMeshFromFile(file, scene, quality,
-                                                Vector3f(), Vector3f(1, 1, 1),
-                                                material))
+            if (!_meshLoader.importMeshFromFile(
+                    file, scene, geometryParameters.getGeometryQuality(),
+                    Matrix4f(), material))
                 BRAYNS_ERROR << "Failed to import " << file << std::endl;
+            /*
+            _meshLoader.importMeshFromFile(
+                file, scene, geometryParameters.getGeometryQuality(),
+                Matrix4f(), MATERIAL_CA_SIMULATION, 0.01f);
+                */
             ++progress;
         }
 #else

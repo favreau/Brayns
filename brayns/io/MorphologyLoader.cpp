@@ -36,9 +36,10 @@
 #endif
 
 #ifdef EXPORT_TO_FILE
+#include <boost/filesystem.hpp>
 namespace
 {
-const float factor = 1.f;
+const float factor = 2.f;
 const float power = 4.f;
 }
 #endif
@@ -89,6 +90,10 @@ void _createSpheres(std::ofstream &outputFile, SpheresMap &spheres,
     const float R1 = correction * r1;
     const float R2 = correction * r2;
 
+    _writeToFile(outputFile, spheres, 0 /*MATERIAL_AFFERENT_SYNAPSE*/, bounds,
+                 from, R1);
+    // return;
+
     const float Rmax = std::max(R1, R2);
     const float Rmin = std::min(R1, R2);
 
@@ -104,9 +109,6 @@ void _createSpheres(std::ofstream &outputFile, SpheresMap &spheres,
         stopPos = R1 / factor;
         signPos = -1.0;
     }
-
-    _writeToFile(outputFile, spheres, MATERIAL_AFFERENT_SYNAPSE, bounds, from,
-                 R1);
 
     if (7 / 8 * (Rmax + Rmin) > d)
     {
@@ -140,7 +142,7 @@ void _createSpheres(std::ofstream &outputFile, SpheresMap &spheres,
         {
             const Vector3f P = from + pos * dir;
             const float R = scale_radius * Rmax;
-            _writeToFile(outputFile, spheres, material, bounds, P, R);
+            _writeToFile(outputFile, spheres, 1, bounds, P, R);
 
             scale_pos = std::pow(scale_initial, i);
             scale_radius = std::pow(scale_initial, i + 1);
@@ -149,8 +151,8 @@ void _createSpheres(std::ofstream &outputFile, SpheresMap &spheres,
         }
     }
 
-    _writeToFile(outputFile, spheres, MATERIAL_EFFERENT_SYNAPSE, bounds, to,
-                 R2);
+    _writeToFile(outputFile, spheres, 1 /* MATERIAL_EFFERENT_SYNAPSE */, bounds,
+                 to, R2);
 }
 #endif
 
@@ -398,7 +400,7 @@ bool MorphologyLoader::importMorphology(const servus::URI &uri,
 #ifdef EXPORT_TO_FILE
 bool MorphologyLoader::_importMorphology(
     const servus::URI &source, const size_t morphologyIndex,
-    const Matrix4f & /*transformation*/,
+    const Matrix4f &transformation,
     const SimulationInformation *simulationInformation, SpheresMap &spheres,
     CylindersMap &cylinders, ConesMap &cones, Boxf &bounds,
     const size_t simulationOffset, float &maxDistanceToSoma, float &minRadius,
@@ -418,8 +420,7 @@ bool MorphologyLoader::_importMorphology(
     {
         Vector3f translation = {0.f, 0.f, 0.f};
 
-        // brain::neuron::Morphology morphology(source, transformation);
-        brain::neuron::Morphology morphology(source);
+        brain::neuron::Morphology morphology(source, transformation);
         brain::neuron::SectionTypes sectionTypes;
 
         const MorphologyLayout &layout =
@@ -491,8 +492,8 @@ bool MorphologyLoader::_importMorphology(
                     for (size_t j = 1; j < nbBalls; ++j)
                     {
                         const Vector3f center = somaPosition + step * j;
-                        _writeToFile(outputFile, spheres, material, bounds,
-                                     center, innerSphereRadius);
+                        _writeToFile(outputFile, spheres, 1, bounds, center,
+                                     innerSphereRadius);
                     }
                 }
             }
@@ -839,13 +840,27 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
     brain::URIs cr_uris;
     const brain::GIDSet &cr_gids = compartmentReport.getGIDs();
 
+    const size_t circuitDensity = 1;
     BRAYNS_INFO << "Loading " << cr_gids.size() << " simulated cells"
                 << std::endl;
+
+    const size_t nbSkippedCells =
+        cr_gids.size() / (cr_gids.size() * circuitDensity / 100);
+    BRAYNS_INFO << "Processing every " << nbSkippedCells << " cell"
+                << std::endl;
+
+    size_t count = 0;
     for (const auto cr_gid : cr_gids)
     {
+        if (count % nbSkippedCells != 0)
+        {
+            ++count;
+            continue;
+        }
         auto it = std::find(gids.begin(), gids.end(), cr_gid);
         auto index = std::distance(gids.begin(), it);
         cr_uris.push_back(uris[index]);
+        ++count;
     }
 
     size_t progress = 0;
@@ -862,12 +877,15 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
         {
             const auto &uri = cr_uris[i];
 #ifdef EXPORT_TO_FILE
-            std::stringstream morphologyFilename;
-            morphologyFilename << uri.getPath() << ".bin";
-            BRAYNS_INFO << "Creating  " << morphologyFilename.str()
-                        << std::endl;
+            const auto filenameNoExt =
+                boost::filesystem::path(uri.getPath()).stem().string();
+            std::string morphologyFilename =
+                "/home/favreau/medias/morphologies/BBPMovie/bin/Factor2/" +
+                filenameNoExt;
+
+            // BRAYNS_INFO << "Creating  " << morphologyFilename << std::endl;
             std::ofstream outputFile;
-            outputFile.open(morphologyFilename.str(),
+            outputFile.open(morphologyFilename,
                             std::ios::out | std::ios::binary);
 #endif
             const SimulationInformation simulationInformation = {
@@ -882,11 +900,14 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
             }
             float maxDistanceToSoma;
 #ifdef EXPORT_TO_FILE
-            _importMorphology(uri, i, transforms[i], &simulationInformation,
+            _importMorphology(uri, i, Matrix4f(), &simulationInformation,
                               private_spheres, private_cylinders, private_cones,
                               private_bounds, 0, maxDistanceToSoma, minRadius,
                               outputFile);
             outputFile.close();
+            private_spheres.clear();
+            private_cylinders.clear();
+            private_cones.clear();
 #else
             _importMorphology(uri, i, transforms[i], &simulationInformation,
                               private_spheres, private_cylinders, private_cones,
@@ -968,7 +989,9 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
 
 #ifdef EXPORT_TO_FILE
                 std::stringstream morphologyFilename;
-                morphologyFilename << uri.getPath() << ".bin";
+                morphologyFilename
+                    << "/home/favreau/medias/morphologies/BBPTestData/bin/" << i
+                    << ".bin";
                 BRAYNS_INFO << "Creating  " << morphologyFilename.str()
                             << std::endl;
                 std::ofstream outputFile;

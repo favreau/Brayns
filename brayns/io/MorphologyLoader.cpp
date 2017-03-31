@@ -36,7 +36,6 @@
 #endif
 
 #ifdef EXPORT_TO_FILE
-std::ofstream _outputFile;
 namespace
 {
 const float factor = 1.f;
@@ -54,27 +53,28 @@ MorphologyLoader::MorphologyLoader(const GeometryParameters &geometryParameters)
 #ifdef BRAYNS_USE_BRION
 
 #ifdef EXPORT_TO_FILE
-void _writeToFile(SpheresMap &spheres, const size_t material, Boxf &bounds,
-                  const Vector3f &position, const float radius)
+void _writeToFile(std::ofstream &outputFile, SpheresMap &spheres,
+                  const size_t material, Boxf &bounds, const Vector3f &position,
+                  const float radius)
 {
     float f = position.x();
-    _outputFile.write((char *)&f, sizeof(float));
+    outputFile.write((char *)&f, sizeof(float));
     f = position.y();
-    _outputFile.write((char *)&f, sizeof(float));
+    outputFile.write((char *)&f, sizeof(float));
     f = position.z();
-    _outputFile.write((char *)&f, sizeof(float));
+    outputFile.write((char *)&f, sizeof(float));
     f = radius;
-    _outputFile.write((char *)&f, sizeof(float));
+    outputFile.write((char *)&f, sizeof(float));
     f = 1.f;
-    _outputFile.write((char *)&f, sizeof(float));
+    outputFile.write((char *)&f, sizeof(float));
     spheres[material].push_back(
         SpherePtr(new Sphere(material, position, radius, 0.f, 0.f)));
     bounds.merge(position);
 }
 
-void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
-                    const Vector3f &from, const float r1, const Vector3f &to,
-                    const float r2)
+void _createSpheres(std::ofstream &outputFile, SpheresMap &spheres,
+                    const size_t material, Boxf &bounds, const Vector3f &from,
+                    const float r1, const Vector3f &to, const float r2)
 {
     Vector3f dir = to - from;
     const float d = dir.length();
@@ -105,7 +105,8 @@ void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
         signPos = -1.0;
     }
 
-    _writeToFile(spheres, MATERIAL_AFFERENT_SYNAPSE, bounds, from, R1);
+    _writeToFile(outputFile, spheres, MATERIAL_AFFERENT_SYNAPSE, bounds, from,
+                 R1);
 
     if (7 / 8 * (Rmax + Rmin) > d)
     {
@@ -115,7 +116,7 @@ void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
         const float R = (Rmax + Rmin) / 2.f;
         pos = d / 2;
         const Vector3f P = from + pos * dir;
-        _writeToFile(spheres, material, bounds, P, R);
+        _writeToFile(outputFile, spheres, material, bounds, P, R);
     }
     else
     {
@@ -139,7 +140,7 @@ void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
         {
             const Vector3f P = from + pos * dir;
             const float R = scale_radius * Rmax;
-            _writeToFile(spheres, material, bounds, P, R);
+            _writeToFile(outputFile, spheres, material, bounds, P, R);
 
             scale_pos = std::pow(scale_initial, i);
             scale_radius = std::pow(scale_initial, i + 1);
@@ -148,7 +149,8 @@ void _createSpheres(SpheresMap &spheres, const size_t material, Boxf &bounds,
         }
     }
 
-    _writeToFile(spheres, MATERIAL_EFFERENT_SYNAPSE, bounds, to, R2);
+    _writeToFile(outputFile, spheres, MATERIAL_EFFERENT_SYNAPSE, bounds, to,
+                 R2);
 }
 #endif
 
@@ -265,14 +267,16 @@ bool MorphologyLoader::_importMorphologyAsMesh(const servus::URI &source,
     return true;
 }
 
+#ifdef EXPORT_TO_FILE
+void _createSpines(std::ofstream &outputFile, const brain::Circuit &circuit,
+                   const brain::GIDSet &gids, const size_t gid,
+                   const float radius, SpheresMap &spheres, CylindersMap &,
+                   Boxf &bounds)
+#else
 void _createSpines(const brain::Circuit &circuit, const brain::GIDSet &gids,
                    const size_t gid, const float radius, SpheresMap &spheres,
-#ifdef EXPORT_TO_FILE
-                   CylindersMap &,
-#else
-                   CylindersMap &cylinders,
+                   CylindersMap &cylinders, Boxf &bounds)
 #endif
-                   Boxf &bounds)
 {
     return;
     BRAYNS_INFO << "Create spines" << std::endl;
@@ -299,10 +303,8 @@ void _createSpines(const brain::Circuit &circuit, const brain::GIDSet &gids,
                 Vector3f dir = (to - from) / 10.f;
                 float r = (2.f * radius) / 10.f;
                 for (float b = 0.f; b < 10.f; b += 1.f)
-                {
-                    _writeToFile(spheres, MATERIAL_AFFERENT_SYNAPSE, bounds,
-                                 from + dir * b, 4.f * radius - r * b);
-                }
+                    _writeToFile(outputFile, spheres, MATERIAL_AFFERENT_SYNAPSE,
+                                 bounds, from + dir * b, 4.f * radius - r * b);
 #else
                 spheres[MATERIAL_AFFERENT_SYNAPSE].push_back(
                     SpherePtr(new Sphere(MATERIAL_AFFERENT_SYNAPSE, from,
@@ -339,10 +341,8 @@ void _createSpines(const brain::Circuit &circuit, const brain::GIDSet &gids,
                 Vector3f dir = (to - from) / 10.f;
                 float r = (2.f * radius) / 10.f;
                 for (float b = 0; b < 10.f; b += 1.f)
-                {
-                    _writeToFile(spheres, MATERIAL_EFFERENT_SYNAPSE, bounds,
-                                 from + dir * b, 2.f * radius + r * b);
-                }
+                    _writeToFile(outputFile, spheres, MATERIAL_EFFERENT_SYNAPSE,
+                                 bounds, from + dir * b, 2.f * radius + r * b);
 #else
                 spheres[MATERIAL_EFFERENT_SYNAPSE].push_back(
                     SpherePtr(new Sphere(MATERIAL_EFFERENT_SYNAPSE, from,
@@ -364,7 +364,8 @@ bool MorphologyLoader::importMorphology(const servus::URI &uri,
 #ifdef EXPORT_TO_FILE
     std::stringstream s;
     s << uri << ".bin";
-    _outputFile.open(s.str(), std::ios::out | std::ios::binary);
+    std::ofstream outputFile;
+    outputFile.open(s.str(), std::ios::out | std::ios::binary);
 #endif
 
     bool returnValue = true;
@@ -377,28 +378,39 @@ bool MorphologyLoader::importMorphology(const servus::URI &uri,
     }
     float maxDistanceToSoma;
     float minRadius;
+#ifdef EXPORT_TO_FILE
+    returnValue = returnValue &&
+                  _importMorphology(uri, morphologyIndex, Matrix4f(), nullptr,
+                                    scene.getSpheres(), scene.getCylinders(),
+                                    scene.getCones(), scene.getWorldBounds(), 0,
+                                    maxDistanceToSoma, minRadius, outputFile);
+    outputFile.close();
+#else
     returnValue = returnValue &&
                   _importMorphology(uri, morphologyIndex, Matrix4f(), nullptr,
                                     scene.getSpheres(), scene.getCylinders(),
                                     scene.getCones(), scene.getWorldBounds(), 0,
                                     maxDistanceToSoma, minRadius);
-
-#ifdef EXPORT_TO_FILE
-    _outputFile.close();
 #endif
     return returnValue;
 }
 
+#ifdef EXPORT_TO_FILE
 bool MorphologyLoader::_importMorphology(
     const servus::URI &source, const size_t morphologyIndex,
-#ifdef EXPORT_TO_FILE
-    const Matrix4f &,
-#else
     const Matrix4f &transformation,
-#endif
+    const SimulationInformation *simulationInformation, SpheresMap &spheres,
+    CylindersMap &cylinders, ConesMap &cones, Boxf &bounds,
+    const size_t simulationOffset, float &maxDistanceToSoma, float &minRadius,
+    std::ofstream &outputFile)
+#else
+bool MorphologyLoader::_importMorphology(
+    const servus::URI &source, const size_t morphologyIndex,
+    const Matrix4f &transformation,
     const SimulationInformation *simulationInformation, SpheresMap &spheres,
     CylindersMap &cylinders, ConesMap &cones, Boxf &bounds,
     const size_t simulationOffset, float &maxDistanceToSoma, float &minRadius)
+#endif
 {
     Vector3f somaPosition;
     maxDistanceToSoma = 0.f;
@@ -406,11 +418,7 @@ bool MorphologyLoader::_importMorphology(
     {
         Vector3f translation = {0.f, 0.f, 0.f};
 
-#ifdef EXPORT_TO_FILE
-        brain::neuron::Morphology morphology(source);
-#else
         brain::neuron::Morphology morphology(source, transformation);
-#endif
         brain::neuron::SectionTypes sectionTypes;
 
         const MorphologyLayout &layout =
@@ -458,7 +466,7 @@ bool MorphologyLoader::_importMorphology(
             const brain::neuron::Soma &soma = morphology.getSoma();
             somaPosition = soma.getCentroid();
             const float somaRadius = soma.getMeanRadius();
-            _writeToFile(spheres, material, bounds, somaPosition,
+            _writeToFile(outputFile, spheres, material, bounds, somaPosition,
                          somaRadius / 2.f);
 
             // Profile
@@ -482,8 +490,8 @@ bool MorphologyLoader::_importMorphology(
                     for (size_t j = 1; j < nbBalls; ++j)
                     {
                         const Vector3f center = somaPosition + step * j;
-                        _writeToFile(spheres, material, bounds, center,
-                                     innerSphereRadius);
+                        _writeToFile(outputFile, spheres, material, bounds,
+                                     center, innerSphereRadius);
                     }
                 }
             }
@@ -495,7 +503,8 @@ bool MorphologyLoader::_importMorphology(
                 const auto &samples = child.getSamples();
                 const Vector3f sample = {samples[0].x(), samples[0].y(),
                                          samples[0].z()};
-                _createSpheres(spheres, material, bounds, somaPosition,
+                _createSpheres(outputFile, spheres, material, bounds,
+                               somaPosition,
                                somaRadius * 0.5f *
                                    _geometryParameters.getRadiusMultiplier(),
                                sample,
@@ -516,7 +525,7 @@ bool MorphologyLoader::_importMorphology(
             const float radius =
                 (_geometryParameters.getRadiusCorrection() != 0.f
                      ? _geometryParameters.getRadiusCorrection()
-                     : soma.getMeanRadius() *
+                     : soma.getMeanRadius() * 0.5f *
                            _geometryParameters.getRadiusMultiplier());
 
             spheres[material].push_back(
@@ -556,8 +565,8 @@ bool MorphologyLoader::_importMorphology(
                 const float targetRadius =
                     samples[s].w() * 0.5f *
                     _geometryParameters.getRadiusMultiplier();
-                _createSpheres(spheres, material, bounds, origin, originRadius,
-                               target, targetRadius);
+                _createSpheres(outputFile, spheres, material, bounds, origin,
+                               originRadius, target, targetRadius);
             }
             continue;
 #endif
@@ -656,7 +665,6 @@ bool MorphologyLoader::_importMorphology(
                      << std::endl;
         BRAYNS_DEBUG << "Distance to soma    : " << maxDistanceToSoma
                      << std::endl;
-        BRAYNS_ERROR << minRadius << std::endl;
     }
     catch (const std::runtime_error &e)
     {
@@ -669,6 +677,13 @@ bool MorphologyLoader::_importMorphology(
 bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
                                      const std::string &target, Scene &scene)
 {
+#ifdef EXPORT_TO_FILE
+    std::stringstream circuitFilename;
+    circuitFilename << circuitConfig << "_" << target << ".bin";
+    std::ofstream outputFile;
+    outputFile.open(circuitFilename.str(), std::ios::out | std::ios::binary);
+#endif
+
     const std::string &filename = circuitConfig.getPath();
     const brion::BlueConfig bc(filename);
     const brain::Circuit circuit(bc);
@@ -701,13 +716,6 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
     size_t progress = 0;
     float minRadius = std::numeric_limits<float>::max();
 
-#ifdef EXPORT_TO_FILE
-    std::stringstream morphologyFilebname;
-    morphologyFilebname << gid << ".bin";
-    _outputFile.open(morphologyFilebname.str(),
-                     std::ios::out | std::ios::binary);
-#endif
-
 #pragma omp parallel
     {
         SpheresMap private_spheres;
@@ -718,6 +726,7 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
         for (size_t i = 0; i < uris.size(); ++i)
         {
             const auto &uri = uris[i];
+
             float maxDistanceToSoma = 0.f;
 
             if (_geometryParameters.useMetaballs())
@@ -728,10 +737,17 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
                                         scene.getWorldBounds());
             }
 
+#ifdef EXPORT_TO_FILE
+            if (_importMorphology(uri, i, transforms[i], 0, private_spheres,
+                                  private_cylinders, private_cones,
+                                  private_bounds, simulationOffset,
+                                  maxDistanceToSoma, minRadius, outputFile))
+#else
             if (_importMorphology(uri, i, transforms[i], 0, private_spheres,
                                   private_cylinders, private_cones,
                                   private_bounds, simulationOffset,
                                   maxDistanceToSoma, minRadius))
+#endif
             {
                 morphologyOffsets[simulatedCells] = maxDistanceToSoma;
                 simulationOffset += maxDistanceToSoma;
@@ -774,12 +790,12 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
         scene.getWorldBounds().merge(private_bounds);
     }
 
-    // Spines
-    gids = (target.empty() ? circuit.getGIDs() : circuit.getGIDs(target));
-    _createSpines(circuit, gids, gid, minRadius, scene.getSpheres(),
-                  scene.getCylinders(), scene.getWorldBounds());
+// Spines
+// gids = (target.empty() ? circuit.getGIDs() : circuit.getGIDs(target));
+//_createSpines(outputFile, circuit, gids, gid, minRadius, scene.getSpheres(),
+//              scene.getCylinders(), scene.getWorldBounds());
 #ifdef EXPORT_TO_FILE
-    _outputFile.close();
+    outputFile.close();
 #endif
     return true;
 }
@@ -788,11 +804,6 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
                                      const std::string &target,
                                      const std::string &report, Scene &scene)
 {
-#ifdef EXPORT_TO_FILE
-    std::ofstream outputFile("morphology.bin",
-                             std::ios::out | std::ios::binary);
-#endif
-
     const std::string &filename = circuitConfig.getPath();
     const brion::BlueConfig bc(filename);
     const brain::Circuit circuit(bc);
@@ -844,6 +855,15 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
         for (size_t i = 0; i < cr_uris.size(); ++i)
         {
             const auto &uri = cr_uris[i];
+#ifdef EXPORT_TO_FILE
+            std::stringstream morphologyFilename;
+            morphologyFilename << uri.getPath() << ".bin";
+            BRAYNS_INFO << "Creating  " << morphologyFilename.str()
+                        << std::endl;
+            std::ofstream outputFile;
+            outputFile.open(morphologyFilename.str(),
+                            std::ios::out | std::ios::binary);
+#endif
             const SimulationInformation simulationInformation = {
                 &compartmentCounts[i], &compartmentOffsets[i]};
 
@@ -854,12 +874,18 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
                                         scene.getTriangleMeshes(),
                                         scene.getWorldBounds());
             }
-
             float maxDistanceToSoma;
+#ifdef EXPORT_TO_FILE
+            _importMorphology(uri, i, transforms[i], &simulationInformation,
+                              private_spheres, private_cylinders, private_cones,
+                              private_bounds, 0, maxDistanceToSoma, minRadius,
+                              outputFile);
+            outputFile.close();
+#else
             _importMorphology(uri, i, transforms[i], &simulationInformation,
                               private_spheres, private_cylinders, private_cones,
                               private_bounds, 0, maxDistanceToSoma, minRadius);
-
+#endif
             BRAYNS_PROGRESS(progress, cr_uris.size());
 #pragma omp atomic
             ++progress;
@@ -934,11 +960,26 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
                 float maxDistanceToSoma;
                 const auto &uri = allUris[i];
 
+#ifdef EXPORT_TO_FILE
+                std::stringstream morphologyFilename;
+                morphologyFilename << uri.getPath() << ".bin";
+                BRAYNS_INFO << "Creating  " << morphologyFilename.str()
+                            << std::endl;
+                std::ofstream outputFile;
+                outputFile.open(morphologyFilename.str(),
+                                std::ios::out | std::ios::binary);
+                _importMorphology(uri, i, allTransforms[i], 0, private_spheres,
+                                  private_cylinders, private_cones,
+                                  private_bounds, 0, maxDistanceToSoma,
+                                  minRadius, outputFile);
+
+                outputFile.close();
+#else
                 _importMorphology(uri, i, allTransforms[i], 0, private_spheres,
                                   private_cylinders, private_cones,
                                   private_bounds, 0, maxDistanceToSoma,
                                   minRadius);
-
+#endif
                 BRAYNS_PROGRESS(progress, allUris.size());
 #pragma omp atomic
                 ++progress;
@@ -979,12 +1020,8 @@ bool MorphologyLoader::importCircuit(const servus::URI &circuitConfig,
     }
 
     // Spines
-    _createSpines(circuit, gids, 0, minRadius, scene.getSpheres(),
-                  scene.getCylinders(), scene.getWorldBounds());
-
-#ifdef EXPORT_TO_FILE
-    outputFile.close();
-#endif
+    //_createSpines(outputFile, circuit, gids, 0, minRadius, scene.getSpheres(),
+    //              scene.getCylinders(), scene.getWorldBounds());
     return true;
 }
 
@@ -1057,6 +1094,10 @@ bool MorphologyLoader::importSimulationData(const servus::URI &circuitConfig,
             compartmentReport.loadFrame(frameTime);
         const floats &values = *valuesPtr;
         simulationHandler->writeFrame(file, values);
+
+        if (false)
+            _createSimulationVolumeFromCircuit(circuitConfig, target, report,
+                                               frame, values);
     }
     file.close();
 
@@ -1065,6 +1106,197 @@ bool MorphologyLoader::importSimulationData(const servus::URI &circuitConfig,
     BRAYNS_INFO << "Number of frames: " << nbFrames << std::endl;
     BRAYNS_INFO << "Frame size      : " << frameSize << std::endl;
     BRAYNS_INFO << "----------------------------------------" << std::endl;
+    return true;
+}
+
+void MorphologyLoader::_writeToVolume(floats &volume,
+                                      const Vector3f &volumeSize,
+                                      const Vector3f &position,
+                                      const float value)
+{
+    const Vector3f minAABB(-903.366f, -404.412f, -1319.39f);
+    const Vector3f maxAABB(1267.04f, 2232.13f, 1243.36f);
+
+    const Vector3f size = (maxAABB - minAABB) / volumeSize;
+    const Vector3f relativePosition = (position - minAABB) / size;
+
+    const int64_t index =
+        relativePosition.x() + relativePosition.y() * volumeSize.x() +
+        relativePosition.z() * volumeSize.x() * volumeSize.y();
+    if (index >= 0 && index < volumeSize.x() * volumeSize.y() * volumeSize.z())
+        volume[index] = value;
+    else
+        BRAYNS_ERROR << index << std::endl;
+}
+
+bool MorphologyLoader::_importSimulationFromMorphology(
+    floats &volume, const Vector3ui &volumeSize, const servus::URI &source,
+    const Matrix4f &transformation,
+    const SimulationInformation *simulationInformation, const floats &values)
+{
+    BRAYNS_INFO << "_importSimulationFromMorphology: " << source << std::endl;
+    try
+    {
+        Vector3f translation = {0.f, 0.f, 0.f};
+
+        brain::neuron::Morphology morphology(source, transformation);
+        brain::neuron::SectionTypes sectionTypes;
+        sectionTypes.push_back(brain::neuron::SectionType::soma);
+        sectionTypes.push_back(brain::neuron::SectionType::axon);
+        sectionTypes.push_back(brain::neuron::SectionType::dendrite);
+        sectionTypes.push_back(brain::neuron::SectionType::apicalDendrite);
+
+        const brain::neuron::Sections &sections =
+            morphology.getSections(sectionTypes);
+
+        size_t sectionId = 0;
+        float offset = 0.f;
+        if (simulationInformation)
+            offset = (*simulationInformation->compartmentOffsets)[sectionId];
+        else
+            offset = 0;
+
+        // Dendrites and axon
+        for (const auto &section : sections)
+        {
+            const Vector4fs &samples = section.getSamples();
+            if (samples.size() < 1)
+                continue;
+
+            Vector4f previousSample = samples[0];
+
+            float segmentStep = 0.f;
+            if (simulationInformation)
+            {
+                const auto &counts = *simulationInformation->compartmentCounts;
+                // Number of compartments usually differs from number of samples
+                if (samples.empty() && counts[sectionId] > 1)
+                    segmentStep = counts[sectionId] / float(samples.size());
+            }
+
+            for (size_t i = 1; i < samples.size(); ++i)
+            {
+                if (simulationInformation)
+                    offset = (*simulationInformation
+                                   ->compartmentOffsets)[sectionId] +
+                             float(i) * segmentStep;
+                else
+                    offset = 0;
+
+                Vector4f sample = samples[i];
+                Vector3f position(sample.x(), sample.y(), sample.z());
+                position += translation;
+                _writeToVolume(volume, volumeSize, position, values[offset]);
+                previousSample = sample;
+
+                /*
+                if (position != target && radius > 0.f && previousRadius > 0.f)
+                {
+                    if (radius == previousRadius)
+                        cylinders[material].push_back(CylinderPtr(
+                            new Cylinder(material, position, target, radius,
+                                         distance, offset)));
+                    else
+                        cones[material].push_back(ConePtr(
+                            new Cone(material, position, target, radius,
+                                     previousRadius, distance, offset)));
+                    bounds.merge(target);
+                }
+                */
+            }
+            ++sectionId;
+        }
+    }
+    catch (const std::runtime_error &e)
+    {
+        BRAYNS_ERROR << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool MorphologyLoader::_createSimulationVolumeFromCircuit(
+    const servus::URI &circuitConfig, const std::string &target,
+    const std::string &report, const size_t frame, const floats &values)
+{
+    const std::string &filename = circuitConfig.getPath();
+    const brion::BlueConfig bc(filename);
+    const brain::Circuit circuit(bc);
+    const brain::GIDSet &gids =
+        (target.empty() ? circuit.getGIDs() : circuit.getGIDs(target));
+    if (gids.empty())
+    {
+        BRAYNS_ERROR << "Circuit does not contain any cells" << std::endl;
+        return false;
+    }
+
+    const Matrix4fs &transforms = circuit.getTransforms(gids);
+
+    const brain::URIs &uris = circuit.getMorphologyURIs(gids);
+
+    // Load simulation information from compartment reports
+    const brion::CompartmentReport compartmentReport(
+        brion::URI(bc.getReportSource(report).getPath()), brion::MODE_READ,
+        gids);
+
+    const brion::CompartmentCounts &compartmentCounts =
+        compartmentReport.getCompartmentCounts();
+
+    const brion::SectionOffsets &compartmentOffsets =
+        compartmentReport.getOffsets();
+
+    brain::URIs cr_uris;
+    const brain::GIDSet &cr_gids = compartmentReport.getGIDs();
+
+    BRAYNS_INFO << "Loading " << cr_gids.size() << " simulated cells"
+                << std::endl;
+    for (const auto cr_gid : cr_gids)
+    {
+        auto it = std::find(gids.begin(), gids.end(), cr_gid);
+        auto index = std::distance(gids.begin(), it);
+        cr_uris.push_back(uris[index]);
+    }
+
+    const Vector3ui volumeSize(512, 512, 512);
+    floats volume;
+    for (size_t i = 0; i < cr_uris.size(); ++i)
+    {
+        volume.resize(volumeSize.x() * volumeSize.y() * volumeSize.z(), 0.f);
+        const SimulationInformation simulationInformation = {
+            &compartmentCounts[i], &compartmentOffsets[i]};
+        _importSimulationFromMorphology(volume, volumeSize, cr_uris[i],
+                                        transforms[i], &simulationInformation,
+                                        values);
+    }
+
+    // Find range
+    float minValue = std::numeric_limits<float>::max();
+    float maxValue = -std::numeric_limits<float>::max();
+    for (const auto value : volume)
+    {
+        minValue = std::min(minValue, value);
+        maxValue = std::max(maxValue, value);
+    }
+    const float range = maxValue - minValue;
+
+    // Normalize
+    uint8_ts normalizedVolume;
+    const float a = 256.f / range;
+    for (const auto value : volume)
+        normalizedVolume.push_back(minValue + value * a);
+
+    std::stringstream s;
+    s << "/home/favreau/medias/volumes/mini50/mini50-" << frame << ".raw";
+    std::ofstream volumeFile;
+    volumeFile.open(s.str(), std::ios::out | std::ios::binary);
+    if (volumeFile.good())
+    {
+        BRAYNS_INFO << "Create volume: " << s.str() << std::endl;
+        for (const auto value : normalizedVolume)
+            volumeFile.write((char *)&value, sizeof(char));
+
+        volumeFile.close();
+    }
     return true;
 }
 

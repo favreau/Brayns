@@ -30,7 +30,7 @@
 #include <fstream>
 #include <vector>
 
-#define EXPORT_TO_FILE
+//#define EXPORT_TO_FILE
 //#define BRAYNS_USE_BRION
 
 namespace brayns
@@ -114,13 +114,35 @@ private:
                            SpheresMap &spheres, CylindersMap &cylinders,
                            ConesMap &cones, Boxf &bounds,
                            const size_t simulationOffset,
-                           float &maxDistanceToSoma, float &minRadius);
+                           float &maxDistanceToSoma, float &minRadius
+#ifdef EXPORT_TO_FILE
+                           ,
+                           std::ofstream &outputFile);
+#else
+                           );
+#endif
 
     bool _importMorphologyAsMesh(const servus::URI &source,
                                  const size_t morphologyIndex,
                                  const MaterialsMap &materials,
                                  const Matrix4f &transformation,
                                  TrianglesMeshMap &meshes, Boxf &bounds);
+
+    // Simulation volume
+    bool _importSimulationFromMorphology(
+        floats &volume, const Vector3ui &volumeSize, const servus::URI &source,
+        const Matrix4f &transformation,
+        const SimulationInformation *simulationInformation,
+        const floats &values);
+
+    bool _createSimulationVolumeFromCircuit(const servus::URI &circuitConfig,
+                                            const std::string &target,
+                                            const std::string &report,
+                                            const size_t frame,
+                                            const floats &values);
+
+    void _writeToVolume(floats &volume, const Vector3f &volumeSize,
+                        const Vector3f &position, const float value);
 
     size_t _getMaterialFromSectionType(size_t morphologyIndex,
                                        size_t sectionType);

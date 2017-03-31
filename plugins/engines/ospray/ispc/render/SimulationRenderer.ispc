@@ -125,9 +125,9 @@ inline vec3f SimulationRenderer_shadeRay(
             varying vec3f localNormal = dg.Ns;
             varying float localLightIntensity = 1.f;
 
-            // Get simulation value from geometry ID
             varying vec3f lightEmission = make_vec3f(0.f);
             vec4f simulationValue = make_vec4f(0.f);
+            // Get simulation value from geometry ID
             if (self->simulationData)
                 simulationValue = getSimulationValue(self, dg, lightEmission);
 
@@ -226,142 +226,202 @@ inline vec3f SimulationRenderer_shadeRay(
 
             if (localOpacity > 0.01f)
             {
+                varying vec3f indirectShadingColor = make_vec3f(0.f);
+                varying float indirectShadingIntensity = 0.f;
+
                 // Intersection point with geometry, slightly above the surface,
                 // along the normal
                 const varying vec3f intersection =
                     dg.P + self->abstract.super.epsilon * dg.Ng;
-
-                varying vec3f indirectShadingColor = make_vec3f(0.f);
-                varying float indirectShadingIntensity = 0.f;
                 const varying vec3f reflectedDirection =
                     ray.dir - 2.f * dot(ray.dir, localNormal) * localNormal;
 
-                if (self->abstract.ambientOcclusionStrength != 0.f &&
-                    localLightEmission == 0.f)
+                if (dg.st.x == 0) // Meshes have no texture coords
                 {
-                    // Indirect illumination
-                    DifferentialGeometry geometry;
-                    if (indirectShading(&(self->abstract), ray, sample,
-                                        intersection, localNormal, geometry,
-                                        indirectShadingColor,
-                                        indirectShadingIntensity))
+                    bool ok = false;
+                    int spp = 0;
+                    while (!ok && spp < 32)
                     {
-                        indirectShadingColor =
-                            indirectShadingColor *
-                            self->abstract.ambientOcclusionStrength;
+                        // Get color from closest skeleton
+                        varying Ray colorRay;
+                        colorRay.org = intersection;
 
-                        indirectShadingIntensity *=
-                            self->abstract.ambientOcclusionStrength;
+                        vec3f randomDirection =
+                            getRandomVector(sample, ray.dir,
+                                            self->abstract.randomNumber + spp);
+                        colorRay.dir = randomDirection;
+                        colorRay.t0 = ray.t + self->abstract.super.epsilon;
+                        colorRay.time = ray.time;
+                        colorRay.t =
+                            ray.t + self->abstract.super.epsilon * 1000.f;
+                        colorRay.primID = -1;
+                        colorRay.geomID = -1;
+                        colorRay.instID = -1;
 
-                        // Get simulation value from geometry ID
-                        varying vec3f lightEmission = make_vec3f(0.f);
-                        vec4f simulationValue = make_vec4f(0.f);
+                        traceRay(self->abstract.super.model, colorRay);
 
-                        if (self->simulationData)
-                            simulationValue = getSimulationValue(self, geometry,
-                                                                 lightEmission);
-
-                        indirectShadingColor = indirectShadingColor +
-                                               lightEmission +
-                                               make_vec3f(simulationValue);
-
-                        indirectShadingIntensity += reduce_max(lightEmission);
+                        if (colorRay.geomID >= 0)
+                        {
+                            // Color ray hits a primitive
+                            DifferentialGeometry colorDg;
+                            postIntersect(self->abstract.super.model, colorDg,
+                                          colorRay,
+                                          DG_NG | DG_NS | DG_NORMALIZE |
+                                              DG_MATERIALID | DG_COLOR |
+                                              DG_TEXCOORD);
+                            if (colorDg.st.x != 0.f && self->simulationData)
+                            {
+                                varying vec3f lightEmission = make_vec3f(0.f);
+                                localDiffuseColor =
+                                    localDiffuseColor +
+                                    make_vec3f(
+                                        getSimulationValue(self, colorDg,
+                                                           lightEmission));
+                                ok = true;
+                            }
+                        }
+                        ++spp;
                     }
                 }
-
-                if (self->abstract.numLights == 0)
+                // else
                 {
-                    // No lights defined
-                    localLightIntensity = localLightEmission;
-                    localLightIntensity =
-                        max(localLightIntensity, indirectShadingIntensity);
-                    localShadedColor = localShadedColor +
-                                       localOpacity * (localDiffuseColor +
-                                                       indirectShadingColor);
-                }
-                else if (self->abstract.electronShadingEnabled)
-                {
-                    // Electron Shading
-                    localLightIntensity = 1.f;
-                    const varying vec3f viewer =
-                        normalize(ray.org - intersection);
-                    const varying float el = max(0.f, dot(viewer, localNormal));
-                    varying float cosNL = localLightEmission + (1.f - el);
-                    localShadedColor =
-                        localShadedColor +
-                        localOpacity * cosNL *
-                            (
-                                // Affect shading with color determined by
-                                // simulation value
-                                (localSimulationColor *
-                                 localSimulationIntensity) +
-                                (1.f - localSimulationIntensity) *
-                                    localDiffuseColor) +
-                        indirectShadingColor * indirectShadingIntensity;
-                }
-                else
-                {
-                    // Shading for all lights defined in the scene
-                    for (uniform int i = 0;
-                         self->abstract.lights && i < self->abstract.numLights;
-                         ++i)
+                    if (self->abstract.ambientOcclusionStrength != 0.f &&
+                        localLightEmission == 0.f)
                     {
-                        const uniform Light* uniform light =
-                            self->abstract.lights[i];
-                        const varying vec2f s = make_vec2f(0.5f);
-                        const varying Light_SampleRes lightSample =
-                            light->sample(light, dg, s);
-                        varying vec3f radiance =
-                            lightSample.weight + indirectShadingIntensity;
-                        varying vec3f lightDirection = lightSample.dir;
-
-                        if (reduce_max(radiance) > 0.f)
+                        // Indirect illumination
+                        DifferentialGeometry geometry;
+                        if (indirectShading(&(self->abstract), ray, sample,
+                                            intersection, localNormal, geometry,
+                                            indirectShadingColor,
+                                            indirectShadingIntensity))
                         {
-                            varying float cosNL = 1.f;
-                            varying float cosLR = 1.f;
-                            // Phong + Blinn shading
-                            if (self->abstract.shadingEnabled)
+                            indirectShadingColor =
+                                indirectShadingColor *
+                                self->abstract.ambientOcclusionStrength;
+
+                            indirectShadingIntensity *=
+                                self->abstract.ambientOcclusionStrength;
+
+                            // Get simulation value from geometry ID
+                            varying vec3f lightEmission = make_vec3f(0.f);
+                            vec4f simulationValue = make_vec4f(0.f);
+
+                            if (self->simulationData)
+                                simulationValue =
+                                    getSimulationValue(self, geometry,
+                                                       lightEmission);
+
+                            indirectShadingColor = indirectShadingColor +
+                                                   lightEmission +
+                                                   make_vec3f(simulationValue);
+
+                            indirectShadingIntensity +=
+                                reduce_max(lightEmission);
+                        }
+                    }
+
+                    if (self->abstract.numLights == 0)
+                    {
+                        // No lights defined
+                        localLightIntensity = localLightEmission;
+                        localLightIntensity =
+                            max(localLightIntensity, indirectShadingIntensity);
+                        localShadedColor =
+                            localShadedColor +
+                            localOpacity *
+                                (localDiffuseColor + indirectShadingColor);
+                    }
+                    else if (self->abstract.electronShadingEnabled)
+                    {
+                        // Electron Shading
+                        localLightIntensity = 1.f;
+                        const varying vec3f viewer =
+                            normalize(ray.org - intersection);
+                        const varying float el =
+                            max(0.f, dot(viewer, localNormal));
+                        varying float cosNL = localLightEmission + (1.f - el);
+                        localShadedColor =
+                            localShadedColor +
+                            localOpacity * cosNL *
+                                (
+                                    // Affect shading with color determined by
+                                    // simulation value
+                                    (localSimulationColor *
+                                     localSimulationIntensity) +
+                                    (1.f - localSimulationIntensity) *
+                                        localDiffuseColor) +
+                            indirectShadingColor * indirectShadingIntensity;
+                    }
+                    else
+                    {
+                        // Shading for all lights defined in the scene
+                        for (uniform int i = 0; self->abstract.lights &&
+                                                i < self->abstract.numLights;
+                             ++i)
+                        {
+                            const uniform Light* uniform light =
+                                self->abstract.lights[i];
+                            const varying vec2f s = make_vec2f(0.5f);
+                            const varying Light_SampleRes lightSample =
+                                light->sample(light, dg, s);
+                            varying vec3f radiance =
+                                lightSample.weight + indirectShadingIntensity;
+                            varying vec3f lightDirection = lightSample.dir;
+
+                            if (reduce_max(radiance) > 0.f)
                             {
-                                cosNL = min(1.f, max(0.f, dot(lightDirection,
+                                varying float cosNL = 1.f;
+                                varying float cosLR = 1.f;
+                                // Phong + Blinn shading
+                                if (self->abstract.shadingEnabled)
+                                {
+                                    cosNL =
+                                        min(1.f, max(0.f, dot(lightDirection,
                                                               localNormal)));
-                                cosLR =
-                                    min(1.f, max(0.f, dot(lightDirection,
-                                                          reflectedDirection)));
+                                    cosLR =
+                                        min(1.f,
+                                            max(0.f, dot(lightDirection,
+                                                         reflectedDirection)));
 
-                                // Specular color
-                                specularColor =
-                                    max(specularColor, localSpecularColor) *
-                                    powf(cosLR, localSpecularExponent);
+                                    // Specular color
+                                    specularColor =
+                                        max(specularColor, localSpecularColor) *
+                                        powf(cosLR, localSpecularExponent);
+                                }
+
+                                cosNL += localLightEmission;
+                                cosLR += localLightEmission;
+
+                                // Process shadows
+                                if (self->abstract.shadowsEnabled &&
+                                    localLightEmission == 0.f)
+                                    localLightIntensity =
+                                        shadedLightIntensity(&(self->abstract),
+                                                             ray, sample,
+                                                             intersection,
+                                                             localNormal,
+                                                             lightDirection);
+
+                                // Diffuse color
+                                const varying vec3f localUnshadedColor =
+                                    cosNL * localLightIntensity *
+                                        (
+                                            // Affect shading with color
+                                            // determined
+                                            // by
+                                            // simulation value
+                                            (localSimulationColor *
+                                             localSimulationIntensity) +
+                                            (1.f - localSimulationIntensity) *
+                                                localDiffuseColor) +
+                                    indirectShadingColor *
+                                        indirectShadingIntensity;
+
+                                // Add contribution of current light
+                                localShadedColor =
+                                    localShadedColor * (1.f - localOpacity) +
+                                    localUnshadedColor * localOpacity;
                             }
-
-                            cosNL += localLightEmission;
-                            cosLR += localLightEmission;
-
-                            // Process shadows
-                            if (self->abstract.shadowsEnabled &&
-                                localLightEmission == 0.f)
-                                localLightIntensity =
-                                    shadedLightIntensity(&(self->abstract), ray,
-                                                         sample, intersection,
-                                                         localNormal,
-                                                         lightDirection);
-
-                            // Diffuse color
-                            const varying vec3f localUnshadedColor =
-                                localOpacity * cosNL * localLightIntensity *
-                                    (
-                                        // Affect shading with color determined
-                                        // by
-                                        // simulation value
-                                        (localSimulationColor *
-                                         localSimulationIntensity) +
-                                        (1.f - localSimulationIntensity) *
-                                            localDiffuseColor) +
-                                indirectShadingColor * indirectShadingIntensity;
-
-                            // Add contribution of current light
-                            localShadedColor =
-                                localShadedColor + localUnshadedColor;
                         }
                     }
                 }
@@ -381,7 +441,8 @@ inline vec3f SimulationRenderer_shadeRay(
                     const float angle = dot(ray.dir, localNormal);
                     if (localRefraction == oldlocalRefraction)
                         if (angle < 0.f)
-                            // Set localRefraction to default index if exiting
+                            // Set localRefraction to default index if
+                            // exiting
                             // volume
                             localRefraction = 1.f;
 
@@ -422,7 +483,8 @@ inline vec3f SimulationRenderer_shadeRay(
     if (depth >= NB_MAX_REBOUNDS)
         sample.z = 1.f - log(zDepth) / 10.f;
 
-    // Back to front computation of final color according to colors and weights
+    // Back to front computation of final color according to colors and
+    // weights
     // of each ray generation
     sample.alpha = pathOpacity;
     for (int i = depth - 2; i >= 0; --i)

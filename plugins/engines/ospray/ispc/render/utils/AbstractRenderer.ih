@@ -110,7 +110,8 @@ bool launchRandomRay(const uniform AbstractRenderer* uniform self,
 */
 vec3f refractedVector(const varying vec3f& direction,
                       const varying vec3f& normal, const varying float n1,
-                      const varying float n2);
+                      const varying float n2,
+                      const varying float criticalAngle = 0.5f);
 
 /**
     Computes indirect shading for secondary rays. A random ray is launched in

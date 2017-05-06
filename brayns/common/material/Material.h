@@ -63,6 +63,14 @@ public:
     BRAYNS_API float getEmission() const { return _emission; }
     BRAYNS_API void setGlossiness(float value) { _glossiness = value; }
     BRAYNS_API float getGlossiness() const { return _glossiness; }
+    BRAYNS_API void setOpacityAttenuation(float value)
+    {
+        _opacityAttenuation = value;
+    }
+    BRAYNS_API float getOpacityAttenuation() const
+    {
+        return _opacityAttenuation;
+    }
     BRAYNS_API TextureTypes& getTextures() { return _textures; }
     BRAYNS_API void setTexture(const TextureType& type,
                                const std::string& filename);
@@ -73,6 +81,7 @@ private:
     float _specularExponent;
     float _reflectionIndex;
     float _opacity;
+    float _opacityAttenuation;
     float _refractionIndex;
     float _emission;
     float _glossiness;

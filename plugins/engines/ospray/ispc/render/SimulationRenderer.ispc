@@ -142,7 +142,6 @@ inline vec3f SimulationRenderer_shadeRay(
     varying vec3f specularColor = make_vec3f(0.f);
     varying float zDepth = 0.f;
     sample.z = 1.f;
-    varying float tend = ray.t;
 
     varying bool moreRebounds = true;
     while (moreRebounds && depth < NB_MAX_REBOUNDS)
@@ -178,14 +177,15 @@ inline vec3f SimulationRenderer_shadeRay(
             // normal to the surface, material ID, texture coordinates, etc.
             DifferentialGeometry dg;
             postIntersect(self->abstract.super.model, dg, ray,
-                          DG_NG | DG_NS | DG_NORMALIZE | DG_FACEFORWARD |
-                              DG_MATERIALID | DG_COLOR | DG_TEXCOORD);
+                          DG_NG | DG_NS | DG_NORMALIZE | DG_MATERIALID |
+                              DG_COLOR | DG_TEXCOORD);
 
             // Initialisation for the current intersection
             varying float localLightEmission = 0.f;
             varying float localRefraction = 1.f;
             varying float localReflection = 0.f;
             varying float localOpacity = 0.f;
+            varying float localOpacityAttenuation = 0.f;
             varying vec3f localSimulationColor = make_vec3f(0.f);
             varying float localSimulationIntensity = 0.f;
             varying vec3f localDiffuseColor = make_vec3f(0.f);
@@ -246,15 +246,18 @@ inline vec3f SimulationRenderer_shadeRay(
                     localLightEmission += mat->a;
 
                     // Glossiness
-                    localNormal = normalize(
-                        localNormal +
-                        mat->g * getRandomVector(sample, localNormal,
-                                                 self->abstract.randomNumber));
+                    if (mat->g > 0.f)
+                        localNormal = normalize(
+                            localNormal +
+                            mat->g *
+                                getRandomVector(sample, localNormal,
+                                                self->abstract.randomNumber));
                     // Refraction index
                     localRefraction = mat->refraction;
 
                     // Opacity
                     localOpacity += mat->d * get1f(mat->map_d, dg.st, 1.f);
+                    localOpacityAttenuation = mat->da;
 
                     // Diffuse color
                     localDiffuseColor = mat->Kd * make_vec3f(dg.color);
@@ -304,6 +307,14 @@ inline vec3f SimulationRenderer_shadeRay(
                 intersectionWeights[depth] = 1.f;
                 intersectionColors[depth] = make_vec3f(0.f);
 
+                if (localOpacityAttenuation > 0.f &&
+                    dot(ray.dir, localNormal) > 0.f)
+                {
+                    // Opacity attenuation
+                    localOpacity *= 1.f + ray.t * localOpacityAttenuation;
+                    localOpacity = min(1.f, localOpacity);
+                }
+
                 if (self->simulationModel)
                     // Get color from simulation model
                     getValueFromSimulationModel(self, sample, dg.P, neg(dg.Ng),
@@ -323,7 +334,7 @@ inline vec3f SimulationRenderer_shadeRay(
                     ray.dir - 2.f * dot(ray.dir, localNormal) * localNormal;
 
                 if (self->abstract.ambientOcclusionStrength != 0.f &&
-                    localLightEmission == 0.f)
+                    localLightEmission < 1.f)
                 {
                     // Indirect illumination
                     DifferentialGeometry geometry;
@@ -372,7 +383,7 @@ inline vec3f SimulationRenderer_shadeRay(
                     const varying vec3f viewer =
                         normalize(ray.org - intersection);
                     const varying float el = max(0.f, dot(viewer, localNormal));
-                    varying float cosNL = localLightEmission + (1.f - el);
+                    varying float cosNL = localLightEmission + 1.f - el;
                     localShadedColor =
                         localShadedColor +
                         localOpacity * cosNL *
@@ -426,7 +437,7 @@ inline vec3f SimulationRenderer_shadeRay(
 
                             // Process shadows
                             if (self->abstract.shadows != 0.f &&
-                                localLightEmission == 0.f)
+                                localLightEmission < 1.f)
                                 localLightIntensity =
                                     shadedLightIntensity(&(self->abstract), ray,
                                                          sample, intersection,
@@ -435,7 +446,7 @@ inline vec3f SimulationRenderer_shadeRay(
 
                             // Diffuse color
                             const varying vec3f localUnshadedColor =
-                                cosNL * localLightIntensity *
+                                localOpacity * cosNL * localLightIntensity *
                                     (
                                         // Affect shading with color determined
                                         // by
@@ -466,13 +477,6 @@ inline vec3f SimulationRenderer_shadeRay(
                 // Prepare ray for next iteration
                 if (localOpacity < 1.f)
                 {
-                    const float angle = dot(ray.dir, localNormal);
-                    if (localRefraction == oldlocalRefraction)
-                        if (angle < 0.f)
-                            // Set localRefraction to default index if exiting
-                            // volume
-                            localRefraction = 1.f;
-
                     ray.t0 = self->abstract.super.epsilon;
                     ray.dir =
                         refractedVector(ray.dir, localNormal,
@@ -503,10 +507,7 @@ inline vec3f SimulationRenderer_shadeRay(
             sample.z = log(zDepth) / 10.f;
 
             // Next ray
-            tend -= ray.t;
-            if (tend < 0.f)
-                break;
-            ray.t = tend;
+            ray.t = infinity;
             ray.primID = -1;
             ray.geomID = -1;
             ray.instID = -1;

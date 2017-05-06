@@ -71,14 +71,15 @@ inline vec3f ExtendedOBJRenderer_shadeRay(
             // normal to the surface, material ID, texture coordinates, etc.
             DifferentialGeometry dg;
             postIntersect(self->abstract.super.model, dg, ray,
-                          DG_NG | DG_NS | DG_NORMALIZE | DG_FACEFORWARD |
-                              DG_MATERIALID | DG_COLOR | DG_TEXCOORD);
+                          DG_NG | DG_NS | DG_NORMALIZE | DG_MATERIALID |
+                              DG_COLOR | DG_TEXCOORD);
 
             // Initialisation for the current intersection
             varying float localLightEmission = 0.f;
             varying float localRefraction = 1.f;
             varying float localReflection = 0.f;
             varying float localOpacity = 0.f;
+            varying float localOpacityAttenuation = 0.f;
             varying vec3f localDiffuseColor = make_vec3f(0.f);
             varying vec3f localSpecularColor = make_vec3f(0.f);
             varying float localSpecularExponent = 0.f;
@@ -106,16 +107,19 @@ inline vec3f ExtendedOBJRenderer_shadeRay(
                     localLightEmission = mat->a;
 
                     // Glossiness
-                    localNormal = normalize(
-                        localNormal +
-                        mat->g * getRandomVector(sample, localNormal,
-                                                 self->abstract.randomNumber));
+                    if (mat->g > 0.f)
+                        localNormal = normalize(
+                            localNormal +
+                            mat->g *
+                                getRandomVector(sample, localNormal,
+                                                self->abstract.randomNumber));
 
                     // Refraction index
                     localRefraction = mat->refraction;
 
                     // Opacity
                     localOpacity = mat->d * get1f(mat->map_d, dg.st, 1.f);
+                    localOpacityAttenuation = mat->da;
 
                     // Diffuse color
                     localDiffuseColor = mat->Kd * make_vec3f(dg.color);
@@ -169,20 +173,29 @@ inline vec3f ExtendedOBJRenderer_shadeRay(
             // Intersection point with geometry, slightly above the surface,
             // along the normal
             const varying vec3f intersection =
-                dg.P + self->abstract.super.epsilon * dg.Ng;
+                dg.P + self->abstract.super.epsilon * localNormal;
 
             if (localOpacity > 0.01f)
             {
                 intersectionWeights[depth] = 1.f;
                 intersectionColors[depth] = make_vec3f(0.f);
 
+                if (localOpacityAttenuation > 0.f &&
+                    dot(ray.dir, localNormal) > 0.f)
+                {
+                    // Opacity attenuation
+                    localOpacity *=
+                        1.f + ray.t * ray.t * localOpacityAttenuation;
+                    localOpacity = min(1.f, localOpacity);
+                }
+
                 varying vec3f indirectShadingColor = make_vec3f(0.f);
                 varying float indirectShadingIntensity = 0.f;
                 const varying vec3f reflectedDirection =
                     ray.dir - 2.f * dot(ray.dir, localNormal) * localNormal;
 
-                if (localLightEmission == 0.f &&
-                    self->abstract.ambientOcclusionStrength != 0.f)
+                if (self->abstract.ambientOcclusionStrength != 0.f &&
+                    localLightEmission < 1.f)
                 {
                     // Indirect illumination
                     DifferentialGeometry geometry;
@@ -216,7 +229,7 @@ inline vec3f ExtendedOBJRenderer_shadeRay(
                     const varying vec3f viewer =
                         normalize(ray.org - intersection);
                     const varying float el = max(0.f, dot(viewer, localNormal));
-                    varying float cosNL = 1.f - el;
+                    varying float cosNL = localLightEmission + 1.f - el;
                     localShadedColor =
                         localOpacity * cosNL *
                         (localDiffuseColor +
@@ -243,21 +256,27 @@ inline vec3f ExtendedOBJRenderer_shadeRay(
                             varying float cosNL = 1.f;
                             varying float cosLR = 1.f;
                             // Phong + Blinn shading
-                            cosNL = 1.f;
-                            cosLR = 1.f;
-                            if (localLightEmission == 0.f &&
-                                self->abstract.shadingEnabled)
+                            if (self->abstract.shadingEnabled)
                             {
                                 cosNL = min(1.f, max(0.f, dot(lightDirection,
                                                               localNormal)));
                                 cosLR =
                                     min(1.f, max(0.f, dot(lightDirection,
                                                           reflectedDirection)));
+
+                                // Specular color
+                                specularColor =
+                                    specularColor +
+                                    localSpecularColor *
+                                        powf(cosLR, localSpecularExponent);
                             }
+
+                            cosNL += localLightEmission;
+                            cosLR += localLightEmission;
 
                             // Process shadows
                             if (self->abstract.shadows != 0.f &&
-                                localLightEmission == 0.f)
+                                localLightEmission < 1.f)
                                 localLightIntensity =
                                     shadedLightIntensity(&(self->abstract), ray,
                                                          sample, intersection,
@@ -266,20 +285,14 @@ inline vec3f ExtendedOBJRenderer_shadeRay(
 
                             // Diffuse color
                             const varying vec3f localUnshadedColor =
-                                localOpacity * cosNL * localDiffuseColor *
-                                    localLightIntensity +
+                                cosNL * localLightIntensity *
+                                    localDiffuseColor +
                                 indirectShadingColor * indirectShadingIntensity;
-
-                            // Specular color
-                            if (self->abstract.shadingEnabled)
-                                specularColor =
-                                    max(specularColor,
-                                        localSpecularColor *
-                                            powf(cosLR, localSpecularExponent));
 
                             // Add contribution of current light
                             localShadedColor =
-                                localShadedColor + localUnshadedColor;
+                                localShadedColor * (1.f - localOpacity) +
+                                localUnshadedColor * localOpacity;
                         }
                     }
                 }
@@ -296,17 +309,18 @@ inline vec3f ExtendedOBJRenderer_shadeRay(
                 // Prepare ray for next iteration
                 if (localOpacity < 1.f)
                 {
-                    const float angle = dot(ray.dir, localNormal);
-                    if (localRefraction == oldlocalRefraction)
-                        if (angle < 0.f)
-                            // Set localRefraction to default index if exiting
-                            // volume
-                            localRefraction = 1.f;
+                    /*
+                    if (localOpacityAttenuation > 0.f)
+                        localRefraction +=
+                            0.1f *
+                            getRandomValue(sample, self->abstract.randomNumber);
+                            */
 
                     ray.t0 = self->abstract.super.epsilon;
-                    ray.dir =
-                        refractedVector(ray.dir, localNormal,
-                                        oldlocalRefraction, localRefraction);
+                    ray.dir = refractedVector(
+                        ray.dir, localNormal, oldlocalRefraction,
+                        localRefraction,
+                        getRandomValue(sample, self->abstract.randomNumber));
                     ray.org = dg.P + self->abstract.super.epsilon * ray.dir;
 
                     intersectionWeights[depth] = 1.f - localOpacity;

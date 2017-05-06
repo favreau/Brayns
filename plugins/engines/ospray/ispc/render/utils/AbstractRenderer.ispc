@@ -64,12 +64,16 @@ inline bool launchRandomRay(
 
 inline vec3f refractedVector(const varying vec3f& direction,
                              const varying vec3f& normal,
-                             const varying float n1, const varying float n2)
+                             const varying float n1, const varying float n2,
+                             const varying float criticalAngle)
 {
-    if (n2 == 0.f)
+    if (n2 == 0.f || n1 == n2)
         return direction;
     const varying float eta = n1 / n2;
     const varying float cos1 = -dot(direction, normal);
+    if (cos1 < criticalAngle)
+        // Snell's law
+        return direction - 2.f * dot(direction, normal) * normal;
     const varying float cos2 = 1.f - eta * eta * (1.f - cos1 * cos1);
     if (cos2 > 0.f)
         return eta * direction + (eta * cos1 - sqrt(cos2)) * normal;

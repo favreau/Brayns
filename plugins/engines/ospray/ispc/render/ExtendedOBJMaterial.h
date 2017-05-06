@@ -36,6 +36,7 @@ struct ExtendedOBJMaterial : public ospray::Material
     /*! opacity: 0 (transparent), 1 (opaque) */
     ospray::Texture2D *map_d;
     float d;
+    float da;
 
     /*! refraction index */
     ospray::Texture2D *map_refraction;

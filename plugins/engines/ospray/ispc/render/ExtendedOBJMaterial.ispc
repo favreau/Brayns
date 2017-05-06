@@ -32,19 +32,21 @@ export void *uniform ExtendedOBJMaterial_create(void *uniform cppE)
 
 export void ExtendedOBJMaterial_set(
     void *uniform _mat, const void *uniform map_d, const uniform float &d,
-    const void *uniform map_refraction, const uniform float &refraction,
-    const void *uniform map_reflection, const uniform float &reflection,
-    const void *uniform map_a, const uniform float &a, const uniform float &g,
-    const void *uniform map_Kd, const uniform vec3f &Kd,
-    const void *uniform map_Ks, const uniform vec3f &Ks,
-    const void *uniform map_Ns, const uniform float &Ns,
-    const void *uniform map_Bump, const void *uniform map_Normal)
+    const uniform float &da, const void *uniform map_refraction,
+    const uniform float &refraction, const void *uniform map_reflection,
+    const uniform float &reflection, const void *uniform map_a,
+    const uniform float &a, const uniform float &g, const void *uniform map_Kd,
+    const uniform vec3f &Kd, const void *uniform map_Ks,
+    const uniform vec3f &Ks, const void *uniform map_Ns,
+    const uniform float &Ns, const void *uniform map_Bump,
+    const void *uniform map_Normal)
 {
     uniform ExtendedOBJMaterial *uniform self =
         (uniform ExtendedOBJMaterial * uniform)_mat;
 
     self->map_d = (uniform Texture2D * uniform)map_d;
     self->d = d;
+    self->da = da;
     self->map_refraction = (uniform Texture2D * uniform)map_refraction;
     self->refraction = refraction;
     self->map_reflection = (uniform Texture2D * uniform)map_reflection;

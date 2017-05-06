@@ -828,6 +828,7 @@ void OSPRayScene::buildGeometry()
     size_t totalNbCylinders = 0;
     size_t totalNbCones = 0;
     size_t totalNbVertices = 0;
+    size_t totalNbNormals = 0;
     size_t totalNbIndices = 0;
     for (size_t materialId = 0; materialId < _materials.size(); ++materialId)
     {
@@ -838,6 +839,7 @@ void OSPRayScene::buildGeometry()
         {
             totalNbVertices +=
                 _trianglesMeshes[materialId].getVertices().size();
+            totalNbNormals += _trianglesMeshes[materialId].getNormals().size();
             totalNbIndices += _trianglesMeshes[materialId].getIndices().size();
         }
     }
@@ -848,6 +850,7 @@ void OSPRayScene::buildGeometry()
     BRAYNS_INFO << "Cylinders: " << totalNbCylinders << std::endl;
     BRAYNS_INFO << "Cones    : " << totalNbCones << std::endl;
     BRAYNS_INFO << "Vertices : " << totalNbVertices << std::endl;
+    BRAYNS_INFO << "Normals  : " << totalNbNormals << std::endl;
     BRAYNS_INFO << "Indices  : " << totalNbIndices << std::endl;
     BRAYNS_INFO << "Total    : " << size << " bytes" << std::endl;
     BRAYNS_INFO << "--------------------" << std::endl;
@@ -1009,6 +1012,7 @@ void OSPRayScene::commitMaterials(const bool updateOnly)
             ospSet3f(ospMaterial, "ks", value3f.x(), value3f.y(), value3f.z());
             ospSet1f(ospMaterial, "ns", material->getSpecularExponent());
             ospSet1f(ospMaterial, "d", material->getOpacity());
+            ospSet1f(ospMaterial, "da", material->getOpacityAttenuation());
             ospSet1f(ospMaterial, "refraction", material->getRefractionIndex());
             ospSet1f(ospMaterial, "reflection", material->getReflectionIndex());
             ospSet1f(ospMaterial, "a", material->getEmission());

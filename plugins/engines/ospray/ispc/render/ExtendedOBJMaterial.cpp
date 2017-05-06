@@ -61,6 +61,7 @@ void ExtendedOBJMaterial::commit()
         getParamObject("map_Normal", getParamObject("map_normal", nullptr));
 
     d = getParam1f("d", 1.f);
+    da = getParam1f("da", 0.f);
     refraction = getParam1f("refraction", 0.f);
     reflection = getParam1f("reflection", 0.f);
     a = getParam1f("a", 0.f);
@@ -70,7 +71,7 @@ void ExtendedOBJMaterial::commit()
     Ns = getParam1f("ns", getParam1f("Ns", 10.f));
 
     ispc::ExtendedOBJMaterial_set(
-        getIE(), map_d ? map_d->getIE() : nullptr, d,
+        getIE(), map_d ? map_d->getIE() : nullptr, d, da,
         map_refraction ? map_refraction->getIE() : nullptr, refraction,
         map_reflection ? map_reflection->getIE() : nullptr, reflection,
         map_a ? map_a->getIE() : nullptr, a, g,

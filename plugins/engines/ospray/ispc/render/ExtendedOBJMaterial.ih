@@ -32,6 +32,7 @@ struct ExtendedOBJMaterial
 
     const uniform Texture2D *map_d;
     float d;
+    float da;
     const uniform Texture2D *map_refraction;
     float refraction;
     const uniform Texture2D *map_reflection;

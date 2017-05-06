@@ -308,6 +308,7 @@ bool ZeroEQPlugin::_requestScene()
         m.setSpecularExponent(material.second->getSpecularExponent());
         m.setReflectionIndex(material.second->getReflectionIndex());
         m.setOpacity(material.second->getOpacity());
+        m.setOpacityAttenuation(material.second->getOpacityAttenuation());
         m.setRefractionIndex(material.second->getRefractionIndex());
         m.setLightEmission(material.second->getEmission());
         m.setGlossiness(material.second->getGlossiness());
@@ -339,6 +340,7 @@ void ZeroEQPlugin::_sceneUpdated()
             material->setSpecularExponent(m.getSpecularExponent());
             material->setReflectionIndex(m.getReflectionIndex());
             material->setOpacity(m.getOpacity());
+            material->setOpacityAttenuation(m.getOpacityAttenuation());
             material->setRefractionIndex(m.getRefractionIndex());
             material->setEmission(m.getLightEmission());
             material->setGlossiness(m.getGlossiness());

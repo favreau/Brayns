@@ -23,12 +23,13 @@ namespace brayns.v1;
 table Material {
     diffuse_color : [float:3];
     specular_color: [float:3];
-    specular_exponent: float;
-    reflection_index : float;
-    opacity: float;
-    refraction_index: float;
-    light_emission: float;
-    glossiness: float;
+    specular_exponent: float = 100.0;
+    reflection_index : float = 0.0;
+    opacity: float = 1.0;
+    refraction_index: float = 1.0;
+    light_emission: float = 0.0;
+    glossiness: float = 0.0;
+    opacity_attenuation: float = 0.0;
 }
 
 table Scene {

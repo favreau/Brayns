@@ -38,6 +38,7 @@ const uint32_t NEST_VERSION = 1;
 const uint32_t NEST_HEADER_SIZE = 2 * sizeof(uint32_t);
 const float NEST_TIMESTEP = 0.1f;
 const uint32_t NEST_OFFSET = 2;
+const float DEFAULT_ALPHA = 1.f;
 }
 
 namespace brayns
@@ -50,8 +51,7 @@ NESTLoader::NESTLoader(const GeometryParameters& geometryParameters)
 }
 
 #if (BRAYNS_USE_BRION)
-void NESTLoader::importCircuit(const std::string& filepath, Scene& scene,
-                               size_t& nbMaterials)
+void NESTLoader::importCircuit(const std::string& filepath, Scene& scene)
 {
     BRAYNS_INFO << "Loading NEST cells from circuit " << filepath << std::endl;
 
@@ -69,9 +69,9 @@ void NESTLoader::importCircuit(const std::string& filepath, Scene& scene,
     floats xPos(_frameSize);
     floats yPos(_frameSize);
     floats zPos(_frameSize);
-    floats xColor(_frameSize);
-    floats yColor(_frameSize);
-    floats zColor(_frameSize);
+    uint16_ts xColor(_frameSize);
+    uint16_ts yColor(_frameSize);
+    uint16_ts zColor(_frameSize);
 
     posDataset.read(xPos.data(), H5::PredType::NATIVE_FLOAT);
     posDataset = neurons.openDataSet("/y");
@@ -79,28 +79,33 @@ void NESTLoader::importCircuit(const std::string& filepath, Scene& scene,
     posDataset = neurons.openDataSet("/z");
     posDataset.read(zPos.data(), H5::PredType::NATIVE_FLOAT);
     posDataset = neurons.openDataSet("/colorx");
-    posDataset.read(xColor.data(), H5::PredType::NATIVE_FLOAT);
+    posDataset.read(xColor.data(), H5::PredType::NATIVE_UINT16);
     posDataset = neurons.openDataSet("/colory");
-    posDataset.read(yColor.data(), H5::PredType::NATIVE_FLOAT);
+    posDataset.read(yColor.data(), H5::PredType::NATIVE_UINT16);
     posDataset = neurons.openDataSet("/colorz");
-    posDataset.read(zColor.data(), H5::PredType::NATIVE_FLOAT);
+    posDataset.read(zColor.data(), H5::PredType::NATIVE_UINT16);
 
     std::map<size_t, Vector4f> materials;
     for (size_t gid = 0; gid < _frameSize; ++gid)
     {
         const size_t index = int(xColor[gid]) + int(yColor[gid] * 256) +
                              int(zColor[gid] * 65536);
-        materials[index] = Vector4f(xColor[gid], yColor[gid], zColor[gid], 0.f);
+        materials[index] =
+            Vector4f(xColor[gid], yColor[gid], zColor[gid], DEFAULT_ALPHA);
     }
-    nbMaterials = materials.size();
+
+    auto& transferFunction = scene.getTransferFunction();
+    transferFunction.clear();
 
     size_t i = 0;
     for (auto& material : materials)
     {
+        transferFunction.getDiffuseColors().push_back(material.second);
         material.second.w() = i;
         ++i;
     }
-    BRAYNS_INFO << "Number of materials: " << nbMaterials << std::endl;
+    transferFunction.setValuesRange(Vector2f(0.f, materials.size()));
+    BRAYNS_INFO << "Number of materials: " << materials.size() << std::endl;
 
     SpheresMap& spheres = scene.getSpheres();
     spheres[0].reserve(_frameSize);

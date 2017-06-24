@@ -689,6 +689,10 @@ void ZeroEQPlugin::_initializeDataSource()
                                             MemoryMode::shared
                                         ? brayns::v1::MemoryMode::shared
                                         : brayns::v1::MemoryMode::replicated);
+    _remoteDataSource.setTissueSliceFile(
+        geometryParameters.getTissueSliceFile());
+    _remoteDataSource.setMeshFilePattern(
+        geometryParameters.getMeshFilePattern());
 
     const Boxf& aabb = geometryParameters.getCircuitBoundingBox();
     if (aabb.getSize() != 0)
@@ -863,6 +867,11 @@ void ZeroEQPlugin::_dataSourceUpdated()
                                                   brayns::v1::MemoryMode::shared
                                               ? "shared"
                                               : "replicated");
+
+    _parametersManager.set("tissue-slice-file",
+                           _remoteDataSource.getTissueSliceFileString());
+    _parametersManager.set("mesh-file-pattern",
+                           _remoteDataSource.getMeshFilePatternString());
 
     _parametersManager.print();
 

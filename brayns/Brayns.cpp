@@ -57,6 +57,7 @@
 #if (BRAYNS_USE_BRION)
 #include <brayns/io/MorphologyLoader.h>
 #include <brayns/io/NESTLoader.h>
+#include <brayns/io/TissueSliceLoader.h>
 #include <servus/uri.h>
 #endif
 
@@ -379,8 +380,13 @@ private:
             _loadCompartmentReport();
 
         if (!geometryParameters.getCircuitConfiguration().empty() &&
-            geometryParameters.getLoadCacheFile().empty())
+            geometryParameters.getLoadCacheFile().empty() &&
+            geometryParameters.getTissueSliceFile().empty())
             _loadCircuitConfiguration();
+
+        if (!geometryParameters.getTissueSliceFile().empty() &&
+            !geometryParameters.getCircuitConfiguration().empty())
+            _loadTissueSliceFile();
 #endif
 
         if (!geometryParameters.getXYZBFile().empty())
@@ -600,7 +606,8 @@ private:
         {
             ++progress;
             servus::URI uri(file);
-            if (!morphologyLoader.importMorphology(uri, i, scene))
+            Matrix4f matrix;
+            if (!morphologyLoader.importMorphology(uri, i, scene, matrix))
                 BRAYNS_ERROR << "Failed to import " << file << std::endl;
             ++i;
         }
@@ -660,6 +667,21 @@ private:
                 scene.commitTransferFunctionData();
             }
         }
+    }
+
+    /**
+      * Loads tissue slice file (command line parameter --tissue-slice-file)
+      */
+    void _loadTissueSliceFile()
+    {
+        auto& geometryParameters = _parametersManager->getGeometryParameters();
+        const auto& tissueSliceFile = geometryParameters.getTissueSliceFile();
+        const auto& circuitConfig =
+            geometryParameters.getCircuitConfiguration();
+        auto& scene = _engine->getScene();
+        TissueSliceLoader tissueSliceLoader(geometryParameters);
+        tissueSliceLoader.importFromFile(tissueSliceFile, circuitConfig, scene,
+                                         _meshLoader);
     }
 #endif // BRAYNS_USE_BRION
 

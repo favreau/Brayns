@@ -31,8 +31,8 @@ if(ASSIMP_FOUND)
 endif()
 
 if(Brion_FOUND)
-  list(APPEND BRAYNSIO_SOURCES MorphologyLoader.cpp NESTLoader.cpp)
-  list(APPEND BRAYNSIO_PUBLIC_HEADERS MorphologyLoader.h NESTLoader.h)
+  list(APPEND BRAYNSIO_SOURCES MorphologyLoader.cpp NESTLoader.cpp TissueSliceLoader.cpp)
+  list(APPEND BRAYNSIO_PUBLIC_HEADERS MorphologyLoader.h NESTLoader.h TissueSliceLoader.h)
   list(APPEND BRAYNSIO_LINK_LIBRARIES PUBLIC Servus PRIVATE Brion Brain ${HDF5_LIBRARIES})
 endif()
 

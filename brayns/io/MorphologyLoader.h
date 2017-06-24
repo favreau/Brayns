@@ -88,7 +88,7 @@ public:
      * @return True if the morphology is successfully loaded, false otherwise
      */
     bool importMorphology(const servus::URI& uri, int morphologyIndex,
-                          Scene& scene);
+                          Scene& scene, const Matrix4f& matrix);
 
     /** Imports morphology from a circuit for the given target name
      *

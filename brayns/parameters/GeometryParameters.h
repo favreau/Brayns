@@ -208,7 +208,16 @@ public:
      * Defines what memory mode should be used between Brayns and the
      * underlying renderer
      */
-    MemoryMode getMemoryMode() const { return _memoryMode; };
+    MemoryMode getMemoryMode() const { return _memoryMode; }
+    /**
+      * Returns the file name of the file containting the tissue slice
+      * information
+      */
+    std::string getTissueSliceFile() const { return _tissueSliceFile; }
+    /**
+      * Returns the pattern to be used to load morphology mesh files
+      */
+    std::string getMeshFilePattern() const { return _meshFilePattern; }
 protected:
     bool _parse(const po::variables_map& vm) final;
 
@@ -251,6 +260,8 @@ protected:
     bool _useSimulationModel;
     Boxf _circuitBoundingBox;
     MemoryMode _memoryMode;
+    std::string _tissueSliceFile;
+    std::string _meshFilePattern;
 };
 }
 #endif // GEOMETRYPARAMETERS_H

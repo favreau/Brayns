@@ -67,6 +67,8 @@ const std::string PARAM_METABALLS_SAMPLES_FROM_SOMA =
 const std::string PARAM_USE_SIMULATION_MODEL = "use-simulation-model";
 const std::string PARAM_CIRCUIT_BOUNDING_BOX = "circuit-bounding-box";
 const std::string PARAM_MEMORY_MODE = "memory-mode";
+const std::string PARAM_TISSUE_SLICE_FILE = "tissue-slice-file";
+const std::string PARAM_MESH_FILE_PATTERN = "mesh-file-pattern";
 
 const std::string COLOR_SCHEMES[11] = {"none",
                                        "neuron-by-id",
@@ -203,7 +205,11 @@ GeometryParameters::GeometryParameters()
         "[float float float float float float]")(
         PARAM_MEMORY_MODE.c_str(), po::value<std::string>(),
         "Defines what memory mode should be used between Brayns and the "
-        "underlying renderer [shared|replicated]");
+        "underlying renderer [shared|replicated]")(
+        PARAM_TISSUE_SLICE_FILE.c_str(), po::value<std::string>(),
+        "file name of the file containting the tissue slice information "
+        "[string]")(PARAM_MESH_FILE_PATTERN.c_str(), po::value<std::string>(),
+                    "Defines the pattern for morphology mesh files");
 }
 
 bool GeometryParameters::_parse(const po::variables_map& vm)
@@ -349,6 +355,10 @@ bool GeometryParameters::_parse(const po::variables_map& vm)
             if (memoryMode == GEOMETRY_MEMORY_MODES[i])
                 _memoryMode = static_cast<MemoryMode>(i);
     }
+    if (vm.count(PARAM_TISSUE_SLICE_FILE))
+        _tissueSliceFile = vm[PARAM_TISSUE_SLICE_FILE].as<std::string>();
+    if (vm.count(PARAM_MESH_FILE_PATTERN))
+        _meshFilePattern = vm[PARAM_MESH_FILE_PATTERN].as<std::string>();
 
     return true;
 }
@@ -429,6 +439,10 @@ void GeometryParameters::print()
                 << (_useSimulationModel ? "yes" : "no") << std::endl;
     BRAYNS_INFO << "Memory mode                : "
                 << (_memoryMode == MemoryMode::shared ? "Shared" : "Replicated")
+                << std::endl;
+    BRAYNS_INFO << "Tissue slice file          : " << _tissueSliceFile
+                << std::endl;
+    BRAYNS_INFO << "Mesh file pattern          : " << _meshFilePattern
                 << std::endl;
 }
 

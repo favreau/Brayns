@@ -1,16 +1,29 @@
 #include "OSPRayPixelOperations.h"
 
+#include <deflect/Stream.h>
+#include <lexis/render/stream.h>
+
+namespace brayns
+{
+
+template <typename T>
+std::future<T> make_ready_future(const T value)
+{
+    std::promise<T> promise;
+    promise.set_value(value);
+    return promise.get_future();
+}
+}
+
 OSPRayPixelOperations::OSPRayPixelOperations()
 {
 
 }
 
-      struct Instance : public ospray::PixelOp::Instance
+     struct Instance : public ospray::PixelOp::Instance
       {
         Instance(FrameBuffer *fb,
-                 PixelOp::Instance *prev,
-                 dw::Client *client)
-          : client(client)
+                 PixelOp::Instance *prev)
         {
           fb->pixelOp = this;
         }
@@ -19,7 +32,9 @@ OSPRayPixelOperations::OSPRayPixelOperations()
         // virtual void  commitNotify() {}
         // /*! gets called once at the end of the frame */
         virtual void endFrame()
-        { client->endFrame(); }
+        {
+            client->endFrame();
+        }
 
         unsigned int clampColorComponent(float c)
         {
@@ -108,8 +123,6 @@ OSPRayPixelOperations::OSPRayPixelOperations()
         //! \brief common function to help printf-debugging
         /*! Every derived class should overrride this! */
         virtual std::string toString() const;
-
-        dw::Client *client;
       };
 
       //! \brief common function to help printf-debugging
@@ -120,20 +133,116 @@ OSPRayPixelOperations::OSPRayPixelOperations()
        *         parameters etc) */
       virtual void commit()
       {
-        std::string streamName = getParamString("streamName","");
-        std::cout << "#osp:dw: trying to establish connection to display wall service at MPI port " << streamName << std::endl;
-        PING;
-        PRINT(streamName);
-        client = new dw::Client(mpi::worker.comm,streamName);
+        std::string id = getParamString("id","");
+        std::string host = getParamString("host","");
+        const bool deflectEnabled = getParamBoolean("enabled", false);
+
+        if (_stream)
+        {
+            const bool changed = _stream->getId() != id ||
+                                 _stream->getHost() != host;
+            if (changed)
+                _stream.reset();
+        }
+
+        if (_previousHost != host)
+        {
+            _params.setEnabled(true);
+            _previousHost = host;
+        }
+
+        if (_stream && _stream->isConnected() && !deflectEnabled)
+        {
+            BRAYNS_INFO << "Closing Deflect stream" << std::endl;
+            _stream.reset();
+        }
+
+        if (deflectEnabled && !_stream)
+            _initializeDeflect(id, host, port);
+
+        if (deflectEnabled && _stream && _stream->isConnected())
+        {
+            _sendDeflectFrame(engine);
+            if (_handleDeflectEvents(engine))
+            {
+                engine.getFrameBuffer().clear();
+                engine.getRenderer().commit();
+            }
+        }
       }
 
       //! \brief create an instance of this pixel op
       virtual ospray::PixelOp::Instance *createInstance(FrameBuffer *fb,
                                                         PixelOp::Instance *prev)
       {
-        return new Instance(fb,prev,client);
+        return new Instance(fb,prev);
       }
 
-      dw::Client *client;
+    private:
+
+      void _sendDeflectFrame(Engine& engine)
+      {
+          if (!_sendFuture.get())
+          {
+              if (!_stream->isConnected())
+                  BRAYNS_INFO << "Stream closed, exiting." << std::endl;
+              else
+                  BRAYNS_ERROR << "failure in deflectStreamSend()" << std::endl;
+              return;
+          }
+
+          auto& frameBuffer = engine.getFrameBuffer();
+          const Vector2i& frameSize = frameBuffer.getSize();
+          void* data = frameBuffer.getColorBuffer();
+
+          if (data)
+          {
+              const size_t bufferSize =
+                  frameSize.x() * frameSize.y() * frameBuffer.getColorDepth();
+              _lastImage.data.resize(bufferSize);
+              memcpy(_lastImage.data.data(), data, bufferSize);
+              _lastImage.size = frameSize;
+              _lastImage.format = frameBuffer.getFrameBufferFormat();
+
+              _send(engine, true);
+          }
+          else
+              _sendFuture = make_ready_future(true);
+      }
+
+      void _initializeDeflect(const std::string& id, const std::string& host, const std::string& port )
+      {
+          try
+          {
+              _stream.reset(new deflect::Stream(id, host, port);
+
+              if (_stream->isConnected())
+                  BRAYNS_INFO << "Deflect successfully connected to Tide on host "
+                              << _stream->getHost() << std::endl;
+              else
+                  BRAYNS_ERROR << "Deflect failed to connect to Tide on host "
+                               << _stream->getHost() << std::endl;
+
+              if (!_stream->registerForEvents())
+                  BRAYNS_ERROR << "Deflect failed to register for events!"
+                               << std::endl;
+
+              _params.setId(_stream->getId());
+              _params.setHost(_stream->getHost());
+          }
+          catch (std::runtime_error& ex)
+          {
+              BRAYNS_ERROR << "Deflect failed to initialize. " << ex.what()
+                           << std::endl;
+              _params.setEnabled(false);
+              return;
+          }
+      }
+
+      std::unique_ptr<deflect::Stream> _stream;
+      ::lexis::render::Stream _params;
+      std::string _previousHost;
+      deflect::Stream::Future _sendFuture;
     };
 
+}

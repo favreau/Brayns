@@ -1185,6 +1185,7 @@ void OSPRayScene::commitSimulationData()
         OSPRayRenderer* osprayRenderer =
             dynamic_cast<OSPRayRenderer*>(renderer.get());
 
+        // TODO: No need to do new data every time!!
         _ospSimulationData =
             ospNewData(_simulationHandler->getFrameSize(), OSP_FLOAT, frameData,
                        _getOSPDataFlags());

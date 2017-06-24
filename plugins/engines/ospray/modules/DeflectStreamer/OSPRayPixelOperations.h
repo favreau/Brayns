@@ -4,6 +4,7 @@
 #include <ospray.h>
 #include <ospray/SDK/fb/PixelOp.h>
 #include <ospray/SDK/fb/FrameBuffer.h>
+#include <deflect/Stream.h>
 
 namespace brayns
 {
@@ -15,9 +16,9 @@ public:
 
     struct Instance : public ospray::PixelOp::Instance
     {
-        Instance(ospray::FrameBuffer *fb, PixelOp::Instance *prev,
-                 DeflectStream *stream)
-            : client(client)
+        Instance(ospray::FrameBuffer *fb, PixelOp::Instance *,
+                 deflect::Stream *stream)
+            : _deflectStream(stream)
         {
             fb->pixelOp = this;
         }
@@ -27,7 +28,7 @@ public:
         // /*! gets called once at the end of the frame */
         virtual void endFrame()
         {
-            client->endFrame();
+            _sendDeflectFrame();
         }
 
         unsigned int clampColorComponent(float c)
@@ -56,9 +57,9 @@ public:
           values (assuming an accubuffer exists), and this function
           defines how these pixels are being processed before written
           into the color buffer */
-        virtual void postAccum(Tile &tile)
+        virtual void postAccum(ospray::Tile &tile)
         {
-            PlainTile plainTile(vec2i(TILE_SIZE));
+            ospray::PlainTile plainTile(ospray::vec2i(TILE_SIZE));
             plainTile.pitch = TILE_SIZE;
             for (int i = 0; i < TILE_SIZE * TILE_SIZE; i++)
             {
@@ -137,33 +138,91 @@ public:
         /*! Every derived class should overrride this! */
         virtual std::string toString() const;
 
-        dw::Client *client;
+        deflect::Stream *_deflectStream;
     };
 
     //! \brief common function to help printf-debugging
     /*! Every derived class should overrride this! */
     virtual std::string toString() const;
 
+
+    void _initializeDeflect(const std::string& id, const std::string& host, const size_t port)
+    {
+        try
+        {
+            _stream.reset(new deflect::Stream(id, host, port));
+
+            if (_stream->isConnected())
+                BRAYNS_INFO << "Deflect successfully connected to Tide on host "
+                            << _stream->getHost() << std::endl;
+            else
+                BRAYNS_ERROR << "Deflect failed to connect to Tide on host "
+                             << _stream->getHost() << std::endl;
+
+            if (!_stream->registerForEvents())
+                BRAYNS_ERROR << "Deflect failed to register for events!"
+                             << std::endl;
+
+            _params.setId(_stream->getId());
+            _params.setHost(_stream->getHost());
+        }
+        catch (std::runtime_error& ex)
+        {
+            BRAYNS_ERROR << "Deflect failed to initialize. " << ex.what()
+                         << std::endl;
+            _params.setEnabled(false);
+            return;
+        }
+    }
+
+    void _sendDeflectFrame(Engine& engine)
+    {
+        if (!_sendFuture.get())
+        {
+            if (!_stream->isConnected())
+                BRAYNS_INFO << "Stream closed, exiting." << std::endl;
+            else
+                BRAYNS_ERROR << "failure in deflectStreamSend()" << std::endl;
+            return;
+        }
+
+        auto& frameBuffer = engine.getFrameBuffer();
+        const Vector2i& frameSize = frameBuffer.getSize();
+        void* data = frameBuffer.getColorBuffer();
+
+        if (data)
+        {
+            const size_t bufferSize =
+                frameSize.x() * frameSize.y() * frameBuffer.getColorDepth();
+            _lastImage.data.resize(bufferSize);
+            memcpy(_lastImage.data.data(), data, bufferSize);
+            _lastImage.size = frameSize;
+            _lastImage.format = frameBuffer.getFrameBufferFormat();
+
+            _send(engine, true);
+        }
+        else
+            _sendFuture = make_ready_future(true);
+    }
+
     /*! \brief commit the object's outstanding changes (such as changed
      *         parameters etc) */
     virtual void commit()
     {
-        std::string streamName = getParamString("streamName", "");
-        std::cout << "#osp:dw: trying to establish connection to display wall "
-                     "service at MPI port " << streamName << std::endl;
-        PING;
-        PRINT(streamName);
-        client = new dw::Client(mpi::worker.comm, streamName);
+        std::string id = getParamString("id", "");
+        std::string hostname = getParamString("hostname", "");
+        size_t port = getParamInt("port");
+        _initializeDeflect(id, hostname, port);
     }
 
     //! \brief create an instance of this pixel op
-    virtual ospray::PixelOp::Instance *createInstance(FrameBuffer *fb,
+    virtual ospray::PixelOp::Instance *createInstance(ospray::FrameBuffer *fb,
                                                       PixelOp::Instance *prev)
     {
-        return new Instance(fb, prev, client);
+        return new Instance(fb, prev);
     }
 
-    dw::Client *client;
+    deflect::Stream *_deflectStream;
 };
 };
 }

@@ -118,9 +118,26 @@ public:
         const brain::Circuit circuit(bc);
         const auto circuitDensity =
             _geometryParameters.getCircuitDensity() / 100.f;
-        brain::GIDSet gids =
+        const auto allGids =
             (target.empty() ? circuit.getRandomGIDs(circuitDensity)
                             : circuit.getRandomGIDs(circuitDensity, target));
+        const Matrix4fs& allTransformations = circuit.getTransforms(allGids);
+
+        brain::GIDSet gids;
+        const auto& aabb = _geometryParameters.getCircuitBoundingBox();
+        if (aabb.getSize() == Vector3f(0.f))
+            gids = allGids;
+        else
+        {
+            auto gidIterator = allGids.begin();
+            for (size_t i = 0; i < allTransformations.size(); ++i)
+            {
+                if (aabb.isIn(allTransformations[i].getTranslation()))
+                    gids.insert(*gidIterator);
+                ++gidIterator;
+            }
+        }
+
         if (gids.empty())
         {
             BRAYNS_ERROR << "Circuit does not contain any cells" << std::endl;
@@ -328,9 +345,8 @@ private:
         Vector2f textureCoordinates;
 
         // https://stackoverflow.com/questions/2810280
-        float x = ((index & 0xFFFFFFFF00000000LL) >> 32) / INDEX_MAGIC;
-        float y = (index & 0xFFFFFFFFLL) / INDEX_MAGIC;
-
+        const float x = ((index & 0xFFFFFFFF00000000LL) >> 32) / INDEX_MAGIC;
+        const float y = (index & 0xFFFFFFFFLL) / INDEX_MAGIC;
         textureCoordinates.x() = x;
         textureCoordinates.y() = y;
         return textureCoordinates;
@@ -614,7 +630,8 @@ private:
                     // Number of compartments usually differs from number of
                     // samples
                     segmentStep =
-                        counts[section.getID()] / float(samples.size());
+                        static_cast<float>(counts[section.getID()]) /
+                        static_cast<float>(samples.size());
                 }
 
                 bool done = false;
@@ -638,7 +655,7 @@ private:
 
                         if (counts[section.getID()] > 0)
                             offset = offsets[section.getID()] +
-                                     float(i - step) * segmentStep;
+                                     static_cast<float>(i - step) * segmentStep;
                         else
                         {
                             if (section.getType() ==

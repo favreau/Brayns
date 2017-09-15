@@ -162,10 +162,13 @@ struct Brayns::Impl
                 .getFrameExportFolder();
         if (frameExportFolder.empty())
             return;
+        BRAYNS_INFO << "_writeFrameToFolder -> " << frameExportFolder << std::endl;
         try
         {
+            const float timestamp =
+                _parametersManager->getSceneParameters().getTimestamp();
             char str[7];
-            snprintf(str, 7, "%06d", int(_engine->getFrameNumber()));
+            snprintf(str, 7, "%06d", int(timestamp));
 
             const std::string filename = frameExportFolder + "/" + str + ".png";
             FrameBuffer& frameBuffer = _engine->getFrameBuffer();
@@ -191,6 +194,7 @@ struct Brayns::Impl
                                 colorBuffer);
             image.flip();
             image.write(filename);
+            BRAYNS_INFO << "Wrote " << filename << " to disk" << std::endl;
         }
         catch (Magick::Warning& warning)
         {
@@ -206,8 +210,8 @@ struct Brayns::Impl
 #else
     void _writeFrameToFolder()
     {
-        BRAYNS_DEBUG << "ImageMagick is required to export frames as PNG files"
-                     << std::endl;
+        BRAYNS_WARN << "ImageMagick is required to export frames as PNG files"
+                    << std::endl;
     }
 #endif
 

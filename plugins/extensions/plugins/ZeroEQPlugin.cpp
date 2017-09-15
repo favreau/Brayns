@@ -147,12 +147,13 @@ bool ZeroEQPlugin::run(Engine& engine)
     }
 
     _forceRendering = false;
-    while (_subscriber.receive(1))
+    for( size_t i = 0; i < 100 && !_forceRendering; ++i )
     {
-        if (_forceRendering)
-            break;
+        while (_subscriber.receive(1))
+        {
+        }
     }
-    return !_forceRendering;
+    return true;
 }
 
 bool ZeroEQPlugin::operator!() const
@@ -313,6 +314,9 @@ void ZeroEQPlugin::_setupSubscriber()
 
 void ZeroEQPlugin::_cameraUpdated()
 {
+    const float timestamp =
+        _parametersManager.getSceneParameters().getTimestamp();
+    BRAYNS_INFO << "Camera updated " << timestamp << std::endl;
     _engine->getFrameBuffer().clear();
     _engine->getCamera().commit();
 }
@@ -1132,7 +1136,11 @@ bool ZeroEQPlugin::_requestFrame()
 
 void ZeroEQPlugin::_frameUpdated()
 {
+    const float timestamp =
+        _parametersManager.getSceneParameters().getTimestamp();
+    BRAYNS_INFO << "Frame updated " << timestamp << std::endl;
     auto& sceneParams = _parametersManager.getSceneParameters();
+
     sceneParams.setTimestamp(_remoteFrame.getCurrent());
     sceneParams.setAnimationDelta(_remoteFrame.getDelta());
 

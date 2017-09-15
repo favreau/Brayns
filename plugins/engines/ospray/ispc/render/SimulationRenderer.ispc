@@ -47,7 +47,7 @@ inline varying vec4f
                        DifferentialGeometry& dg, varying vec3f& lightEmission)
 {
     lightEmission = make_vec3f(0.f);
-    vec4f color = make_vec4f(0.f, 0.f, 0.f, 1.f);
+    vec4f color = make_vec4f(0.f, 0.f, 0.f, 0.f);
 
     float value = 0.f;
     const uint64 index = (uint64)(dg.st.x * OFFSET_MAGIC) << 32 |
@@ -59,15 +59,15 @@ inline varying vec4f
         // Value offset is out of range, return error color
         return color;
 
-    if (value < self->threshold)
-        return color;
+//    if (value < self->threshold)
+//        return color;
 
     // Normalize the value according colormap size
     const float normalizedValue = (value - self->abstract.colorMapMinValue) /
                                   self->abstract.colorMapRange;
 
-    const uint32 lookupIndex =
-        max(0.f, min(normalizedValue, 1.f)) * (self->abstract.colorMapSize - 1);
+    const uint32 lookupIndex = (uint32)
+        (max(0.f, min(normalizedValue, 1.f)) * (float)(self->abstract.colorMapSize - 1));
 
     color = self->abstract.colorMap[lookupIndex];
 
@@ -101,7 +101,7 @@ inline void getValueFromSimulationModel(
     colorRay.dir = getRandomVector(sample, normal, self->abstract.randomNumber);
     colorRay.t0 = 0.f;
     colorRay.time = infinity;
-    colorRay.t = infinity;
+    colorRay.t = self->abstract.super.epsilon * 100.f;
     colorRay.primID = -1;
     colorRay.geomID = -1;
     colorRay.instID = -1;
@@ -381,7 +381,8 @@ inline vec3f SimulationRenderer_shadeRay(
                     const varying vec3f viewer =
                         normalize(ray.org - intersection);
                     const varying float el = max(0.f, dot(viewer, localNormal));
-                    varying float cosNL = localLightEmission + (1.f - el);
+//                    varying float cosNL = localLightEmission + (1.f - el);
+                    varying float cosNL = localLightEmission + el;
                     localShadedColor =
                         localShadedColor +
                         localOpacity * cosNL *

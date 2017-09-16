@@ -37,6 +37,8 @@
 #include "../Random.h"
 #include <optix_world.h>
 
+#define JULIA
+
 struct PerRayData_radiance
 {
     float3 result;
@@ -72,6 +74,7 @@ rtDeclareVariable(float, ambient_occlusion_strength, , );
 rtDeclareVariable(uint, electron_shading_enabled, , );
 rtDeclareVariable(float4, jitter4, , );
 rtDeclareVariable(float3, bg_color, , );
+rtDeclareVariable(float, timestamp, , );
 
 // Volume
 rtBuffer<unsigned char> volumeData;
@@ -123,6 +126,46 @@ static __device__ void composite(const float4& src, float4& dst)
     dst.w += (alpha * (1.f - dst.w));
 }
 
+static __device__ unsigned char getJuliaContribution(const float3 p,
+                                                     const unsigned int value)
+{
+    const float W = (float)volumeDimensions.x;
+    const float H = (float)volumeDimensions.y;
+
+    // pick some values for the constant c, this determines the shape of the
+    // Julia Set
+    const float cRe =
+        -0.7f +
+        0.5f * (p.z / volumeDimensions.z +
+                sinf((10.f * p.z + value + timestamp) / volumeDimensions.z));
+    const float cIm =
+        0.27015f +
+        0.5f * sinf((6.f * p.z - value + timestamp) / volumeDimensions.z);
+
+    // calculate the initial real and imaginary part of z, based on the pixel
+    // location and zoom and position values
+    float newRe = 1.5f * (p.x - W / 2.f) / (0.5f * W);
+    float newIm = (p.y - H / 2.f) / (0.5f * H);
+    // i will represent the number of iterations
+    unsigned char n = 0;
+    // start the iteration process
+    for (n = 0; n < max(50, value); ++n)
+    {
+        // remember value of previous iteration
+        float oldRe = newRe;
+        float oldIm = newIm;
+        // the actual iteration, the real and imaginary part are calculated
+        newRe = oldRe * oldRe - oldIm * oldIm + cRe;
+        newIm = 2.f * oldRe * oldIm + cIm;
+        // if the point is outside the circle with radius 2: stop
+        if ((newRe * newRe + newIm * newIm) > 4.f)
+            break;
+    }
+    // use color model conversion to get rainbow palette, make brightness black
+    // if maxIterations reached
+    return n;
+}
+
 static __device__ float getVolumeShadowContribution(const optix::Ray& volumeRay)
 {
     float t = volumeDiag;
@@ -135,12 +178,17 @@ static __device__ float getVolumeShadowContribution(const optix::Ray& volumeRay)
             point.y < volumeDimensions.y && point.z > 0.f &&
             point.z < volumeDimensions.z)
         {
-            const ulong index =
-                (ulong)((ulong)floor(point.x) +
-                        (ulong)floor(point.y) * volumeDimensions.x +
-                        (ulong)floor(point.z) * volumeDimensions.x *
-                            volumeDimensions.y);
-            const unsigned char voxelValue = volumeData[index];
+            ulong index = (ulong)((ulong)floor(point.x) +
+                                  (ulong)floor(point.y) * volumeDimensions.x +
+                                  (ulong)floor(point.z) * volumeDimensions.x *
+                                      volumeDimensions.y);
+            const unsigned char v = volumeData[index];
+
+#ifdef JULIA
+            const unsigned char j =
+                (v == 0) ? 0 : getJuliaContribution(point, v);
+#endif
+            const unsigned voxelValue = j;
 
             const float normalizedValue =
                 (float)colorMapSize * ((float)voxelValue - colorMapMinValue) /
@@ -173,9 +221,10 @@ static __device__ float4 getVolumeContribution(const optix::Ray& volumeRay,
     while (t < tMax && pathColor.w < 1.f)
     {
         const float x = rnd(seed) * volumeEpsilon;
-        float3 point = ((volumeRay.origin + volumeRay.direction * (t + x)) -
-                        volumeOffset) /
-                       volumeElementSpacing;
+        const float3 point =
+            ((volumeRay.origin + volumeRay.direction * (t + x)) -
+             volumeOffset) /
+            volumeElementSpacing;
 
         if (point.x > 0.f && point.x < volumeDimensions.x && point.y > 0.f &&
             point.y < volumeDimensions.y && point.z > 0.f &&
@@ -185,7 +234,13 @@ static __device__ float4 getVolumeContribution(const optix::Ray& volumeRay,
                                   (ulong)floor(point.y) * volumeDimensions.x +
                                   (ulong)floor(point.z) * volumeDimensions.x *
                                       volumeDimensions.y);
-            const unsigned char voxelValue = volumeData[index];
+            const unsigned char v = volumeData[index];
+
+#ifdef JULIA
+            const unsigned char j =
+                (v == 0) ? 0 : getJuliaContribution(point, v);
+#endif
+            const unsigned voxelValue = j;
 
             const float normalizedValue =
                 ((float)voxelValue - colorMapMinValue) / colorMapRange;
@@ -202,7 +257,6 @@ static __device__ float4 getVolumeContribution(const optix::Ray& volumeRay,
                 make_float4(emissionIntensityMap[normalizedValue], 0.f);
             float4 voxelColor =
                 fmaxf(make_float4(0.f), emissionIntensity + colorMapColor);
-
             // Determine light contribution
             if (shadows > 0.f && voxelColor.w > 0.1f)
             {

@@ -330,7 +330,6 @@ struct Brayns::Impl
     ParametersManager& getParametersManager() { return *_parametersManager; }
     KeyboardHandler& getKeyboardHandler() { return *_keyboardHandler; }
     AbstractManipulator& getCameraManipulator() { return *_cameraManipulator; }
-
 private:
     void _render()
     {
@@ -411,8 +410,9 @@ private:
                 volumeParameters.getElementSpacing();
             Boxf& worldBounds = scene.getWorldBounds();
             worldBounds.merge(Vector3f(0.f, 0.f, 0.f));
-            worldBounds.merge(volumeOffset + Vector3f(volumeDimensions) *
-                                                 volumeElementSpacing);
+            worldBounds.merge(volumeOffset +
+                              Vector3f(volumeDimensions) *
+                                  volumeElementSpacing);
         }
     }
 
@@ -638,14 +638,15 @@ private:
         auto& scene = _engine->getScene();
         const std::string& filename =
             geometryParameters.getCircuitConfiguration();
-        const std::string& target = geometryParameters.getCircuitTarget();
+        const auto& targets = geometryParameters.getCircuitTargetsAsStrings();
 
         BRAYNS_INFO << "Loading circuit configuration from " << filename
                     << std::endl;
         const std::string& report = geometryParameters.getCircuitReport();
         MorphologyLoader morphologyLoader(geometryParameters, scene);
         const servus::URI uri(filename);
-        morphologyLoader.importCircuit(uri, target, report, scene, _meshLoader);
+        morphologyLoader.importCircuit(uri, targets, report, scene,
+                                       _meshLoader);
     }
 
 #endif // BRAYNS_USE_BRION

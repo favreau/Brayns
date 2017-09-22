@@ -389,8 +389,7 @@ private:
         if (!geometryParameters.getMorphologyFolder().empty())
             _loadMorphologyFolder();
 
-        if (!geometryParameters.getCircuitConfiguration().empty() &&
-            geometryParameters.getLoadCacheFile().empty())
+        if (!geometryParameters.getCircuitConfiguration().empty())
             _loadCircuitConfiguration();
 #endif
 
@@ -639,14 +638,15 @@ private:
         auto& scene = _engine->getScene();
         const std::string& filename =
             geometryParameters.getCircuitConfiguration();
-        const std::string& target = geometryParameters.getCircuitTarget();
+        const auto& targets = geometryParameters.getCircuitTargetsAsStrings();
 
         BRAYNS_INFO << "Loading circuit configuration from " << filename
                     << std::endl;
         const std::string& report = geometryParameters.getCircuitReport();
         MorphologyLoader morphologyLoader(geometryParameters, scene);
         const servus::URI uri(filename);
-        morphologyLoader.importCircuit(uri, target, report, scene, _meshLoader);
+        morphologyLoader.importCircuit(uri, targets, report, scene,
+                                       _meshLoader);
     }
 
 #endif // BRAYNS_USE_BRION

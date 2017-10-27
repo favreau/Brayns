@@ -66,12 +66,6 @@ public:
     BRAYNS_API virtual void commit() = 0;
 
     /**
-        Creates the materials handled by the scene, and available to the
-        scene geometry
-    */
-    BRAYNS_API void buildMaterials();
-
-    /**
         Sets the materials handled by the scene, and available to the
         scene geometry
         @param materialType Specifies the algorithm that is used to create
@@ -80,6 +74,11 @@ public:
     */
     BRAYNS_API void setMaterials(
         MaterialType materialType = MaterialType::none);
+
+    /**
+     * @brief Clear all materials and initialize system ones
+     */
+    void resetMaterials();
 
     /**
         Returns the material object for a given index

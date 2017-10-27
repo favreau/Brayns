@@ -88,26 +88,12 @@ void Scene::_markGeometryDirty()
     _modified = true;
 }
 
-void Scene::buildMaterials()
+void Scene::resetMaterials()
 {
-    BRAYNS_INFO << "Building materials" << std::endl;
-    for (const auto& spheres : _spheres)
-        if (!spheres.second.empty() &&
-            _materials.find(spheres.first) == _materials.end())
-            _materials[spheres.first] = Material();
-    for (const auto& cylinders : _cylinders)
-        if (!cylinders.second.empty() &&
-            _materials.find(cylinders.first) == _materials.end())
-            _materials[cylinders.first] = Material();
-    for (const auto& cones : _cones)
-        if (!cones.second.empty() &&
-            _materials.find(cones.first) == _materials.end())
-            _materials[cones.first] = Material();
-    for (auto& meshes : _trianglesMeshes)
-        if (!meshes.second.getIndices().empty() &&
-            _materials.find(meshes.first) == _materials.end())
-            _materials[meshes.first] = Material();
+    // Clean existing materials
+    _materials.clear();
 
+    // Initialize system materials
     for (size_t i = 0; i < NB_SYSTEM_MATERIALS; ++i)
     {
         auto& material = _materials[i];
@@ -125,18 +111,34 @@ void Scene::buildMaterials()
             break;
         }
     }
+
+    // Create materials according to registered geometry
+    for (const auto& spheres : _spheres)
+        if (!spheres.second.empty() &&
+            _materials.find(spheres.first) == _materials.end())
+            _materials[spheres.first] = Material();
+    for (const auto& cylinders : _cylinders)
+        if (!cylinders.second.empty() &&
+            _materials.find(cylinders.first) == _materials.end())
+            _materials[cylinders.first] = Material();
+    for (const auto& cones : _cones)
+        if (!cones.second.empty() &&
+            _materials.find(cones.first) == _materials.end())
+            _materials[cones.first] = Material();
+    for (auto& meshes : _trianglesMeshes)
+        if (!meshes.second.getIndices().empty() &&
+            _materials.find(meshes.first) == _materials.end())
+            _materials[meshes.first] = Material();
+    commitMaterials();
 }
 
 void Scene::setMaterials(const MaterialType materialType)
 {
+    const Vector3f WHITE = {1.f, 1.f, 1.f};
     const auto nbMaterials = _materials.size();
-    for (size_t i = NB_SYSTEM_MATERIALS; i < nbMaterials; ++i)
+    for (size_t i = 0; i < nbMaterials - NB_SYSTEM_MATERIALS; ++i)
     {
-        auto& material = _materials[i];
-        material.setSpecularColor(Vector3f(0.f, 0.f, 0.f));
-        material.setOpacity(1.f);
-        material.setReflectionIndex(0.f);
-
+        auto& material = _materials[i + NB_SYSTEM_MATERIALS];
         switch (materialType)
         {
         case MaterialType::none:
@@ -161,6 +163,45 @@ void Scene::setMaterials(const MaterialType materialType)
                                            float(std::rand() % 255) / 255.f));
             }
             break;
+        case MaterialType::cornellbox:
+        {
+            const Vector3f colors[6] = {{0.8f, 0.8f, 0.8f}, {1.f, 0.f, 0.f},
+                                        {0.8f, 0.8f, 0.8f}, {0.f, 1.f, 0.f},
+                                        {0.8f, 0.8f, 0.8f}, {0.8f, 0.8f, 0.8f}};
+            switch (i)
+            {
+            case 0: // Front
+            case 1: // Right
+            case 2: // Back
+            case 3: // Left
+            case 4: // Bottom
+            case 5: // Top
+                material.setColor(colors[i]);
+                material.setSpecularColor(WHITE);
+                material.setReflectionIndex(i == 4 ? 0.8f : 0.f);
+                break;
+            case 6:
+                material.setOpacity(0.3f);
+                material.setRefractionIndex(1.1f);
+                material.setColor(WHITE);
+                material.setSpecularColor(WHITE);
+                material.setSpecularExponent(100.f);
+                break;
+            case 7:
+                material.setColor(Vector3f(0.1f, 0.1f, 0.8f));
+                material.setSpecularColor(WHITE);
+                break;
+            case 8:
+                material.setReflectionIndex(0.8f);
+                material.setSpecularColor(WHITE);
+                break;
+            case 9:
+                material.setColor(WHITE);
+                material.setEmission(5.f);
+                break;
+            }
+            break;
+        }
         case MaterialType::gradient:
         {
             const float a =
@@ -201,7 +242,6 @@ void Scene::setMaterials(const MaterialType materialType)
             material.setColor(Vector3f(value, value, value));
             break;
         }
-        _materials[i] = material;
     }
     commitMaterials();
 }
@@ -216,8 +256,6 @@ void Scene::buildDefault()
     BRAYNS_INFO << "Building default Cornell Box scene" << std::endl;
 
     _markGeometryDirty();
-
-    const Vector3f WHITE = {1.f, 1.f, 1.f};
 
     const Vector3f positions[8] = {
         {0.f, 0.f, 0.f}, {1.f, 0.f, 0.f}, //    6--------7
@@ -238,19 +276,9 @@ void Scene::buildDefault()
         {7, 3, 2, 2, 6, 7}  // Top
     };
 
-    const Vector3f colors[6] = {{0.8f, 0.8f, 0.8f}, {1.f, 0.f, 0.f},
-                                {0.8f, 0.8f, 0.8f}, {0.f, 1.f, 0.f},
-                                {0.8f, 0.8f, 0.8f}, {0.8f, 0.8f, 0.8f}};
-
     // Cornell box
     for (size_t material = 1; material < 6; ++material)
     {
-        auto& m = _materials[NB_SYSTEM_MATERIALS + material];
-        m.setColor(colors[material]);
-        m.setSpecularColor(WHITE);
-        m.setSpecularExponent(10.f);
-        m.setReflectionIndex(material == 4 ? 0.8f : 0.f);
-        m.setOpacity(1.f);
         auto& trianglesMesh = _trianglesMeshes[NB_SYSTEM_MATERIALS + material];
         for (size_t i = 0; i < 6; ++i)
         {
@@ -262,43 +290,23 @@ void Scene::buildDefault()
         trianglesMesh.getIndices().push_back(Vector3ui(3, 4, 5));
     }
 
-    size_t material = NB_SYSTEM_MATERIALS + 7;
+    size_t material = NB_SYSTEM_MATERIALS + 6;
 
     // Sphere
-    {
-        _spheres[material].push_back(
-            SpherePtr(new Sphere(Vector3f(0.25f, 0.26f, 0.30f), 0.25f)));
-        auto& m = _materials[material];
-        m.setOpacity(0.3f);
-        m.setRefractionIndex(1.1f);
-        m.setColor(WHITE);
-        m.setSpecularColor(WHITE);
-        m.setSpecularExponent(100.f);
-    }
+    _spheres[material].push_back(
+        SpherePtr(new Sphere(Vector3f(0.25f, 0.26f, 0.30f), 0.25f)));
 
     // Cylinder
     ++material;
     _cylinders[material].push_back(
         CylinderPtr(new Cylinder(Vector3f(0.25f, 0.126f, 0.75f),
                                  Vector3f(0.75f, 0.126f, 0.75f), 0.125f)));
-    {
-        auto& m = _materials[material];
-        m.setColor(Vector3f(0.1f, 0.1f, 0.8f));
-        m.setSpecularColor(WHITE);
-        m.setSpecularExponent(10.f);
-    }
 
     // Cone
     ++material;
     _cones[material].push_back(
         ConePtr(new Cone(Vector3f(0.75f, 0.01f, 0.25f),
                          Vector3f(0.75f, 0.5f, 0.25f), 0.15f, 0.f)));
-    {
-        auto& m = _materials[material];
-        m.setReflectionIndex(0.8f);
-        m.setSpecularColor(WHITE);
-        m.setSpecularExponent(10.f);
-    }
 
     // Lamp
     ++material;
@@ -312,11 +320,6 @@ void Scene::buildDefault()
         _trianglesMeshes[material].getVertices().push_back(lampPositions[i]);
     _trianglesMeshes[material].getIndices().push_back(Vector3i(2, 1, 0));
     _trianglesMeshes[material].getIndices().push_back(Vector3i(0, 3, 2));
-    {
-        auto& m = _materials[material];
-        m.setColor(WHITE);
-        m.setEmission(5.f);
-    }
 
     BRAYNS_INFO << "Bounding Box: " << _bounds << std::endl;
 }

@@ -62,11 +62,11 @@ inline vec3f BasicRenderer_shadeRay(const uniform BasicRenderer* uniform self,
     uniform ExtendedOBJMaterial* objMaterial =
         (uniform ExtendedOBJMaterial*)material;
 
-    vec3f Kd;
+    vec3f Kd = make_vec3f(0.f);
     if (!objMaterial)
         Kd = make_vec3f(dg.color);
     else
-        foreach_unique(mat in objMaterial) Kd = mat->Kd;
+        foreach_unique(mat in objMaterial) Kd = mat->Kd * make_vec3f(dg.color);
 
     // Head-light shading
     const vec3f intersection = dg.P + self->abstract.super.epsilon * dg.Ns;

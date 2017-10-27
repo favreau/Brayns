@@ -194,6 +194,7 @@ public:
                         simulationHandler->getCompartmentReport();
                     // Attach simulation handler
                     scene.setSimulationHandler(simulationHandler);
+                    allGids = compartmentReport->getGIDs();
                 }
                 catch (const std::exception& e)
                 {
@@ -300,7 +301,7 @@ private:
                 }
             break;
         default:
-            materialId = NO_MATERIAL;
+            materialId = 0;
         }
         return NB_SYSTEM_MATERIALS + materialId;
     }
@@ -711,7 +712,7 @@ private:
                         done = true;
                     }
 
-                    const auto distance = distanceToSoma + distancesToSoma[i];
+                    auto distance = distanceToSoma + distancesToSoma[i];
 
                     if (compartmentReport)
                     {
@@ -762,6 +763,9 @@ private:
 
                     if (radius > 0.f)
                     {
+                        distance = _geometryParameters.useTimedGeometry()
+                                       ? distance
+                                       : 0.f;
                         auto& spheres = scene._spheres[materialId];
                         spheres.push_back(
                             SpherePtr(new Sphere(position, radius, distance,

@@ -259,10 +259,12 @@ inline vec3f SimulationRenderer_shadeRay(
                     localLightEmission += mat->a;
 
                     // Glossiness
-                    localNormal = normalize(
-                        localNormal +
-                        mat->g * getRandomVector(sample, localNormal,
-                                                 self->abstract.randomNumber));
+                    if (mat->glossiness != 0.f)
+                        localNormal = normalize(
+                            localNormal +
+                            mat->glossiness *
+                                getRandomVector(sample, localNormal,
+                                                self->abstract.randomNumber));
                     // Refraction index
                     localRefraction = mat->refraction;
 
@@ -271,9 +273,9 @@ inline vec3f SimulationRenderer_shadeRay(
 
                     // Diffuse color
                     localDiffuseColor = mat->Kd * make_vec3f(dg.color);
-                    if (mat->map_Kd)
+                    if (valid(mat->map_Kd))
                     {
-                        vec4f localDiffuseColorFromMap =
+                        const vec4f localDiffuseColorFromMap =
                             get4f(mat->map_Kd, dg.st);
                         localDiffuseColor =
                             localDiffuseColor *
@@ -287,28 +289,19 @@ inline vec3f SimulationRenderer_shadeRay(
                                                              make_vec3f(1.f)));
 
                     // Specular exponent
-                    localSpecularExponent =
-                        max(localSpecularExponent,
-                            mat->Ns * get1f(mat->map_Ns, dg.st, 1.f));
+                    localSpecularExponent = max(localSpecularExponent, mat->Ns);
 
                     // Normal mapping
-                    if (mat->map_Normal)
+                    if (valid(mat->map_Bump))
                     {
-                        vec3f n =
-                            get3f(mat->map_Normal, dg.st, make_vec3f(0.f)) -
-                            0.5f;
+                        const vec3f n =
+                            get3f(mat->map_Bump, dg.st, make_vec3f(0.f)) - 0.5f;
                         localNormal.x -= n.x;
                         localNormal.y -= n.y;
                     }
 
-                    // localReflection index
+                    // Reflection index
                     localReflection = mat->reflection;
-                    if (mat->map_reflection)
-                    {
-                        vec3f n =
-                            get3f(mat->map_reflection, dg.st, make_vec3f(0.f));
-                        localReflection *= (n.x + n.y + n.z) / 3.f;
-                    }
                 }
             }
 

@@ -466,7 +466,7 @@ void ZeroEQPlugin::_sceneUpdated()
         material.setGlossiness(m.getGlossiness());
     }
 
-    scene.commitMaterials(true);
+    scene.commitMaterials();
 }
 
 void ZeroEQPlugin::_spikesUpdated()
@@ -850,6 +850,8 @@ void ZeroEQPlugin::_initializeDataSource()
         geometryParameters.getMetaballsThreshold());
     _remoteDataSource.setMetaballsSamplesFromSoma(
         geometryParameters.getMetaballsSamplesFromSoma());
+    _remoteDataSource.setUseTimedGeometry(
+        geometryParameters.useTimedGeometry());
     _remoteDataSource.setMemoryMode(geometryParameters.getMemoryMode() ==
                                             MemoryMode::shared
                                         ? brayns::v1::MemoryMode::shared
@@ -1037,6 +1039,8 @@ void ZeroEQPlugin::_dataSourceUpdated()
     _parametersManager.set("metaballs-threshold",
                            std::to_string(
                                _remoteDataSource.getMetaballsThreshold()));
+    _parametersManager.set("use-timed-geometry",
+                           _remoteDataSource.getUseTimedGeometry() ? "1" : "0");
     _parametersManager.set(
         "metaballs-samples-from-soma",
         std::to_string(_remoteDataSource.getMetaballsSamplesFromSoma()));
@@ -1109,6 +1113,10 @@ void ZeroEQPlugin::_initializeSettings()
         break;
     case RendererType::shadingNormals:
         _remoteSettings.setShader(::brayns::v1::Shader::shading_normals);
+        break;
+    case RendererType::scientificVisualization:
+        _remoteSettings.setShader(
+            ::brayns::v1::Shader::scientific_visualization);
         break;
     default:
         _remoteSettings.setShader(::brayns::v1::Shader::basic);

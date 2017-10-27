@@ -263,6 +263,10 @@ public:
     }
     /** Range of dimensions */
     Vector3f getConnectivityScale() const { return _connectivityScale; }
+    /**
+     * @return True if a timestamp should be assigned to an extended geometry
+     */
+    bool useTimedGeometry() const { return _useTimedGeometry; }
 protected:
     bool _parse(const po::variables_map& vm) final;
 
@@ -318,6 +322,7 @@ protected:
     size_t _metaballsGridSize;
     float _metaballsThreshold;
     size_t _metaballsSamplesFromSoma;
+    bool _useTimedGeometry;
 
     // System parameters
     MemoryMode _memoryMode;

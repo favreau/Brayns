@@ -74,6 +74,7 @@ const std::string PARAM_METABALLS_GRIDSIZE = "metaballs-grid-size";
 const std::string PARAM_METABALLS_THRESHOLD = "metaballs-threshold";
 const std::string PARAM_METABALLS_SAMPLES_FROM_SOMA =
     "metaballs-samples-from-soma";
+const std::string PARAM_USE_TIMED_GEOMETRY = "use-timed-geometry";
 const std::string PARAM_MEMORY_MODE = "memory-mode";
 const std::string PARAM_SCENE_FILE = "scene-file";
 const std::string PARAM_CONNECTIVITY_FILE = "connectivity-file";
@@ -127,6 +128,7 @@ GeometryParameters::GeometryParameters()
     , _metaballsGridSize(0)
     , _metaballsThreshold(1.f)
     , _metaballsSamplesFromSoma(3)
+    , _useTimedGeometry(false)
     , _memoryMode(MemoryMode::shared)
     , _connectivityMatrixId{0}
     , _connectivityDimensionRange{0, std::numeric_limits<unsigned int>::max()}
@@ -211,10 +213,12 @@ GeometryParameters::GeometryParameters()
                                "Metaballs threshold [float]")(
         PARAM_METABALLS_SAMPLES_FROM_SOMA.c_str(), po::value<size_t>(),
         "Number of morphology samples (or segments) from soma used by "
-        "automated meshing [int]")(PARAM_CIRCUIT_USES_SIMULATION_MODEL.c_str(),
-                                   po::value<bool>(),
-                                   "Defines if a different model is used to "
-                                   "handle the simulation geometry [bool]")(
+        "automated meshing [int]")(
+        PARAM_USE_TIMED_GEOMETRY.c_str(), po::value<bool>(),
+        "Defines if a timestamp should be attached to a geometry [bool]")(
+        PARAM_CIRCUIT_USES_SIMULATION_MODEL.c_str(), po::value<bool>(),
+        "Defines if a different model is used to "
+        "handle the simulation geometry [bool]")(
         PARAM_CIRCUIT_BOUNDING_BOX.c_str(), po::value<floats>()->multitoken(),
         "Does not load circuit geometry outside of the specified bounding box"
         "[float float float float float float]")(
@@ -355,6 +359,8 @@ bool GeometryParameters::_parse(const po::variables_map& vm)
     if (vm.count(PARAM_METABALLS_SAMPLES_FROM_SOMA))
         _metaballsSamplesFromSoma =
             vm[PARAM_METABALLS_SAMPLES_FROM_SOMA].as<size_t>();
+    if (vm.count(PARAM_USE_TIMED_GEOMETRY))
+        _useTimedGeometry = vm[PARAM_USE_TIMED_GEOMETRY].as<bool>();
     if (vm.count(PARAM_CIRCUIT_USES_SIMULATION_MODEL))
         _circuitUseSimulationModel =
             vm[PARAM_CIRCUIT_USES_SIMULATION_MODEL].as<bool>();
@@ -450,6 +456,8 @@ void GeometryParameters::print()
                 << getSceneEnvironmentAsString(_sceneEnvironment) << std::endl;
     BRAYNS_INFO << "Geometry quality           : "
                 << getGeometryQualityAsString(_geometryQuality) << std::endl;
+    BRAYNS_INFO << "Use timed geometry         : "
+                << (_useTimedGeometry ? "Yes" : "No") << std::endl;
     BRAYNS_INFO << "Circuit configuration      : " << std::endl;
     BRAYNS_INFO << "- Config file              : " << _circuitConfiguration
                 << std::endl;

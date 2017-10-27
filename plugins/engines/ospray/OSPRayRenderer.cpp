@@ -74,19 +74,20 @@ void OSPRayRenderer::commit()
 
     Vector3f color = rp.getBackgroundColor();
     ospSet3f(_renderer, "bgColor", color.x(), color.y(), color.z());
+    ospSet1i(_renderer, "shadowsEnabled", rp.getShadows() > 0.f);
     ospSet1f(_renderer, "shadows", rp.getShadows());
     ospSet1f(_renderer, "softShadows", rp.getSoftShadows());
-    ospSet1f(_renderer, "ambientOcclusionStrength",
-             rp.getAmbientOcclusionStrength());
+    ospSet1f(_renderer, "aoWeight", rp.getAmbientOcclusionStrength());
+    ospSet1i(_renderer, "aoSamples", 1);
+    ospSet1f(_renderer, "aoDistance", rp.getDetectionDistance());
     ospSet1f(_renderer, "varianceThreshold", rp.getVarianceThreshold());
-
     ospSet1i(_renderer, "shadingEnabled", (mt == ShadingType::diffuse));
     ospSet1f(_renderer, "timestamp", sp.getAnimationFrame());
     ospSet1i(_renderer, "randomNumber", rand() % 10000);
     ospSet1i(_renderer, "spp", rp.getSamplesPerPixel());
     ospSet1i(_renderer, "electronShading", (mt == ShadingType::electron));
     ospSet1f(_renderer, "epsilon", rp.getEpsilon());
-    ospSet1i(_renderer, "moving", false);
+    ospSet1f(_renderer, "aoDistance", rp.getDetectionDistance());
     ospSet1f(_renderer, "detectionDistance", rp.getDetectionDistance());
     ospSet1i(_renderer, "detectionOnDifferentMaterial",
              rp.getDetectionOnDifferentMaterial());
@@ -104,8 +105,9 @@ void OSPRayRenderer::commit()
         _scene->getParametersManager().getSceneParameters().getAnimationFrame();
 
     ospSetObject(_renderer, "world", osprayScene->modelImpl(animationFrame));
-    ospSetObject(_renderer, "simulationModel",
-                 osprayScene->simulationModelImpl());
+    if (osprayScene->simulationModelImpl())
+        ospSetObject(_renderer, "simulationModel",
+                     osprayScene->simulationModelImpl());
     ospCommit(_renderer);
 }
 

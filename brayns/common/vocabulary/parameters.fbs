@@ -131,6 +131,7 @@ table DataSource {
     metaballs_grid_size: uint;
     metaballs_threshold: float;
     metaballs_samples_from_soma: uint;
+    use_timed_geometry: bool;
     memory_mode: MemoryMode;
     scene_file: string;
     connectivity_configuration: ConnectivityConfiguration;
@@ -142,7 +143,8 @@ enum Shader: uint {
     simulation,
     particle,
     geometry_normals,
-    shading_normals
+    shading_normals,
+    scientific_visualization
 }
 
 enum Shading: uint {

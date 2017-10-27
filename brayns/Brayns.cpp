@@ -242,7 +242,8 @@ private:
         Scene& scene = _engine->getScene();
         _loadData(loadingProgress);
 
-        if (scene.empty() && !scene.getVolumeHandler())
+        const bool defaultScene = scene.empty() && !scene.getVolumeHandler();
+        if (defaultScene)
         {
             BRAYNS_INFO << "Building default scene" << std::endl;
             scene.buildDefault();
@@ -253,9 +254,10 @@ private:
         const auto& geomParams = _parametersManager->getGeometryParameters();
         if (geomParams.getLoadCacheFile().empty())
         {
-            scene.buildMaterials();
             loadingProgress.setMessage("Building geometry ...");
             scene.buildGeometry();
+            scene.setMaterials(defaultScene ? MaterialType::cornellbox
+                                            : MaterialType::gradient);
 
             if (!geomParams.getSaveCacheFile().empty())
                 scene.saveToCacheFile();

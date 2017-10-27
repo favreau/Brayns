@@ -55,14 +55,13 @@ void AbstractRenderer::commit()
     _bgColor = getParam3f("bgColor", ospray::vec3f(1.f));
     _shadows = getParam1f("shadows", 0.f);
     _softShadows = getParam1f("softShadows", 0.f);
-    _ambientOcclusionStrength = getParam1f("ambientOcclusionStrength", 0.f);
+    _ambientOcclusionStrength = getParam1f("aoWeight", 0.f);
     _shadingEnabled = bool(getParam1i("shadingEnabled", 1));
     _randomNumber = getParam1i("randomNumber", 0);
     _timestamp = getParam1f("timestamp", 0.f);
     _spp = getParam1i("spp", 1);
     _electronShadingEnabled = bool(getParam1i("electronShading", 0));
 
-    // Those materials are used for simulation mapping only
     _materialData = (ospray::Data*)getParamData("materials");
     _materialArray.clear();
     if (_materialData)
@@ -70,12 +69,5 @@ void AbstractRenderer::commit()
             _materialArray.push_back(
                 ((ospray::Material**)_materialData->data)[i]->getIE());
     _materialPtr = _materialArray.empty() ? nullptr : &_materialArray[0];
-}
-
-/*! \brief create a material of given type */
-ospray::Material* AbstractRenderer::createMaterial(const char*)
-{
-    ospray::Material* mat = new brayns::obj::ExtendedOBJMaterial;
-    return mat;
 }
 }

@@ -44,9 +44,9 @@ struct TextureTypeMaterialAttribute
 };
 
 static TextureTypeMaterialAttribute textureTypeMaterialAttribute[6] = {
-    {TT_DIFFUSE, "map_kd"},  {TT_NORMALS, "map_Normal"},
+    {TT_DIFFUSE, "map_kd"},  {TT_NORMALS, "map_normal"},
     {TT_SPECULAR, "map_ks"}, {TT_EMISSIVE, "map_a"},
-    {TT_OPACITY, "map_d"},   {TT_REFLECTION, "map_Reflection"}};
+    {TT_OPACITY, "map_d"},   {TT_REFLECTION, "map_reflection"}};
 
 OSPRayScene::OSPRayScene(Renderers renderers,
                          ParametersManager& parametersManager)
@@ -110,6 +110,7 @@ void OSPRayScene::unload()
         }
         ospCommit(_simulationModel);
         ospRelease(_simulationModel);
+        _simulationModel = nullptr;
     }
 
     Scene::unload();
@@ -413,12 +414,12 @@ void OSPRayScene::loadFromCacheFile()
     BRAYNS_INFO << nbMaterials << " materials" << std::endl;
 
     // Read materials
-    _materials.clear();
-    buildMaterials();
+    resetMaterials();
     for (size_t i = 0; i < nbMaterials; ++i)
     {
         size_t id;
         file.read((char*)&id, sizeof(size_t));
+        _materials[id] = Material();
         auto& material = _materials[id];
         Vector3f value3f;
         file.read((char*)&value3f, sizeof(Vector3f));
@@ -847,7 +848,7 @@ void OSPRayScene::buildGeometry()
 {
     BRAYNS_INFO << "Building OSPRay geometry" << std::endl;
 
-    commitMaterials();
+    resetMaterials();
 
     const auto& geomParams = _parametersManager.getGeometryParameters();
 
@@ -1044,7 +1045,7 @@ void OSPRayScene::commitLights()
 
         if (_ospLightData == 0)
         {
-            _ospLightData = ospNewData(_lights.size(), OSP_OBJECT,
+            _ospLightData = ospNewData(_ospLights.size(), OSP_OBJECT,
                                        &_ospLights[0], _getOSPDataFlags());
             ospCommit(_ospLightData);
         }
@@ -1091,6 +1092,8 @@ void OSPRayScene::commitMaterials(const bool updateOnly)
                  material.second.getReflectionIndex());
         ospSet1f(ospMaterial, "a", material.second.getEmission());
         ospSet1f(ospMaterial, "g", material.second.getGlossiness());
+        for (const auto& textureType : textureTypeMaterialAttribute)
+            ospSetObject(ospMaterial, textureType.attribute.c_str(), nullptr);
 
         if (!updateOnly)
         {
@@ -1121,7 +1124,7 @@ void OSPRayScene::commitMaterials(const bool updateOnly)
         ospCommit(ospMaterial);
     }
 
-    _ospMaterialData = ospNewData(_materials.size(), OSP_OBJECT,
+    _ospMaterialData = ospNewData(_ospMaterials.size(), OSP_OBJECT,
                                   &_ospMaterials[0], _getOSPDataFlags());
     ospCommit(_ospMaterialData);
 

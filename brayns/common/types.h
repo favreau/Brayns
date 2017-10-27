@@ -209,7 +209,8 @@ enum class RendererType
     simulation,
     particle,
     geometryNormals,
-    shadingNormals
+    shadingNormals,
+    scientificVisualization
 };
 typedef std::vector<RendererType> RendererTypes;
 typedef std::map<RendererType, RendererPtr> RendererMap;
@@ -313,6 +314,7 @@ enum class MemoryMode
 enum class MaterialType
 {
     none,           // Random colors
+    cornellbox,     // Cornell box (default scene)
     random,         // Random materials including transparency, reflection,
                     // and light emission
     shades_of_grey, // 255 shades of grey

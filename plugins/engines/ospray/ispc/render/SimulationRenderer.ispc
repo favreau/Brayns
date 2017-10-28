@@ -66,9 +66,8 @@ inline varying vec4f
     // Normalize the value according colormap size
     const float normalizedValue = (value - self->abstract.colorMapMinValue) /
                                   self->abstract.colorMapRange;
-
     const uint32 lookupIndex =
-        max(0.f, min(normalizedValue, 1.f)) * (self->abstract.colorMapSize - 1);
+        max(0.f, min(1.f, normalizedValue)) * (self->abstract.colorMapSize - 1);
 
     color = self->abstract.colorMap[lookupIndex];
 
@@ -259,7 +258,7 @@ inline vec3f SimulationRenderer_shadeRay(
                     localLightEmission += mat->a;
 
                     // Glossiness
-                    if (mat->glossiness != 0.f)
+                    if (mat->glossiness > 0.f)
                         localNormal = normalize(
                             localNormal +
                             mat->glossiness *
@@ -268,11 +267,15 @@ inline vec3f SimulationRenderer_shadeRay(
                     // Refraction index
                     localRefraction = mat->refraction;
 
+#ifdef ADVANCED_TEXTURING
                     // Opacity
                     localOpacity += mat->d * get1f(mat->map_d, dg.st, 1.f);
-
+#else
+                    localOpacity += mat->d;
+#endif
                     // Diffuse color
                     localDiffuseColor = mat->Kd * make_vec3f(dg.color);
+#ifdef ADVANCED_TEXTURING
                     if (valid(mat->map_Kd))
                     {
                         const vec4f localDiffuseColorFromMap =
@@ -282,15 +285,20 @@ inline vec3f SimulationRenderer_shadeRay(
                             make_vec3f(localDiffuseColorFromMap);
                         localOpacity *= localDiffuseColorFromMap.w;
                     }
+#endif
 
                     // Specular color
-                    localSpecularColor = max(localSpecularColor,
-                                             mat->Ks * get3f(mat->map_Ks, dg.st,
-                                                             make_vec3f(1.f)));
-
+                    localSpecularColor = max(localSpecularColor, mat->Ks);
+#ifdef ADVANCED_TEXTURING
+                    if (valid(mat->map_Ks))
+                        localSpecularColor =
+                            localSpecularColor *
+                            get3f(mat->map_Ks, dg.st, make_vec3f(1.f));
+#endif
                     // Specular exponent
                     localSpecularExponent = max(localSpecularExponent, mat->Ns);
 
+#ifdef ADVANCED_TEXTURING
                     // Normal mapping
                     if (valid(mat->map_Bump))
                     {
@@ -299,6 +307,7 @@ inline vec3f SimulationRenderer_shadeRay(
                         localNormal.x -= n.x;
                         localNormal.y -= n.y;
                     }
+#endif
 
                     // Reflection index
                     localReflection = mat->reflection;
@@ -325,8 +334,8 @@ inline vec3f SimulationRenderer_shadeRay(
                 const varying vec3f reflectedDirection =
                     ray.dir - 2.f * dot(ray.dir, localNormal) * localNormal;
 
-                if (self->abstract.ambientOcclusionStrength != 0.f &&
-                    localLightEmission == 0.f)
+                if (self->abstract.ambientOcclusionStrength > 0.f &&
+                    localLightEmission < 0.01f)
                 {
                     // Indirect illumination
                     DifferentialGeometry geometry;
@@ -428,8 +437,8 @@ inline vec3f SimulationRenderer_shadeRay(
                             cosLR += localLightEmission;
 
                             // Process shadows
-                            if (self->abstract.shadows != 0.f &&
-                                localLightEmission == 0.f)
+                            if (self->abstract.shadows > 0.f &&
+                                localLightEmission < 0.01f)
                                 localLightIntensity =
                                     shadedLightIntensity(&(self->abstract), ray,
                                                          sample, intersection,

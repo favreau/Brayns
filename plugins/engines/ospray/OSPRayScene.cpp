@@ -51,31 +51,49 @@ static TextureTypeMaterialAttribute textureTypeMaterialAttribute[6] = {
 OSPRayScene::OSPRayScene(Renderers renderers,
                          ParametersManager& parametersManager)
     : Scene(renderers, parametersManager)
-    , _simulationModel(0)
-    , _ospLightData(0)
-    , _ospMaterialData(0)
-    , _ospVolumeData(0)
-    , _ospSimulationData(0)
-    , _ospTransferFunctionDiffuseData(0)
-    , _ospTransferFunctionEmissionData(0)
+    , _simulationModel(nullptr)
+    , _ospMaterialsData(nullptr)
+    , _ospVolumeData(nullptr)
+    , _ospSimulationData(nullptr)
+    , _ospTransferFunctionDiffuseData(nullptr)
+    , _ospTransferFunctionEmissionData(nullptr)
 {
 }
 
 OSPRayScene::~OSPRayScene()
 {
-    if (_ospTransferFunctionDiffuseData)
-        ospRelease(_ospTransferFunctionDiffuseData);
-
-    if (_ospTransferFunctionEmissionData)
-        ospRelease(_ospTransferFunctionEmissionData);
-
-    for (auto& light : _ospLights)
-        ospRelease(light);
-    _ospLights.clear();
+    unload();
 }
 
 void OSPRayScene::unload()
 {
+    // Simulation data
+    if (_simulationModel)
+    {
+        for (size_t materialId = 0; materialId < _materials.size();
+             ++materialId)
+        {
+            ospRemoveGeometry(_simulationModel,
+                              _ospExtendedSpheres[materialId]);
+            ospRemoveGeometry(_simulationModel,
+                              _ospExtendedCylinders[materialId]);
+            ospRemoveGeometry(_simulationModel, _ospExtendedCones[materialId]);
+        }
+        ospCommit(_simulationModel);
+        ospRelease(_simulationModel);
+        _simulationModel = nullptr;
+    }
+
+    if (_ospSimulationData)
+        ospRelease(_ospSimulationData);
+    _ospSimulationData = nullptr;
+
+    // Volume
+    if (_ospVolumeData)
+        ospRelease(_ospVolumeData);
+    _ospVolumeData = nullptr;
+
+    // Geometry
     for (const auto& model : _models)
     {
         for (size_t materialId = 0; materialId < _materials.size();
@@ -97,32 +115,6 @@ void OSPRayScene::unload()
     }
     _models.clear();
 
-    if (_simulationModel)
-    {
-        for (size_t materialId = 0; materialId < _materials.size();
-             ++materialId)
-        {
-            ospRemoveGeometry(_simulationModel,
-                              _ospExtendedSpheres[materialId]);
-            ospRemoveGeometry(_simulationModel,
-                              _ospExtendedCylinders[materialId]);
-            ospRemoveGeometry(_simulationModel, _ospExtendedCones[materialId]);
-        }
-        ospCommit(_simulationModel);
-        ospRelease(_simulationModel);
-        _simulationModel = nullptr;
-    }
-
-    Scene::unload();
-
-    for (auto& material : _ospMaterials)
-        ospRelease(material);
-    _ospMaterials.clear();
-
-    for (auto& texture : _ospTextures)
-        ospRelease(texture.second);
-    _ospTextures.clear();
-
     _serializedSpheresData.clear();
     _serializedCylindersData.clear();
     _serializedConesData.clear();
@@ -134,33 +126,32 @@ void OSPRayScene::unload()
     _timestampCylindersIndices.clear();
     _timestampConesIndices.clear();
 
-    if (_ospSimulationData)
-        ospRelease(_ospSimulationData);
-
-    if (_ospVolumeData)
-        ospRelease(_ospVolumeData);
-
-    for (auto& geom : _ospExtendedSpheres)
-        ospRelease(geom.second);
     _ospExtendedSpheres.clear();
-    for (auto& geom : _ospExtendedSpheresData)
-        ospRelease(geom.second);
     _ospExtendedSpheresData.clear();
-    for (auto& geom : _ospExtendedCylinders)
-        ospRelease(geom.second);
     _ospExtendedCylinders.clear();
-    for (auto& geom : _ospExtendedCylindersData)
-        ospRelease(geom.second);
     _ospExtendedCylindersData.clear();
-    for (auto& geom : _ospExtendedCones)
-        ospRelease(geom.second);
     _ospExtendedCones.clear();
-    for (auto& geom : _ospExtendedConesData)
-        ospRelease(geom.second);
     _ospExtendedConesData.clear();
-    for (auto& geom : _ospMeshes)
-        ospRelease(geom.second);
     _ospMeshes.clear();
+
+    // Materials and textures
+    _ospTextures.clear();
+    _ospMaterials.clear();
+
+    // Transfer function
+    if (_ospTransferFunctionDiffuseData)
+        ospRelease(_ospTransferFunctionDiffuseData);
+    _ospTransferFunctionDiffuseData = nullptr;
+
+    if (_ospTransferFunctionEmissionData)
+        ospRelease(_ospTransferFunctionEmissionData);
+    _ospTransferFunctionEmissionData = nullptr;
+
+    // Lights
+    _ospLightsData.clear();
+    _ospLights.clear();
+
+    Scene::unload();
 }
 
 void OSPRayScene::commit()
@@ -413,8 +404,10 @@ void OSPRayScene::loadFromCacheFile()
     file.read((char*)&nbMaterials, sizeof(size_t));
     BRAYNS_INFO << nbMaterials << " materials" << std::endl;
 
+    // Clean existing materials
+    _materials.clear();
+
     // Read materials
-    resetMaterials();
     for (size_t i = 0; i < nbMaterials; ++i)
     {
         size_t id;
@@ -628,10 +621,8 @@ uint64_t OSPRayScene::_serializeSpheres(const size_t materialId)
                 ospSet1i(_ospExtendedSpheres[materialId], "offset_value_y",
                          6 * sizeof(float));
 
-                if (_ospMaterials[materialId])
-                    ospSetMaterial(_ospExtendedSpheres[materialId],
-                                   _ospMaterials[materialId]);
-
+                ospSetMaterial(_ospExtendedSpheres[materialId],
+                               _ospMaterials[materialId]);
                 ospCommit(_ospExtendedSpheres[materialId]);
 
                 if (geometryParameters.getCircuitUseSimulationModel())
@@ -703,11 +694,10 @@ uint64_t OSPRayScene::_serializeCylinders(const size_t materialId)
                 ospSet1i(_ospExtendedCylinders[materialId], "offset_value_y",
                          9 * sizeof(float));
 
-                if (_ospMaterials[materialId])
-                    ospSetMaterial(_ospExtendedCylinders[materialId],
-                                   _ospMaterials[materialId]);
-
+                ospSetMaterial(_ospExtendedCylinders[materialId],
+                               _ospMaterials[materialId]);
                 ospCommit(_ospExtendedCylinders[materialId]);
+
                 if (geometryParameters.getCircuitUseSimulationModel())
                     ospAddGeometry(_simulationModel,
                                    _ospExtendedCylinders[materialId]);
@@ -772,11 +762,10 @@ uint64_t OSPRayScene::_serializeCones(const size_t materialId)
                 ospSet1i(_ospExtendedCones[materialId], "offset_value_y",
                          10 * sizeof(float));
 
-                if (_ospMaterials[materialId])
-                    ospSetMaterial(_ospExtendedCones[materialId],
-                                   _ospMaterials[materialId]);
-
+                ospSetMaterial(_ospExtendedCones[materialId],
+                               _ospMaterials[materialId]);
                 ospCommit(_ospExtendedCones[materialId]);
+
                 if (geometryParameters.getCircuitUseSimulationModel())
                     ospAddGeometry(_simulationModel,
                                    _ospExtendedCones[materialId]);
@@ -847,9 +836,6 @@ uint64_t OSPRayScene::serializeGeometry()
 void OSPRayScene::buildGeometry()
 {
     BRAYNS_INFO << "Building OSPRay geometry" << std::endl;
-
-    resetMaterials();
-
     const auto& geomParams = _parametersManager.getGeometryParameters();
 
     if (geomParams.getGenerateMultipleModels())
@@ -978,9 +964,7 @@ uint64_t OSPRayScene::_buildMeshOSPGeometry(const size_t materialId)
         ospSet1i(_ospMeshes[materialId], "alpha_type", 0);
         ospSet1i(_ospMeshes[materialId], "alpha_component", 4);
 
-        if (_ospMaterials[materialId])
-            ospSetMaterial(_ospMeshes[materialId], _ospMaterials[materialId]);
-
+        ospSetMaterial(_ospMeshes[materialId], _ospMaterials[materialId]);
         ospCommit(_ospMeshes[materialId]);
 
         // Meshes are by default added to all timestamps
@@ -992,64 +976,61 @@ uint64_t OSPRayScene::_buildMeshOSPGeometry(const size_t materialId)
 
 void OSPRayScene::commitLights()
 {
+    OSPRayRenderer* baseRenderer =
+        dynamic_cast<OSPRayRenderer*>(_renderers[0].get());
+
+    _ospLights.clear();
+    for (auto light : _lights)
+    {
+        DirectionalLight* directionalLight =
+            dynamic_cast<DirectionalLight*>(light.get());
+        if (directionalLight)
+        {
+            OSPLight ospLight =
+                ospNewLight(baseRenderer->impl(), "DirectionalLight");
+            const Vector3f color = directionalLight->getColor();
+            ospSet3f(ospLight, "color", color.x(), color.y(), color.z());
+            const Vector3f direction = directionalLight->getDirection();
+            ospSet3f(ospLight, "direction", direction.x(), direction.y(),
+                     direction.z());
+            ospSet1f(ospLight, "intensity", directionalLight->getIntensity());
+            ospCommit(ospLight);
+            _ospLights.push_back(ospLight);
+        }
+        else
+        {
+            PointLight* pointLight = dynamic_cast<PointLight*>(light.get());
+            if (pointLight)
+            {
+                OSPLight ospLight =
+                    ospNewLight(baseRenderer->impl(), "PointLight");
+                const Vector3f position = pointLight->getPosition();
+                ospSet3f(ospLight, "position", position.x(), position.y(),
+                         position.z());
+                const Vector3f color = pointLight->getColor();
+                ospSet3f(ospLight, "color", color.x(), color.y(), color.z());
+                ospSet1f(ospLight, "intensity", pointLight->getIntensity());
+                ospSet1f(ospLight, "radius", pointLight->getCutoffDistance());
+                ospCommit(ospLight);
+                _ospLights.push_back(ospLight);
+            }
+        }
+    }
+
+    size_t count = 0;
     for (auto renderer : _renderers)
     {
         OSPRayRenderer* osprayRenderer =
             dynamic_cast<OSPRayRenderer*>(renderer.get());
-
-        size_t lightCount = 0;
-        for (auto light : _lights)
-        {
-            DirectionalLight* directionalLight =
-                dynamic_cast<DirectionalLight*>(light.get());
-            if (directionalLight != 0)
-            {
-                if (_ospLights.size() <= lightCount)
-                    _ospLights.push_back(ospNewLight(osprayRenderer->impl(),
-                                                     "DirectionalLight"));
-
-                const Vector3f color = directionalLight->getColor();
-                ospSet3f(_ospLights[lightCount], "color", color.x(), color.y(),
-                         color.z());
-                const Vector3f direction = directionalLight->getDirection();
-                ospSet3f(_ospLights[lightCount], "direction", direction.x(),
-                         direction.y(), direction.z());
-                ospSet1f(_ospLights[lightCount], "intensity",
-                         directionalLight->getIntensity());
-                ospCommit(_ospLights[lightCount]);
-            }
-            else
-            {
-                PointLight* pointLight = dynamic_cast<PointLight*>(light.get());
-                if (pointLight != 0)
-                {
-                    if (_ospLights.size() <= lightCount)
-                        _ospLights.push_back(
-                            ospNewLight(osprayRenderer->impl(), "PointLight"));
-
-                    const Vector3f position = pointLight->getPosition();
-                    ospSet3f(_ospLights[lightCount], "position", position.x(),
-                             position.y(), position.z());
-                    const Vector3f color = pointLight->getColor();
-                    ospSet3f(_ospLights[lightCount], "color", color.x(),
-                             color.y(), color.z());
-                    ospSet1f(_ospLights[lightCount], "intensity",
-                             pointLight->getIntensity());
-                    ospSet1f(_ospLights[lightCount], "radius",
-                             pointLight->getCutoffDistance());
-                    ospCommit(_ospLights[lightCount]);
-                }
-            }
-            ++lightCount;
-        }
-
-        if (_ospLightData == 0)
-        {
-            _ospLightData = ospNewData(_ospLights.size(), OSP_OBJECT,
-                                       &_ospLights[0], _getOSPDataFlags());
-            ospCommit(_ospLightData);
-        }
-        ospSetData(osprayRenderer->impl(), "lights", _ospLightData);
+        //        if (_ospLightsData)
+        //            ospRelease(_ospLightsData);
+        _ospLightsData.push_back(ospNewData(_ospLights.size(), OSP_OBJECT,
+                                            _ospLights.data(),
+                                            _getOSPDataFlags()));
+        ospCommit(_ospLightsData[count]);
+        ospSetData(osprayRenderer->impl(), "lights", _ospLightsData[count]);
+        ospCommit(osprayRenderer->impl());
+        ++count;
     }
 }
 
@@ -1064,41 +1045,37 @@ void OSPRayScene::commitMaterials(const bool updateOnly)
         if (_materials.find(i) == _materials.end())
             _materials[i] = Material();
 
-    BRAYNS_INFO << "Committing " << maxId + 1 << " OSPRay materials"
-                << std::endl;
+    OSPRayRenderer* baseRenderer =
+        dynamic_cast<OSPRayRenderer*>(_renderers[0].get());
 
-    for (auto& material : _materials)
+    for (size_t i = 0; i < _materials.size(); ++i)
     {
-        if (_ospMaterials.size() <= material.first)
-            for (const auto& renderer : _renderers)
-            {
-                OSPRayRenderer* osprayRenderer =
-                    dynamic_cast<OSPRayRenderer*>(renderer.get());
-                _ospMaterials.push_back(ospNewMaterial(osprayRenderer->impl(),
-                                                       "ExtendedOBJMaterial"));
-            }
+        if (_ospMaterials.size() <= i)
+        {
+            OSPMaterial ospMaterial =
+                ospNewMaterial(baseRenderer->impl(), "ExtendedOBJMaterial");
+            _ospMaterials.push_back(ospMaterial);
+        }
+        auto& ospMaterial = _ospMaterials[i];
+        auto& material = _materials[i];
 
-        auto& ospMaterial = _ospMaterials[material.first];
-
-        Vector3f value3f = material.second.getColor();
+        Vector3f value3f = material.getColor();
         ospSet3f(ospMaterial, "kd", value3f.x(), value3f.y(), value3f.z());
-        value3f = material.second.getSpecularColor();
+        value3f = material.getSpecularColor();
         ospSet3f(ospMaterial, "ks", value3f.x(), value3f.y(), value3f.z());
-        ospSet1f(ospMaterial, "ns", material.second.getSpecularExponent());
-        ospSet1f(ospMaterial, "d", material.second.getOpacity());
-        ospSet1f(ospMaterial, "refraction",
-                 material.second.getRefractionIndex());
-        ospSet1f(ospMaterial, "reflection",
-                 material.second.getReflectionIndex());
-        ospSet1f(ospMaterial, "a", material.second.getEmission());
-        ospSet1f(ospMaterial, "g", material.second.getGlossiness());
+        ospSet1f(ospMaterial, "ns", material.getSpecularExponent());
+        ospSet1f(ospMaterial, "d", material.getOpacity());
+        ospSet1f(ospMaterial, "refraction", material.getRefractionIndex());
+        ospSet1f(ospMaterial, "reflection", material.getReflectionIndex());
+        ospSet1f(ospMaterial, "a", material.getEmission());
+        ospSet1f(ospMaterial, "g", material.getGlossiness());
         for (const auto& textureType : textureTypeMaterialAttribute)
             ospSetObject(ospMaterial, textureType.attribute.c_str(), nullptr);
 
         if (!updateOnly)
         {
             // Textures
-            for (auto texture : material.second.getTextures())
+            for (auto texture : material.getTextures())
             {
                 TextureLoader textureLoader;
                 if (texture.second != TEXTURE_NAME_SIMULATION)
@@ -1117,29 +1094,32 @@ void OSPRayScene::commitMaterials(const bool updateOnly)
                 BRAYNS_DEBUG
                     << "Texture assigned to "
                     << textureTypeMaterialAttribute[texture.first].attribute
-                    << " of material " << material.first << ": "
-                    << texture.second << std::endl;
+                    << " of material " << i << ": " << texture.second
+                    << std::endl;
             }
         }
         ospCommit(ospMaterial);
     }
 
-    _ospMaterialData = ospNewData(_ospMaterials.size(), OSP_OBJECT,
-                                  &_ospMaterials[0], _getOSPDataFlags());
-    ospCommit(_ospMaterialData);
+    _ospMaterialsData = ospNewData(_ospMaterials.size(), OSP_OBJECT,
+                                   _ospMaterials.data(), _getOSPDataFlags());
+    ospCommit(_ospMaterialsData);
 
     for (const auto& renderer : _renderers)
     {
         OSPRayRenderer* osprayRenderer =
             dynamic_cast<OSPRayRenderer*>(renderer.get());
-        ospSetData(osprayRenderer->impl(), "materials", _ospMaterialData);
+        ospSetData(osprayRenderer->impl(), "materials", _ospMaterialsData);
         ospCommit(osprayRenderer->impl());
     }
+    BRAYNS_INFO << "Committed " << _materials.size() << " OSPRay materials"
+                << std::endl;
     _modified = true;
 }
 
 void OSPRayScene::commitTransferFunctionData()
 {
+    BRAYNS_INFO << "commitTransferFunctionData" << std::endl;
     if (_ospTransferFunctionDiffuseData)
         ospRelease(_ospTransferFunctionDiffuseData);
 
@@ -1163,6 +1143,9 @@ void OSPRayScene::commitTransferFunctionData()
     {
         OSPRayRenderer* osprayRenderer =
             dynamic_cast<OSPRayRenderer*>(renderer.get());
+
+        if (osprayRenderer->getName() != "simulationrenderer")
+            continue;
 
         // Transfer function Diffuse colors
         ospSetData(osprayRenderer->impl(), "transferFunctionDiffuseData",
@@ -1205,6 +1188,9 @@ void OSPRayScene::commitVolumeData()
             OSPRayRenderer* osprayRenderer =
                 dynamic_cast<OSPRayRenderer*>(renderer.get());
 
+            if (osprayRenderer->getName() != "simulationrenderer")
+                continue;
+
             const size_t size = volumeHandler->getSize();
 
             _ospVolumeData =
@@ -1239,9 +1225,7 @@ void OSPRayScene::commitVolumeData()
 void OSPRayScene::commitSimulationData()
 {
     if (!_simulationHandler)
-    {
         return;
-    }
 
     const auto animationFrame =
         _parametersManager.getSceneParameters().getAnimationFrame();
@@ -1264,6 +1248,9 @@ void OSPRayScene::commitSimulationData()
     {
         OSPRayRenderer* osprayRenderer =
             dynamic_cast<OSPRayRenderer*>(renderer.get());
+
+        if (osprayRenderer->getName() != "simulationrenderer")
+            continue;
 
         ospSetData(osprayRenderer->impl(), "simulationData",
                    _ospSimulationData);

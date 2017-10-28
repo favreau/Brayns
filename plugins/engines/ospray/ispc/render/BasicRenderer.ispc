@@ -50,7 +50,7 @@ inline vec3f BasicRenderer_shadeRay(const uniform BasicRenderer* uniform self,
                                          self->abstract.numMaterials,
                                          self->abstract.materials));
         sample.alpha = 0.f;
-        return self->abstract.bgColor;
+        return color;
     }
 
     DifferentialGeometry dg;

@@ -113,12 +113,13 @@ inline bool indirectShading(const uniform AbstractRenderer* uniform self,
                     // Light intensity
                     vec3f Ka = make_vec3f(mat->a);
                     indirectShadingPower = mat->a;
+#ifdef ADVANCED_TEXTURING
                     if (valid(mat->map_a))
                     {
                         Ka = get3f(mat->map_a, geometry.st);
                         indirectShadingPower = reduce_max(Ka);
                     }
-
+#endif
                     // Returned color is the one material with weigth according
                     // intensity and distance to intersection
                     indirectShadingColor = localDiffuseColor * Ka;
@@ -211,6 +212,7 @@ inline float shadedLightIntensity(const uniform AbstractRenderer* uniform self,
                 foreach_unique(mat in objMaterial)
                 {
                     materialOpacity = mat->d;
+#ifdef ADVANCED_TEXTURING
                     if (valid(mat->map_d))
                     {
                         const vec4f d_map = get4f(mat->map_d, dg.st);
@@ -222,6 +224,7 @@ inline float shadedLightIntensity(const uniform AbstractRenderer* uniform self,
                             get4f(mat->map_Kd, dg.st);
                         materialOpacity = 1.f - localDiffuseColor_map.w;
                     }
+#endif
                 }
             }
 

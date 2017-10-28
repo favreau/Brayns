@@ -194,6 +194,7 @@ public:
                         simulationHandler->getCompartmentReport();
                     // Attach simulation handler
                     scene.setSimulationHandler(simulationHandler);
+                    // Only keep GIDs that have simulation data
                     allGids = compartmentReport->getGIDs();
                 }
                 catch (const std::exception& e)

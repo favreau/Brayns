@@ -323,6 +323,9 @@ void MeshLoader::_createMaterials(Scene& scene, const aiScene* aiScene,
         value1f = 0.f;
         material->Get(AI_MATKEY_REFRACTI, value1f);
         mat.setRefractionIndex(fabs(value1f - 1.f) < 0.01f ? 1.0f : value1f);
+
+        // Mesh materials are locked by default
+        mat.lock();
     }
 }
 

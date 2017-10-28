@@ -25,7 +25,7 @@ using namespace optix;
 // Global variables
 rtDeclareVariable(float, timestamp, , );
 
-#define CYLINDER_SIZE 9
+#define CYLINDER_SIZE 10
 
 rtBuffer<float> cylinders;
 

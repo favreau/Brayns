@@ -35,7 +35,7 @@
 
 using namespace optix;
 
-#define SPHERE_SIZE 6
+#define SPHERE_SIZE 7
 
 rtBuffer<float> spheres;
 

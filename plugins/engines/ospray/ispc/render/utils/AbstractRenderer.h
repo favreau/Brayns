@@ -43,6 +43,7 @@ class AbstractRenderer : public ospray::Renderer
 {
 public:
     AbstractRenderer();
+    virtual ~AbstractRenderer();
 
     virtual void commit();
 

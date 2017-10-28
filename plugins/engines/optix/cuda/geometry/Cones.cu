@@ -29,7 +29,7 @@ using namespace optix;
 // Global variables
 rtDeclareVariable(float, timestamp, , );
 
-#define CONES_SIZE 10
+#define CONES_SIZE 11
 
 rtBuffer<float> cones;
 

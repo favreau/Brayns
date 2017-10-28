@@ -38,20 +38,39 @@ AbstractRenderer::AbstractRenderer()
 {
 }
 
+AbstractRenderer::~AbstractRenderer()
+{
+}
+
 void AbstractRenderer::commit()
 {
     Renderer::commit();
 
+    // Lights
     _lightData = (ospray::Data*)getParamData("lights");
     _lightArray.clear();
-
     if (_lightData)
-        for (size_t i = 0; i < _lightData->size(); ++i)
-            _lightArray.push_back(
-                ((ospray::Light**)_lightData->data)[i]->getIE());
-
+        for (uint32_t i = 0; i < _lightData->size(); ++i)
+        {
+            const ospray::Light* const light =
+                ((ospray::Light**)_lightData->data)[i];
+            _lightArray.push_back(light->getIE());
+        }
     _lightPtr = _lightArray.empty() ? nullptr : &_lightArray[0];
 
+    // Materials
+    _materialData = (ospray::Data*)getParamData("materials");
+    _materialArray.clear();
+    if (_materialData)
+        for (uint32_t i = 0; i < _materialData->size(); ++i)
+        {
+            const ospray::Material* const material =
+                ((ospray::Material**)_materialData->data)[i];
+            _materialArray.push_back(material->getIE());
+        }
+    _materialPtr = _materialArray.empty() ? nullptr : &_materialArray[0];
+
+    // Attributes
     _bgColor = getParam3f("bgColor", ospray::vec3f(1.f));
     _shadows = getParam1f("shadows", 0.f);
     _softShadows = getParam1f("softShadows", 0.f);
@@ -61,13 +80,5 @@ void AbstractRenderer::commit()
     _timestamp = getParam1f("timestamp", 0.f);
     _spp = getParam1i("spp", 1);
     _electronShadingEnabled = bool(getParam1i("electronShading", 0));
-
-    _materialData = (ospray::Data*)getParamData("materials");
-    _materialArray.clear();
-    if (_materialData)
-        for (size_t i = 0; i < _materialData->size(); ++i)
-            _materialArray.push_back(
-                ((ospray::Material**)_materialData->data)[i]->getIE());
-    _materialPtr = _materialArray.empty() ? nullptr : &_materialArray[0];
 }
 }

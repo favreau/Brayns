@@ -240,6 +240,7 @@ private:
         loadingProgress.setMessage("Loading data ...");
         _meshLoader.clear();
         Scene& scene = _engine->getScene();
+        scene.resetMaterials();
         _loadData(loadingProgress);
 
         const bool defaultScene = scene.empty() && !scene.getVolumeHandler();
@@ -254,10 +255,10 @@ private:
         const auto& geomParams = _parametersManager->getGeometryParameters();
         if (geomParams.getLoadCacheFile().empty())
         {
-            loadingProgress.setMessage("Building geometry ...");
-            scene.buildGeometry();
+            loadingProgress.setMessage("Building materials and geometry ...");
             scene.setMaterials(defaultScene ? MaterialType::cornellbox
                                             : MaterialType::gradient);
+            scene.buildGeometry();
 
             if (!geomParams.getSaveCacheFile().empty())
                 scene.saveToCacheFile();
@@ -843,8 +844,8 @@ private:
             '4', "Set pastel materials",
             std::bind(&Brayns::Impl::_pastelMaterials, this));
         _keyboardHandler->registerKeyboardShortcut(
-            '5', "Set random materials",
-            std::bind(&Brayns::Impl::_randomMaterials, this));
+            '5', "Scientific visualization renderer",
+            std::bind(&Brayns::Impl::_scivisRenderer, this));
         _keyboardHandler->registerKeyboardShortcut(
             '6', "Default renderer",
             std::bind(&Brayns::Impl::_defaultRenderer, this));
@@ -975,6 +976,13 @@ private:
         RenderingParameters& renderParams =
             _parametersManager->getRenderingParameters();
         renderParams.setRenderer(RendererType::basic);
+    }
+
+    void _scivisRenderer()
+    {
+        RenderingParameters& renderParams =
+            _parametersManager->getRenderingParameters();
+        renderParams.setRenderer(RendererType::scientificVisualization);
     }
 
     void _particleRenderer()

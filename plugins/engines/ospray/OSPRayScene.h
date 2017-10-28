@@ -96,12 +96,12 @@ private:
 
     std::map<uint32_t, OSPModel> _models;
     OSPModel _simulationModel;
-    std::vector<OSPMaterial> _ospMaterials;
     std::map<std::string, OSPTexture2D> _ospTextures;
 
     std::vector<OSPLight> _ospLights;
-    OSPData _ospLightData;
-    OSPData _ospMaterialData;
+    std::vector<OSPData> _ospLightsData;
+    std::vector<OSPMaterial> _ospMaterials;
+    OSPData _ospMaterialsData;
     OSPData _ospVolumeData;
     OSPData _ospSimulationData;
     OSPData _ospTransferFunctionDiffuseData;

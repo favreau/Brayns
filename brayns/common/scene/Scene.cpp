@@ -90,10 +90,8 @@ void Scene::_markGeometryDirty()
 
 void Scene::resetMaterials()
 {
-    // Clean existing materials
-    _materials.clear();
-
     // Initialize system materials
+    _materials.clear();
     for (size_t i = 0; i < NB_SYSTEM_MATERIALS; ++i)
     {
         auto& material = _materials[i];
@@ -109,9 +107,15 @@ void Scene::resetMaterials()
             material.setColor(Vector3f(1.f, 1.f, 1.f));
             material.setSpecularColor(Vector3f(0.f, 0.f, 0.f));
             break;
+        default:
+            material.setColor(Vector3f(0.f, 1.f, 0.f));
+            break;
         }
     }
+}
 
+void Scene::setMaterials(const MaterialType materialType)
+{
     // Create materials according to registered geometry
     for (const auto& spheres : _spheres)
         if (!spheres.second.empty() &&
@@ -129,16 +133,14 @@ void Scene::resetMaterials()
         if (!meshes.second.getIndices().empty() &&
             _materials.find(meshes.first) == _materials.end())
             _materials[meshes.first] = Material();
-    commitMaterials();
-}
 
-void Scene::setMaterials(const MaterialType materialType)
-{
     const Vector3f WHITE = {1.f, 1.f, 1.f};
     const auto nbMaterials = _materials.size();
     for (size_t i = 0; i < nbMaterials - NB_SYSTEM_MATERIALS; ++i)
     {
         auto& material = _materials[i + NB_SYSTEM_MATERIALS];
+        if (material.locked())
+            continue;
         switch (materialType)
         {
         case MaterialType::none:

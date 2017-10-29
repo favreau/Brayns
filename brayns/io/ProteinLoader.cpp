@@ -400,20 +400,17 @@ bool ProteinLoader::importPDBFile(const std::string& filename,
                         found = true;
                         switch (colorScheme)
                         {
-                        case ColorScheme::protein_chains:
-                            atom.materialId = NB_SYSTEM_MATERIALS +
-                                              abs(atom.chainId) %
-                                                  (scene.getMaterials().size() -
-                                                   NB_SYSTEM_MATERIALS);
+                        case ColorScheme::protein_by_chain:
+                            atom.materialId = abs(atom.chainId);
                             break;
-                        case ColorScheme::protein_residues:
-                            atom.materialId = NB_SYSTEM_MATERIALS +
-                                              abs(atom.residue) %
-                                                  (scene.getMaterials().size() -
-                                                   NB_SYSTEM_MATERIALS);
+                        case ColorScheme::protein_by_residue:
+                            atom.materialId = abs(atom.residue);
+                            break;
+                        case ColorScheme::protein_by_atom:
+                            atom.materialId = static_cast<int>(i);
                             break;
                         default:
-                            atom.materialId = static_cast<int>(i);
+                            atom.materialId = 0;
                             break;
                         }
                     }
@@ -440,19 +437,24 @@ bool ProteinLoader::importPDBFile(const std::string& filename,
                     0.0001f * atom.radius *          // convert from angstrom
                         _geometryParameters.getRadiusMultiplier()));
 
+                size_t materialId;
                 switch (colorScheme)
                 {
                 case ColorScheme::protein_by_id:
                 {
-                    const auto material =
-                        proteinIndex % scene.getMaterials().size();
-                    scene.getSpheres()[material].push_back(sphere);
+                    materialId = proteinIndex;
+                    scene.getSpheres()[materialId].push_back(sphere);
                 }
                 break;
                 default:
-                    scene.getSpheres()[atom.materialId].push_back(sphere);
+                    materialId = atom.materialId + NB_SYSTEM_MATERIALS;
+                    scene.getSpheres()[materialId].push_back(sphere);
                 }
 
+                auto& material = scene.getMaterials()[materialId];
+                material.setColor(
+                    getMaterialKd(materialId - NB_SYSTEM_MATERIALS));
+                material.lock();
                 scene.getWorldBounds().merge(sphere->getCenter());
             }
         }

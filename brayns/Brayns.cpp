@@ -571,12 +571,6 @@ private:
         ProteinLoader proteinLoader(geometryParameters);
         if (!proteinLoader.importPDBFile(pdbFile, Vector3f(0, 0, 0), 0, scene))
             BRAYNS_ERROR << "Failed to import " << pdbFile << std::endl;
-
-        for (size_t i = 0; i < scene.getMaterials().size(); ++i)
-        {
-            auto& material = scene.getMaterials()[i];
-            material.setColor(proteinLoader.getMaterialKd(i));
-        }
     }
 
     /**

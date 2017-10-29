@@ -94,9 +94,9 @@ const std::string COLOR_SCHEMES[12] = {"none",
                                        "neuron-by-etype",
                                        "neuron-by-target",
                                        "protein-by-id",
-                                       "protein-atoms",
-                                       "protein-chains",
-                                       "protein-residues"};
+                                       "protein-by-atom",
+                                       "protein-by-chain",
+                                       "protein-by-residue"};
 
 const std::string SCENE_ENVIRONMENTS[4] = {"none", "ground", "wall",
                                            "bounding-box"};
@@ -161,11 +161,11 @@ GeometryParameters::GeometryParameters()
         "Radius multiplier for spheres, cones and cylinders [float]")(
         PARAM_RADIUS_CORRECTION.c_str(), po::value<float>(),
         "Forces radius of spheres and cylinders to the specified value "
-        "[float]")(
-        PARAM_COLOR_SCHEME.c_str(), po::value<std::string>(),
-        "Color scheme to be applied to the geometry [none|"
-        "neuron_by_id|neuron_by_type|neuron_by_segment_type|"
-        "protein_atoms|protein_chains|protein_residues|protein_backbones]")(
+        "[float]")(PARAM_COLOR_SCHEME.c_str(), po::value<std::string>(),
+                   "Color scheme to be applied to the geometry [none|"
+                   "neuron_by_id|neuron_by_segment_type|neuron_by_layer|neuron_"
+                   "by_mtype|neuron_by_etype|neuron_by_target|"
+                   "protein_by_atom|protein_by_chain|protein_by_residue]")(
         PARAM_SCENE_ENVIRONMENT.c_str(), po::value<std::string>(),
         "Scene environment [none|ground|wall|bounding-box]")(
         PARAM_GEOMETRY_QUALITY.c_str(), po::value<std::string>(),

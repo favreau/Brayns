@@ -109,54 +109,18 @@ OptiXScene::OptiXScene(Renderers renderer, ParametersManager& parametersManager,
 void OptiXScene::reset()
 {
     // need to free optix data here as in dtor context is already gone
-    if (_lightBuffer)
-        _lightBuffer->destroy();
-    _lightBuffer = nullptr;
-
-    if (_phong_ch)
-        _phong_ch->destroy();
-    _phong_ch = nullptr;
-
-    if (_phong_ch_textured)
-        _phong_ch_textured->destroy();
-    _phong_ch_textured = nullptr;
-
-    if (_phong_ah)
-        _phong_ah->destroy();
-    _phong_ah = nullptr;
-
-    if (_spheresBoundsProgram)
-        _spheresBoundsProgram->destroy();
-    _spheresBoundsProgram = nullptr;
-
-    if (_spheresIntersectProgram)
-        _spheresIntersectProgram->destroy();
-    _spheresIntersectProgram = nullptr;
-
-    if (_cylindersBoundsProgram)
-        _cylindersBoundsProgram->destroy();
-    _cylindersBoundsProgram = nullptr;
-
-    if (_cylindersIntersectProgram)
-        _cylindersIntersectProgram->destroy();
-    _cylindersIntersectProgram = nullptr;
-
-    if (_conesBoundsProgram)
-        _conesBoundsProgram->destroy();
-    _conesBoundsProgram = nullptr;
-
-    if (_conesIntersectProgram)
-        _conesIntersectProgram->destroy();
-    _conesIntersectProgram = nullptr;
-
-    if (_meshBoundsProgram)
-        _meshBoundsProgram->destroy();
-    _meshBoundsProgram = nullptr;
-
-    if (_meshIntersectProgram)
-        _meshIntersectProgram->destroy();
-    _meshIntersectProgram = nullptr;
-
+    RT_DESTROY(_lightBuffer);
+    RT_DESTROY(_phong_ch);
+    RT_DESTROY(_phong_ch_textured);
+    RT_DESTROY(_phong_ah);
+    RT_DESTROY(_spheresBoundsProgram);
+    RT_DESTROY(_spheresIntersectProgram);
+    RT_DESTROY(_cylindersBoundsProgram);
+    RT_DESTROY(_cylindersIntersectProgram);
+    RT_DESTROY(_conesBoundsProgram);
+    RT_DESTROY(_conesIntersectProgram);
+    RT_DESTROY(_meshBoundsProgram);
+    RT_DESTROY(_meshIntersectProgram);
     Scene::reset();
 }
 
@@ -166,22 +130,14 @@ void OptiXScene::unload()
     for (auto& i : _geometryInstances)
         i->destroy();
     _geometryInstances.clear();
-    if (_geometryGroup)
-        _geometryGroup->destroy();
-    _geometryGroup = nullptr;
+    RT_DESTROY(_geometryGroup);
 
     // Volume
-    if (_volumeBuffer)
-        _volumeBuffer->destroy();
-    _volumeBuffer = nullptr;
+    RT_DESTROY(_volumeBuffer);
 
     // Color map
-    if (_colorMapBuffer)
-        _colorMapBuffer->destroy();
-    _colorMapBuffer = nullptr;
-    if (_emissionIntensityMapBuffer)
-        _emissionIntensityMapBuffer->destroy();
-    _emissionIntensityMapBuffer = nullptr;
+    RT_DESTROY(_colorMapBuffer);
+    RT_DESTROY(_emissionIntensityMapBuffer);
 
     // Spheres
     for (auto& i : _spheresBuffers)
@@ -208,24 +164,12 @@ void OptiXScene::unload()
     _optixCones.clear();
 
     // Meshes
-    if (_mesh)
-        _mesh->destroy();
-    _mesh = nullptr;
-    if (_verticesBuffer)
-        _verticesBuffer->destroy();
-    _verticesBuffer = nullptr;
-    if (_indicesBuffer)
-        _indicesBuffer->destroy();
-    _indicesBuffer = nullptr;
-    if (_normalsBuffer)
-        _normalsBuffer->destroy();
-    _normalsBuffer = nullptr;
-    if (_textureCoordsBuffer)
-        _textureCoordsBuffer->destroy();
-    _textureCoordsBuffer = nullptr;
-    if (_materialsBuffer)
-        _materialsBuffer->destroy();
-    _materialsBuffer = nullptr;
+    RT_DESTROY(_mesh);
+    RT_DESTROY(_verticesBuffer);
+    RT_DESTROY(_indicesBuffer);
+    RT_DESTROY(_normalsBuffer);
+    RT_DESTROY(_textureCoordsBuffer);
+    RT_DESTROY(_materialsBuffer);
 
     // Materials
     for (auto& material : _optixMaterials)

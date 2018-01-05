@@ -286,16 +286,26 @@ void BaseWindow::display()
             .empty())
     {
         GLenum type = GL_FLOAT;
-        GLvoid* buffer = 0;
+        GLvoid* buffer = nullptr;
         switch (_frameBufferMode)
         {
-        case FrameBufferMode::COLOR:
+        case FrameBufferMode::COLOR_I8:
             type = GL_UNSIGNED_BYTE;
             buffer = renderOutput.colorBuffer.data();
             break;
-        case FrameBufferMode::DEPTH:
+        case FrameBufferMode::COLOR_F32:
+        {
+            const size_t size = _windowSize.x() * _windowSize.y() * 4;
+            if (renderOutput.floatBuffer.size() != size)
+                break;
+            type = GL_FLOAT;
+            format = GL_BGRA;
+            buffer = renderOutput.floatBuffer.data();
+            break;
+        }
+        case FrameBufferMode::DEPTH_F32:
             format = GL_LUMINANCE;
-            buffer = renderOutput.depthBuffer.data();
+            buffer = renderOutput.floatBuffer.data();
             break;
         default:
             glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -303,10 +313,8 @@ void BaseWindow::display()
         }
 
         if (buffer)
-        {
             glDrawPixels(_windowSize.x(), _windowSize.y(), format, type,
                          buffer);
-        }
     }
     else
     {
@@ -320,7 +328,7 @@ void BaseWindow::display()
         ssProcData.colorType = GL_UNSIGNED_BYTE;
 
         ssProcData.depthFormat = GL_LUMINANCE;
-        ssProcData.depthBuffer = renderOutput.depthBuffer.data();
+        ssProcData.depthBuffer = renderOutput.floatBuffer.data();
         ssProcData.depthType = GL_FLOAT;
 
         _screenSpaceProcessor.draw(ssProcData);
@@ -335,7 +343,7 @@ void BaseWindow::display()
         glDisable(GL_COLOR_LOGIC_OP);
     }
 
-    float* buffer = renderOutput.depthBuffer.data();
+    float* buffer = renderOutput.floatBuffer.data();
     _gid = -1;
     if (buffer &&
         _brayns.getEngine().getActiveRenderer() == RendererType::particle)
@@ -490,9 +498,8 @@ void BaseWindow::_renderBitmapString(const float x, const float y,
 
 void BaseWindow::_toggleFrameBuffer()
 {
-    if (_frameBufferMode == FrameBufferMode::DEPTH)
-        _frameBufferMode = FrameBufferMode::COLOR;
-    else
-        _frameBufferMode = FrameBufferMode::DEPTH;
+    size_t mode = static_cast<size_t>(_frameBufferMode);
+    mode = (mode + 1) % 3;
+    _frameBufferMode = static_cast<FrameBufferMode>(mode);
 }
 }

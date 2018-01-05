@@ -68,7 +68,7 @@ void OptiXRenderer::render(FrameBufferPtr frameBuffer)
     const Vector2ui& size = frameBuffer->getSize();
     _context->launch(0, size.x(), size.y());
 
-    if (!frameBuffer->getAccumulation())
+    if (frameBuffer->getAccumulationType() == AccumulationType::none)
         return;
 
     // no way to determine yet if accumulation produces new images or not

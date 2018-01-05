@@ -19,6 +19,7 @@
  */
 
 #include "OptiXEngine.h"
+#include "OptiXTypes.h"
 
 #include <brayns/common/input/KeyboardHandler.h>
 
@@ -60,14 +61,14 @@ OptiXEngine::OptiXEngine(int, const char**,
     BRAYNS_INFO << "Initializing frame buffer" << std::endl;
     _frameSize = _parametersManager.getApplicationParameters().getWindowSize();
 
-    const bool accumulation =
-        _parametersManager.getRenderingParameters().getAccumulation();
+    const AccumulationType accumulationType =
+        _parametersManager.getRenderingParameters().getAccumulationType();
     const bool environmentMap =
         !parametersManager.getSceneParameters().getEnvironmentMap().empty();
 
     _frameBuffer.reset(new OptiXFrameBuffer(_frameSize,
                                             FrameBufferFormat::rgba_i8,
-                                            accumulation, _context));
+                                            accumulationType, _context));
     _camera.reset(new OptiXCamera(
         _parametersManager.getRenderingParameters().getCameraType(), _context,
         environmentMap));
@@ -81,11 +82,7 @@ OptiXEngine::~OptiXEngine()
         _scene->reset(); // needs to be done before context->destroy()
 
     _frameBuffer.reset();
-    if (_context)
-    {
-        _context->destroy();
-        _context = nullptr;
-    }
+    RT_DESTROY(_context);
 }
 
 void OptiXEngine::_initializeContext()

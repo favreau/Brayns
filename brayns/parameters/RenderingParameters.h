@@ -182,7 +182,9 @@ public:
     */
     bool getHeadLight() const { return _headLight; }
     /** If the rendering should be refined by accumulating multiple passes */
-    bool getAccumulation() const { return _accumulation; }
+    AccumulationType getAccumulationType() const { return _accumulationType; }
+    const std::string getAccumulationTypeAsString(const AccumulationType value);
+
     /**
      * @return the threshold where accumulation stops if the variance error
      * reaches this value.
@@ -209,7 +211,7 @@ protected:
     ShadingType _shading;
     bool _lightEmittingMaterials;
     int _spp;
-    bool _accumulation{true};
+    AccumulationType _accumulationType{AccumulationType::linear};
     float _shadows;
     float _softShadows;
     Vector3f _backgroundColor;

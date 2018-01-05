@@ -28,11 +28,11 @@ namespace brayns
 {
 OSPRayFrameBuffer::OSPRayFrameBuffer(const Vector2ui& frameSize,
                                      const FrameBufferFormat colorDepth,
-                                     const bool accumulation)
-    : FrameBuffer(frameSize, colorDepth, accumulation)
-    , _frameBuffer(0)
-    , _colorBuffer(0)
-    , _depthBuffer(0)
+                                     const AccumulationType accumulationType)
+    : FrameBuffer(frameSize, colorDepth, accumulationType)
+    , _frameBuffer(nullptr)
+    , _colorBuffer(nullptr)
+    , _floatBuffer(nullptr)
 {
     resize(frameSize);
 }
@@ -81,7 +81,7 @@ void OSPRayFrameBuffer::resize(const Vector2ui& frameSize)
     osp::vec2i size = {int(_frameSize.x()), int(_frameSize.y())};
 
     size_t attributes = OSP_FB_COLOR | OSP_FB_DEPTH;
-    if (_accumulation)
+    if (_accumulationType != AccumulationType::none)
         attributes |= OSP_FB_ACCUM | OSP_FB_VARIANCE;
 
     _frameBuffer = ospNewFrameBuffer(size, format, attributes);
@@ -110,7 +110,7 @@ void OSPRayFrameBuffer::setStreamingParams(const StreamParameters& params,
 void OSPRayFrameBuffer::clear()
 {
     size_t attributes = OSP_FB_COLOR | OSP_FB_DEPTH;
-    if (_accumulation)
+    if (_accumulationType != AccumulationType::none)
         attributes |= OSP_FB_ACCUM | OSP_FB_VARIANCE;
     ospFrameBufferClear(_frameBuffer, attributes);
 }
@@ -121,7 +121,7 @@ void OSPRayFrameBuffer::map()
         return;
 
     _colorBuffer = (uint8_t*)ospMapFrameBuffer(_frameBuffer, OSP_FB_COLOR);
-    _depthBuffer = (float*)ospMapFrameBuffer(_frameBuffer, OSP_FB_DEPTH);
+    _floatBuffer = (float*)ospMapFrameBuffer(_frameBuffer, OSP_FB_DEPTH);
 }
 
 void OSPRayFrameBuffer::unmap()
@@ -135,10 +135,10 @@ void OSPRayFrameBuffer::unmap()
         _colorBuffer = 0;
     }
 
-    if (_depthBuffer)
+    if (_floatBuffer)
     {
-        ospUnmapFrameBuffer(_depthBuffer, _frameBuffer);
-        _depthBuffer = 0;
+        ospUnmapFrameBuffer(_floatBuffer, _frameBuffer);
+        _floatBuffer = 0;
     }
 }
 }

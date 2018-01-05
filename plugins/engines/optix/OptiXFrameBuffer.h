@@ -36,7 +36,8 @@ class OptiXFrameBuffer : public brayns::FrameBuffer
 public:
     OptiXFrameBuffer(const Vector2ui& frameSize,
                      const FrameBufferFormat colorDepth,
-                     const bool accumulation, optix::Context& context);
+                     const AccumulationType accumulationType,
+                     optix::Context& context);
 
     ~OptiXFrameBuffer();
 
@@ -49,16 +50,36 @@ public:
     void unmap() final;
 
     uint8_t* getColorBuffer() final { return _colorBuffer; }
-    float* getDepthBuffer() final { return 0; }
+    float* getFloatBuffer() final { return _floatBuffer; }
+    size_t getFloatDepth() final { return 4; }
 private:
     void _cleanup();
-    optix::Buffer _frameBuffer;
+    optix::Buffer _outputBuffer;
     optix::Buffer _accumBuffer;
+    optix::Buffer _tonemappedBuffer;
+    optix::Buffer _denoisedBuffer;
     optix::Context& _context;
     uint8_t* _colorBuffer;
-    float* _depthBuffer;
+    float* _floatBuffer;
     uint16_t _accumulationFrameNumber;
-    void* _imageData;
+    void* _colorData;
+    void* _floatData;
+
+    // Post processing
+    void _initializePostProcessingStages();
+    optix::CommandList _commandListWithDenoiser{nullptr};
+    optix::CommandList _commandListWithoutDenoiser{nullptr};
+    optix::PostprocessingStage _tonemapStage{nullptr};
+    optix::PostprocessingStage _denoiserStage{nullptr};
+
+    size_t _numNonDenoisedFrames{4}; // number of frames that show the original
+                                     // image before switching on denoising
+    float _denoiseBlend{
+        0.f}; // Defines the amount of the original image that is
+              // blended with the denoised result ranging from
+              // 0.0 to 1.0
+
+    bool _postprocessingStagesInitialized{false};
 };
 }
 

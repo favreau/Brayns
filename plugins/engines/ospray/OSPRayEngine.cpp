@@ -105,15 +105,15 @@ OSPRayEngine::OSPRayEngine(int argc, const char** argv,
     _frameSize = getSupportedFrameSize(
         _parametersManager.getApplicationParameters().getWindowSize());
 
-    bool accumulation = rp.getAccumulation();
+    AccumulationType accumulationType = rp.getAccumulationType();
     if (!_parametersManager.getApplicationParameters().getFilters().empty())
-        accumulation = false;
+        accumulationType = AccumulationType::none;
 
     auto ospFrameBuffer =
         new OSPRayFrameBuffer(_frameSize,
                               haveDeflectPixelOp() ? FrameBufferFormat::none
                                                    : FrameBufferFormat::rgba_i8,
-                              accumulation);
+                              accumulationType);
     if (haveDeflectPixelOp())
         ospFrameBuffer->enableDeflectPixelOp();
 
@@ -180,9 +180,10 @@ void OSPRayEngine::render()
 void OSPRayEngine::preRender()
 {
     const auto& renderParams = _parametersManager.getRenderingParameters();
-    if (renderParams.getAccumulation() != _frameBuffer->getAccumulation())
+    if (renderParams.getAccumulationType() !=
+        _frameBuffer->getAccumulationType())
     {
-        _frameBuffer->setAccumulation(renderParams.getAccumulation());
+        _frameBuffer->setAccumulationType(renderParams.getAccumulationType());
         _frameBuffer->resize(_frameBuffer->getSize());
     }
 

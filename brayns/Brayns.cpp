@@ -171,12 +171,13 @@ struct Brayns::Impl
                     frameBuffer.getFrameBufferFormat();
             }
 
-            float* depthBuffer = frameBuffer.getDepthBuffer();
-            if (depthBuffer)
+            float* floatBuffer = frameBuffer.getFloatBuffer();
+            if (floatBuffer)
             {
-                const size_t size = frameSize.x() * frameSize.y();
-                renderOutput.depthBuffer.assign(depthBuffer,
-                                                depthBuffer + size);
+                const size_t size =
+                    frameSize.x() * frameSize.y() * frameBuffer.getFloatDepth();
+                renderOutput.floatBuffer.assign(floatBuffer,
+                                                floatBuffer + size);
             }
         }
 

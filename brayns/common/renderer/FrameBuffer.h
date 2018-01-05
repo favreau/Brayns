@@ -29,9 +29,9 @@ namespace brayns
 class FrameBuffer
 {
 public:
-    BRAYNS_API FrameBuffer(const Vector2ui& frameSize,
-                           FrameBufferFormat frameBufferFormat,
-                           bool accumulation = true);
+    BRAYNS_API FrameBuffer(
+        const Vector2ui& frameSize, FrameBufferFormat frameBufferFormat,
+        AccumulationType accumulation = AccumulationType::linear);
     virtual ~FrameBuffer() {}
     virtual void clear() = 0;
     virtual void map() = 0;
@@ -39,16 +39,17 @@ public:
 
     virtual uint8_t* getColorBuffer() = 0;
     virtual size_t getColorDepth();
-    virtual float* getDepthBuffer() = 0;
+    virtual float* getFloatBuffer() = 0;
+    virtual size_t getFloatDepth() = 0;
 
     virtual void resize(const Vector2ui& frameSize) = 0;
 
     Vector2ui getSize() const { return _frameSize; }
-    void setAccumulation(const bool accumulation)
+    void setAccumulationType(const AccumulationType accumulationType)
     {
-        _accumulation = accumulation;
+        _accumulationType = accumulationType;
     }
-    bool getAccumulation() const { return _accumulation; }
+    AccumulationType getAccumulationType() const { return _accumulationType; }
     FrameBufferFormat getFrameBufferFormat() const
     {
         return _frameBufferFormat;
@@ -57,7 +58,7 @@ public:
 protected:
     Vector2ui _frameSize;
     FrameBufferFormat _frameBufferFormat;
-    bool _accumulation;
+    AccumulationType _accumulationType;
 };
 }
 #endif // FRAMEBUFFER_H

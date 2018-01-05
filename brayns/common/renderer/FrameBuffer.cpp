@@ -24,10 +24,10 @@ namespace brayns
 {
 FrameBuffer::FrameBuffer(const Vector2ui& frameSize,
                          const FrameBufferFormat frameBufferFormat,
-                         const bool accumulation)
+                         const AccumulationType accumulationType)
     : _frameSize(frameSize)
     , _frameBufferFormat(frameBufferFormat)
-    , _accumulation(accumulation)
+    , _accumulationType(accumulationType)
 {
 }
 

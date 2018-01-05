@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(defaults)
     auto& fb = brayns.getEngine().getFrameBuffer();
     BOOST_CHECK(!fb.getColorBuffer());
     BOOST_CHECK_EQUAL(fb.getColorDepth(), 4);
-    BOOST_CHECK(!fb.getDepthBuffer());
+    BOOST_CHECK(!fb.getFloatBuffer());
     BOOST_CHECK_EQUAL(fb.getSize(), brayns::Vector2i(800, 600));
 
     auto& pm = brayns.getParametersManager();
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(render_two_frames_and_compare_they_are_same)
 
     auto& fb = brayns.getEngine().getFrameBuffer();
     const auto& size = fb.getSize();
-    fb.setAccumulation(false);
+    fb.setAccumulationType(brayns::AccumulationType::none);
     fb.resize(size);
 
     uint16_t depth = fb.getColorDepth();

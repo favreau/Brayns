@@ -23,6 +23,11 @@
 
 #include <brayns/common/types.h>
 
+#define RT_DESTROY(__object) \
+    if (__object)            \
+        __object->destroy(); \
+    __object = nullptr;
+
 // Error check/report helper for users of the C API
 #define RT_CHECK_ERROR(func)                             \
     do                                                   \

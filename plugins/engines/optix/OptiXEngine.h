@@ -61,7 +61,6 @@ public:
     uint64_t getTotalMemory() { return _totalMemory; }
 private:
     void _initializeContext();
-
     optix::Context _context;
     uint64_t _totalMemory;
     std::string _workingDirectory;

@@ -389,9 +389,18 @@ struct RenderInput
 struct RenderOutput
 {
     uint8_ts colorBuffer;
-    floats depthBuffer;
+    floats floatBuffer;
     FrameBufferFormat colorBufferFormat;
 };
-}
 
+/**
+ * Accumulation types
+ */
+enum class AccumulationType
+{
+    none,
+    linear,
+    ai_denoised,
+};
+}
 #endif // TYPES_H

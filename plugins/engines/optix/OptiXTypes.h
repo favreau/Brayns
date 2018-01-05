@@ -23,4 +23,13 @@
 
 #include <optixu/optixpp_namespace.h>
 
+namespace
+{
+const std::string CUDA_OUTPUT_BUFFER = "output_buffer";
+const std::string CUDA_ACCUMULATION_BUFFER = "accum_buffer";
+const std::string CUDA_DENOISED_BUFFER = "denoised_buffer";
+const std::string CUDA_TONEMAPPED_BUFFER = "tonemapped_buffer";
+const std::string CUDA_FRAME_NUMBER = "frame_number";
+}
+
 #endif // OPTIXTYPES_H

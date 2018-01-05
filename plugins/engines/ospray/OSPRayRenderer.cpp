@@ -50,7 +50,7 @@ void OSPRayRenderer::render(FrameBufferPtr frameBuffer)
         ospRenderFrame(osprayFrameBuffer->impl(), _renderer,
                        OSP_FB_COLOR | OSP_FB_DEPTH | OSP_FB_ACCUM);
 
-    if (!frameBuffer->getAccumulation())
+    if (frameBuffer->getAccumulationType() == AccumulationType::none)
         return;
 
     if (variance == std::numeric_limits<float>::infinity())

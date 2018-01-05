@@ -109,6 +109,11 @@ STATICJSON_DECLARE_ENUM(brayns::EngineType,
                         {"ospray", brayns::EngineType::ospray},
                         {"optix", brayns::EngineType::optix});
 
+STATICJSON_DECLARE_ENUM(brayns::AccumulationType,
+                        {"none", brayns::AccumulationType::none},
+                        {"linear", brayns::AccumulationType::linear},
+                        {"ai-denoised", brayns::AccumulationType::ai_denoised});
+
 // c-array to std.array: https://stackoverflow.com/questions/11205186
 #define Vector2uiArray(vec) \
     reinterpret_cast<std::array<unsigned, 2>*>(&(vec).array[0])
@@ -159,10 +164,10 @@ void init(brayns::FrameBuffer* f, ObjectHandler* h)
     diffuse = base64_encode(f->getColorBuffer(),
                             frameSize.x() * frameSize.y() * f->getColorDepth());
 
-    if (f->getDepthBuffer())
+    if (f->getFloatBuffer())
     {
         depth =
-            base64_encode(reinterpret_cast<const uint8_t*>(f->getDepthBuffer()),
+            base64_encode(reinterpret_cast<const uint8_t*>(f->getFloatBuffer()),
                           frameSize.x() * frameSize.y() * sizeof(float));
     }
     f->unmap();
@@ -357,7 +362,7 @@ void init(brayns::RenderingParameters* r, ObjectHandler* h)
                     Flags::Optional);
     h->add_property("ambient_occlusion_distance", &r->_ambientOcclusionDistance,
                     Flags::Optional);
-    h->add_property("accumulation", &r->_accumulation, Flags::Optional);
+    h->add_property("accumulation", &r->_accumulationType, Flags::Optional);
     h->add_property("radiance", &r->_lightEmittingMaterials, Flags::Optional);
     h->add_property("epsilon", &r->_epsilon, Flags::Optional);
     h->add_property("head_light", &r->_headLight, Flags::Optional);

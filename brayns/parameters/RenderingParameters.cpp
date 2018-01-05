@@ -30,7 +30,7 @@ const std::string PARAM_ENGINE = "engine";
 const std::string PARAM_MODULE = "module";
 const std::string PARAM_RENDERER = "renderer";
 const std::string PARAM_SPP = "samples-per-pixel";
-const std::string PARAM_ACCUMULATION = "accumulation";
+const std::string PARAM_ACCUMULATION_TYPE = "accumulation";
 const std::string PARAM_AMBIENT_OCCLUSION = "ambient-occlusion";
 const std::string PARAM_AMBIENT_OCCLUSION_DISTANCE =
     "ambient-occlusion-distance";
@@ -69,6 +69,7 @@ const std::string CAMERA_TYPES[5] = {"perspective", "stereo", "orthographic",
                                      "panoramic", "clipped"};
 
 const std::string SHADING_TYPES[3] = {"none", "diffuse", "electron"};
+const std::string ACCUMULATION_TYPES[3] = {"none", "linear", "ai-denoised"};
 }
 
 namespace brayns
@@ -101,8 +102,8 @@ RenderingParameters::RenderingParameters()
         "OSPRay active renderer [basic|simulation|proximity|particle]")(
         PARAM_SPP.c_str(), po::value<size_t>(),
         "Number of samples per pixel [int]")(
-        PARAM_ACCUMULATION.c_str(), po::value<bool>(),
-        "Enable/Disable accumulation [bool]")(
+        PARAM_ACCUMULATION_TYPE.c_str(), po::value<std::string>(),
+        "Accumulation type [none|linear|ai-denoised]")(
         PARAM_AMBIENT_OCCLUSION.c_str(), po::value<float>(),
         "Ambient occlusion distance [float]")(
         PARAM_AMBIENT_OCCLUSION_DISTANCE.c_str(), po::value<float>(),
@@ -167,8 +168,17 @@ bool RenderingParameters::_parse(const po::variables_map& vm)
     }
     if (vm.count(PARAM_SPP))
         _spp = vm[PARAM_SPP].as<size_t>();
-    if (vm.count(PARAM_ACCUMULATION))
-        _accumulation = vm[PARAM_ACCUMULATION].as<bool>();
+    if (vm.count(PARAM_ACCUMULATION_TYPE))
+    {
+        _accumulationType = AccumulationType::none;
+        const std::string& accumulationType =
+            vm[PARAM_ACCUMULATION_TYPE].as<std::string>();
+        for (size_t i = 0;
+             i < sizeof(ACCUMULATION_TYPES) / sizeof(ACCUMULATION_TYPES[0]);
+             ++i)
+            if (accumulationType == ACCUMULATION_TYPES[i])
+                _accumulationType = static_cast<AccumulationType>(i);
+    }
     if (vm.count(PARAM_AMBIENT_OCCLUSION))
         _ambientOcclusionStrength = vm[PARAM_AMBIENT_OCCLUSION].as<float>();
     if (vm.count(PARAM_AMBIENT_OCCLUSION_DISTANCE))
@@ -267,8 +277,8 @@ void RenderingParameters::print()
                 << std::endl;
     BRAYNS_INFO << "Camera type                       : "
                 << getCameraTypeAsString(_cameraType) << std::endl;
-    BRAYNS_INFO << "Accumulation                      : "
-                << (_accumulation ? "on" : "off") << std::endl;
+    BRAYNS_INFO << "Accumulation type                 : "
+                << getAccumulationTypeAsString(_accumulationType) << std::endl;
 }
 
 const std::string& RenderingParameters::getEngineAsString(
@@ -299,5 +309,11 @@ const std::string& RenderingParameters::getShadingAsString(
     const ShadingType value) const
 {
     return SHADING_TYPES[static_cast<size_t>(value)];
+}
+
+const std::string RenderingParameters::getAccumulationTypeAsString(
+    const AccumulationType value)
+{
+    return ACCUMULATION_TYPES[static_cast<size_t>(value)];
 }
 }

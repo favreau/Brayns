@@ -26,6 +26,7 @@
 #include <brayns/common/scene/Model.h>
 #include <brayns/common/utils/Utils.h>
 #include <brayns/common/volume/VolumeHandler.h>
+#include <brayns/io/TransferFunctionLoader.h>
 #include <brayns/io/simulation/CADiffusionSimulationHandler.h>
 #include <brayns/parameters/ParametersManager.h>
 
@@ -258,7 +259,7 @@ bool Scene::empty() const
     return true;
 }
 
-void Scene::load(Blob&& blob, const Matrix4f& transformation,
+void Scene::load(Blob&& blob, const Transformation& transformation,
                  const size_t materialID, Loader::UpdateCallback cb)
 {
     auto loader = _loaderRegistry.createLoader(blob.type);
@@ -268,7 +269,7 @@ void Scene::load(Blob&& blob, const Matrix4f& transformation,
     saveToCacheFile();
 }
 
-void Scene::load(const std::string& path, const Matrix4f& transformation,
+void Scene::load(const std::string& path, const Transformation& transformation,
                  const size_t materialID, Loader::UpdateCallback cb)
 {
     if (fs::is_directory(path))
@@ -316,7 +317,6 @@ void Scene::load(const std::string& path, const Matrix4f& transformation,
         loader->setProgressCallback(cb);
         loader->importFromFile(path, *this, 0, transformation, materialID);
     }
-    saveToCacheFile();
 }
 
 void Scene::saveToCacheFile()
@@ -829,7 +829,13 @@ void Scene::_computeBounds()
     for (auto modelDescriptor : _modelDescriptors)
         if (modelDescriptor->getEnabled())
         {
-            _bounds.merge(modelDescriptor->getModel().getBounds());
+            auto bounds = modelDescriptor.getModel().getBounds();
+            const auto translation =
+                modelDescriptor.getTransformations()[0].getTranslation();
+            Boxf translatedBounds;
+            translatedBounds.merge(bounds.getMin() + translation);
+            translatedBounds.merge(bounds.getMax() + translation);
+            _bounds.merge(translatedBounds);
             ++nbEnabledModels;
         }
 

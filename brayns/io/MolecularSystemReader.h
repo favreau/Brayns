@@ -58,11 +58,11 @@ public:
 
     void importFromFile(const std::string& fileName, Scene& scene,
                         const size_t index = 0,
-                        const Matrix4f& transformation = Matrix4f(),
+                        const Transformation& transformation = Transformation(),
                         const size_t = NO_MATERIAL) final;
 
     void importFromBlob(Blob&&, Scene&, const size_t = 0,
-                        const Matrix4f& = Matrix4f(),
+                        const Transformation& = Transformation(),
                         const size_t = NO_MATERIAL) final
     {
         throw std::runtime_error("Unsupported");
@@ -76,6 +76,7 @@ private:
     void _writePositionstoFile(const std::string& fileName);
 
     const GeometryParameters& _geometryParameters;
+    float _density{100};
     std::string _proteinFolder;
     std::string _meshFolder;
     std::string _descriptorFilename;

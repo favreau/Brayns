@@ -20,6 +20,7 @@
 
 #include "MolecularSystemReader.h"
 
+#include <brayns/common/Transformation.h>
 #include <brayns/common/log.h>
 #include <brayns/common/scene/Model.h>
 #include <brayns/common/scene/Scene.h>
@@ -40,7 +41,7 @@ MolecularSystemReader::MolecularSystemReader(
 
 void MolecularSystemReader::importFromFile(
     const std::string& fileName, Scene& scene, const size_t index BRAYNS_UNUSED,
-    const Matrix4f& transformation BRAYNS_UNUSED,
+    const Transformation& transformation BRAYNS_UNUSED,
     const size_t defaultMaterialId BRAYNS_UNUSED)
 {
     _nbProteins = 0;
@@ -69,49 +70,74 @@ void MolecularSystemReader::importFromFile(
 
 bool MolecularSystemReader::_createScene(Scene& scene)
 {
-    uint64_t proteinCount = 0;
-    for (const auto& proteinPosition : _proteinPositions)
+    const size_t step = 100 / _density;
+    for (size_t p = 0; p < _nbProteins; p += step)
     {
-        const auto& protein = _proteins.find(proteinPosition.first);
-        if (!_proteinFolder.empty())
-            // Load PDB files
-            for (const auto& position : proteinPosition.second)
+        const auto& proteinPosition = _proteinPositions[p];
+        const auto& protein = _proteins.find(p);
+        size_t instanceCount = 0;
+        for (size_t pos = 0; pos < proteinPosition.size(); pos += step)
+        {
+            const auto position = proteinPosition[pos];
+            if (!_proteinFolder.empty())
             {
-                const auto pdbFilename =
-                    _proteinFolder + '/' + protein->second + ".pdb";
-                Matrix4f transformation;
-                transformation.setTranslation(position);
-                ProteinLoader loader(_geometryParameters);
-                loader.importFromFile(pdbFilename, scene, proteinCount,
-                                      transformation, NO_MATERIAL);
-                ++proteinCount;
+                // Load PDB files
+                if (instanceCount == 0)
+                {
+                    const auto pdbFilename =
+                        _proteinFolder + '/' + protein->second + ".pdb";
+                    Transformation transformation;
+                    transformation.setTranslation(position);
+                    ProteinLoader loader(_geometryParameters);
+                    loader.importFromFile(pdbFilename, scene, p, transformation,
+                                          NO_MATERIAL);
+                }
+                else
+                {
+                    auto& modelDescriptors = scene.getModelDescriptors();
+                    auto& modelDescriptor =
+                        modelDescriptors[modelDescriptors.size() - 1];
+                    Transformation transformation;
+                    transformation.setTranslation(position);
+                    modelDescriptor.addInstance(transformation);
+                }
             }
-
-        if (!_meshFolder.empty())
-            // Load meshes
-            for (const auto& position : proteinPosition.second)
+            else if (!_meshFolder.empty())
             {
-                const Vector3f scale = {1.f, 1.f, 1.f};
-                const Matrix4f transformation(position, scale);
-                const size_t materialId =
-                    _geometryParameters.getColorScheme() ==
-                            ColorScheme::protein_by_id
-                        ? proteinCount
-                        : NO_MATERIAL;
-
-                // Scale mesh to match PDB units. PDB are in angstrom, and
-                // positions are in micrometers
-                MeshLoader meshLoader(_geometryParameters);
-                const std::string fileName =
-                    _meshFolder + '/' + protein->second + ".obj";
-                meshLoader.importFromFile(fileName, scene, proteinCount,
-                                          transformation, materialId);
-
-                if (_proteinFolder.empty())
-                    ++proteinCount;
+                // Load meshes
+                try
+                {
+                    if (instanceCount == 0)
+                    {
+                        // Scale mesh to match PDB units. PDB are in angstrom,
+                        // and positions are in micrometers
+                        Transformation transformation;
+                        transformation.setTranslation(position);
+                        MeshLoader meshLoader(_geometryParameters);
+                        const std::string fileName =
+                            _meshFolder + '/' + protein->second + ".obj";
+                        meshLoader.importFromFile(fileName, scene, p,
+                                                  transformation, 0);
+                    }
+                    else
+                    {
+                        auto& modelDescriptors = scene.getModelDescriptors();
+                        auto& modelDescriptor =
+                            modelDescriptors[modelDescriptors.size() - 1];
+                        Transformation transformation;
+                        transformation.setTranslation(position);
+                        modelDescriptor.addInstance(transformation);
+                    }
+                }
+                catch (const std::runtime_error& e)
+                {
+                    BRAYNS_ERROR << p << "/" << _nbProteins << " - " << e.what()
+                                 << std::endl;
+                }
             }
-
-        updateProgress("Loading proteins...", proteinCount, _nbProteins);
+            ++instanceCount;
+        }
+        updateProgress("Loading proteins...", p, _nbProteins);
     }
     return true;
 }
@@ -137,6 +163,7 @@ bool MolecularSystemReader::_loadConfiguration(const std::string& fileName)
     }
     configurationFile.close();
 
+    _density = std::stof(parameters["SystemDensity"]);
     _proteinFolder = parameters["ProteinFolder"];
     _meshFolder = parameters["MeshFolder"];
     _descriptorFilename = parameters["SystemDescriptor"];
@@ -144,6 +171,7 @@ bool MolecularSystemReader::_loadConfiguration(const std::string& fileName)
     _calciumSimulationFolder = parameters["CalciumPositions"];
 
     BRAYNS_INFO << "Loading molecular system" << std::endl;
+    BRAYNS_INFO << "Density           : " << _density << std::endl;
     BRAYNS_INFO << "Protein folder    : " << _proteinFolder << std::endl;
     BRAYNS_INFO << "Mesh folder       : " << _meshFolder << std::endl;
     BRAYNS_INFO << "System descriptor : " << _descriptorFilename << std::endl;

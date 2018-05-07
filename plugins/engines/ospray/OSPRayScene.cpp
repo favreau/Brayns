@@ -67,6 +67,7 @@ OSPRayScene::~OSPRayScene()
     for (auto& light : _ospLights)
         ospRelease(light);
     _ospLights.clear();
+}
 
     if (_rootModel)
         ospRelease(_rootModel);

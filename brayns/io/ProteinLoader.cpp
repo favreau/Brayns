@@ -322,7 +322,7 @@ std::set<std::string> ProteinLoader::getSupportedDataTypes()
 
 void ProteinLoader::importFromFile(const std::string& fileName, Scene& scene,
                                    const size_t index,
-                                   const Matrix4f& transformation,
+                                   const Transformation& transformation,
                                    const size_t defaultMaterialId BRAYNS_UNUSED)
 {
     std::ifstream file(fileName.c_str());

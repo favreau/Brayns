@@ -58,7 +58,8 @@ public:
      * @return True is the morphology was successfully imported, false otherwise
      */
     bool importMorphology(const servus::URI& source, Model& model,
-                          const uint64_t index, const Matrix4f& transformation,
+                          const uint64_t index,
+                          const Transformation& transformation,
                           const size_t defaultMaterialId = NO_MATERIAL,
                           CompartmentReportPtr compartmentReport = nullptr)
     {
@@ -117,7 +118,7 @@ public:
 
     bool importMorphology(const servus::URI& source, const uint64_t index,
                           MaterialFunc materialFunc,
-                          const Matrix4f& transformation,
+                          const Transformation& transformation,
                           CompartmentReportPtr compartmentReport,
                           ParallelModelContainer& model)
     {
@@ -210,7 +211,7 @@ private:
      */
     bool _importMorphologyAsPoint(const uint64_t index,
                                   MaterialFunc materialFunc,
-                                  const Matrix4f& transformation,
+                                  const Transformation& transformation,
                                   CompartmentReportPtr compartmentReport,
                                   ParallelModelContainer& model)
     {
@@ -239,7 +240,7 @@ private:
      * @return True if the loading was successful, false otherwise
      */
     bool _createRealisticSoma(const servus::URI& uri, MaterialFunc materialFunc,
-                              const Matrix4f& transformation,
+                              const Transformation& transformation,
                               ParallelModelContainer& model)
     {
         try
@@ -247,7 +248,8 @@ private:
             const size_t morphologySectionTypes =
                 enumsToBitmask(_geometryParameters.getMorphologySectionTypes());
 
-            brain::neuron::Morphology morphology(uri, transformation);
+            brain::neuron::Morphology morphology(uri,
+                                                 transformation.getMatrix());
             const auto sectionTypes = _getSectionTypes(morphologySectionTypes);
             const auto& sections = morphology.getSections(sectionTypes);
 
@@ -327,7 +329,7 @@ private:
      */
     bool _importMorphologyFromURI(const servus::URI& uri, const uint64_t index,
                                   MaterialFunc materialFunc,
-                                  const Matrix4f& transformation,
+                                  const Transformation& transformation,
                                   CompartmentReportPtr compartmentReport,
                                   ParallelModelContainer& model) const
     {
@@ -338,7 +340,8 @@ private:
             const size_t morphologySectionTypes =
                 enumsToBitmask(_geometryParameters.getMorphologySectionTypes());
 
-            brain::neuron::Morphology morphology(uri, transformation);
+            brain::neuron::Morphology morphology(uri,
+                                                 transformation.getMatrix());
             brain::neuron::SectionTypes sectionTypes;
 
             const MorphologyLayout& layout =
@@ -575,7 +578,7 @@ std::set<std::string> MorphologyLoader::getSupportedDataTypes()
 
 void MorphologyLoader::importFromBlob(Blob&& /*blob*/, Scene& /*scene*/,
                                       const size_t /*index*/,
-                                      const Matrix4f& /*transformation*/,
+                                      const Transformation& /*transformation*/,
                                       const size_t /*materialID*/)
 {
     throw std::runtime_error("Load morphology from memory not supported");
@@ -583,7 +586,7 @@ void MorphologyLoader::importFromBlob(Blob&& /*blob*/, Scene& /*scene*/,
 
 void MorphologyLoader::importFromFile(
     const std::string& fileName, Scene& scene, const size_t index,
-    const Matrix4f& transformation,
+    const Transformation& transformation,
     const size_t defaultMaterialId BRAYNS_UNUSED)
 {
     const auto modelName = boost::filesystem::basename({fileName});
@@ -597,7 +600,7 @@ void MorphologyLoader::importFromFile(
 
 bool MorphologyLoader::importMorphology(const servus::URI& uri, Model& model,
                                         const size_t index,
-                                        const Matrix4f& transformation)
+                                        const Transformation& transformation)
 {
     return _impl->importMorphology(uri, model, index, transformation);
 }
@@ -605,7 +608,7 @@ bool MorphologyLoader::importMorphology(const servus::URI& uri, Model& model,
 bool MorphologyLoader::_importMorphology(const servus::URI& source,
                                          const uint64_t index,
                                          MaterialFunc materialFunc,
-                                         const Matrix4f& transformation,
+                                         const Transformation& transformation,
                                          CompartmentReportPtr compartmentReport,
                                          ParallelModelContainer& model)
 {

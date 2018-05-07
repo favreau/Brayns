@@ -27,15 +27,24 @@
 
 namespace brayns
 {
-ModelDescriptor::ModelDescriptor(const size_t id, const std::string& name,
+ModelDescriptor::ModelDescriptor(const std::string& name,
                                  const std::string& path,
-                                 const ModelMetadata& metadata, ModelPtr model)
+                                 const ModelMetadata& metadata,
+                                 const Transformation& transformation,
+                                 ModelPtr model)
     : _id(id)
     , _name(name)
     , _path(path)
     , _metadata(metadata)
+    , _transformations{1}
     , _model(std::move(model))
 {
+    _transformations.push_back(transformation);
+}
+
+void ModelDescriptor::addInstance(const Transformation& transformation)
+{
+    _transformations.push_back(transformation);
 }
 
 bool Model::empty() const

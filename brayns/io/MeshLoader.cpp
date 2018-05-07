@@ -90,8 +90,8 @@ std::set<std::string> MeshLoader::getSupportedDataTypes()
 
 #ifdef BRAYNS_USE_ASSIMP
 void MeshLoader::importFromFile(const std::string& fileName, Scene& scene,
-                                const size_t index,
-                                const Matrix4f& transformation,
+                                const size_t index BRAYNS_UNUSED,
+                                const Transformation& transformation,
                                 const size_t defaultMaterialId)
 {
     const boost::filesystem::path file = fileName;
@@ -130,7 +130,8 @@ void MeshLoader::importFromFile(const std::string& fileName, Scene& scene,
                    fileName);
 }
 
-void MeshLoader::importFromBlob(Blob&& blob, Scene& scene, const size_t index,
+void MeshLoader::importFromBlob(Blob&& blob, Scene& scene,
+                                const size_t index BRAYNS_UNUSED,
                                 const Matrix4f& transformation,
                                 const size_t defaultMaterialId)
 {
@@ -239,7 +240,7 @@ void MeshLoader::_createMaterials(Model& model, const aiScene* aiScene,
 }
 
 void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
-                           const size_t index, const Matrix4f& transformation,
+                           const Matrix4f& transformation,
                            const size_t defaultMaterialId,
                            const std::string& folder)
 {
@@ -250,6 +251,8 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
 
     if (materialId == NO_MATERIAL)
         _createMaterials(model, aiScene, folder);
+    else
+        model.createMaterial(defaultMaterialId, "Default");
 
     size_t nbVertices = 0;
     size_t nbFaces = 0;
@@ -268,8 +271,7 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
         for (size_t i = 0; i < mesh->mNumVertices; ++i)
         {
             const auto& v = mesh->mVertices[i];
-            const Vector4f vertex =
-                transformation * Vector4f(v.x, v.y, v.z, 1.f);
+            const Vector4f vertex = {v.x, v.y, v.z, 1.f};
             const Vector3f transformedVertex = {vertex.x(), vertex.y(),
                                                 vertex.z()};
             triangleMeshes.vertices.push_back(transformedVertex);
@@ -277,8 +279,7 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
             if (mesh->HasNormals())
             {
                 const auto& n = mesh->mNormals[i];
-                const Vector4f normal =
-                    transformation * Vector4f(n.x, n.y, n.z, 0.f);
+                const Vector4f normal = {n.x, n.y, n.z, 0.f};
                 const Vector3f transformedNormal = {normal.x(), normal.y(),
                                                     normal.z()};
                 triangleMeshes.normals.push_back(transformedNormal);
@@ -353,17 +354,16 @@ const std::string NO_ASSIMP_MESSAGE =
     "The assimp library is required to load meshes";
 }
 
-bool MeshLoader::importMeshFromFile(const std::string&, Scene&, const Matrix4f&,
-                                    const size_t)
+void MeshLoader::importFromFile(const std::string&, Scene&, const size_t,
+                                const Transformation&, const size_t)
 {
-    BRAYNS_ERROR << NO_ASSIMP_MESSAGE << std::endl;
-    return false;
+    throw std::runtime_error(NO_ASSIMP_MESSAGE);
 }
 
-bool MeshLoader::exportMeshToFile(const std::string&, Scene&) const
+void MeshLoader::importFromBlob(Blob&&, Scene&, const size_t, const Transformation&,
+                                const size_t)
 {
-    BRAYNS_ERROR << NO_ASSIMP_MESSAGE << std::endl;
-    return false;
+    throw std::runtime_error(NO_ASSIMP_MESSAGE);
 }
 
 std::string MeshLoader::getMeshFilenameFromGID(const uint64_t)

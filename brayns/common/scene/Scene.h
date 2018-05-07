@@ -23,6 +23,7 @@
 
 #include <brayns/api.h>
 #include <brayns/common/BaseObject.h>
+#include <brayns/common/Transformation.h>
 #include <brayns/common/loader/LoaderRegistry.h>
 #include <brayns/common/simulation/AbstractSimulationHandler.h>
 #include <brayns/common/transferFunction/TransferFunction.h>
@@ -123,7 +124,8 @@ public:
       */
     BRAYNS_API void addModel(ModelPtr model, const std::string& name,
                              const std::string& path = "",
-                             const ModelMetadata& metadata = {});
+                             const ModelMetadata& metadata = {},
+                             const Transformation& transformation = Transformation());
 
     /**
         Removes a model from the scene
@@ -246,7 +248,7 @@ public:
      * @param materialID the default material ot use
      * @param cb the callback for progress updates from the loader
      */
-    void load(Blob&& blob, const Matrix4f& transformation,
+    void load(Blob&& blob, const Transformation& transformation,
               const size_t materialID, Loader::UpdateCallback cb);
 
     /**
@@ -257,7 +259,7 @@ public:
      * @param materialID the default material ot use
      * @param cb the callback for progress updates from the loader
      */
-    void load(const std::string& path, const Matrix4f& transformation,
+    void load(const std::string& path, const Transformation& transformation,
               const size_t materialID, Loader::UpdateCallback cb);
 
     /** @return the registry for all supported loaders of this scene. */

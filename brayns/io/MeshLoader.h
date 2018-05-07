@@ -46,11 +46,11 @@ public:
 
     void importFromFile(const std::string& fileName, Scene& scene,
                         const size_t index = 0,
-                        const Matrix4f& transformation = Matrix4f(),
+                        const Transformation& transformation = Transformation(),
                         const size_t defaultMaterial = NO_MATERIAL) final;
 
     void importFromBlob(Blob&& blob, Scene& scene, const size_t index = 0,
-                        const Matrix4f& transformation = Matrix4f(),
+                        const Transformation& transformation = Transformation(),
                         const size_t defaultMaterial = NO_MATERIAL) final;
 
     /**
@@ -67,8 +67,8 @@ private:
     void _createMaterials(Model& model, const aiScene* aiScene,
                           const std::string& folder);
 
-    void _postLoad(const aiScene* aiScene, Model& model, const size_t index,
-                   const Matrix4f& transformation, const size_t defaultMaterial,
+    void _postLoad(const aiScene* aiScene, Model& model,
+                   const size_t defaultMaterial,
                    const std::string& folder = "");
     size_t _getQuality() const;
 #endif

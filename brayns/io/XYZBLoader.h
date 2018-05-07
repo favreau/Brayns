@@ -34,12 +34,12 @@ public:
     static std::set<std::string> getSupportedDataTypes();
 
     void importFromBlob(Blob&& blob, Scene& scene, const size_t index = 0,
-                        const Matrix4f& transformation = Matrix4f(),
+                        const Transformation& transformation = Matrix4f(),
                         const size_t defaultMaterialId = NO_MATERIAL) final;
 
     void importFromFile(const std::string& filename, Scene& scene,
                         const size_t index = 0,
-                        const Matrix4f& transformation = Matrix4f(),
+                        const Transformation& transformation = Matrix4f(),
                         const size_t defaultMaterialId = NO_MATERIAL) final;
 
 private:

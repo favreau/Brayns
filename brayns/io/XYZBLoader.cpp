@@ -43,7 +43,7 @@ std::set<std::string> XYZBLoader::getSupportedDataTypes()
 
 void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
                                 const size_t index BRAYNS_UNUSED,
-                                const Matrix4f& transformation,
+                                const Transformation& transformation,
                                 const size_t defaultMaterialId BRAYNS_UNUSED)
 {
     BRAYNS_INFO << "Loading xyz " << blob.name << std::endl;
@@ -73,22 +73,30 @@ void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
     msg << "Loading " << shortenString(blob.name) << " ..." << std::endl;
     while (std::getline(stream, line))
     {
-        std::vector<float> lineData;
-        std::stringstream lineStream(line);
+        const auto materialId =
+            (defaultMaterialId == NO_MATERIAL ? 0 : defaultMaterialId);
+        model.createMaterial(materialId, name);
+        auto& spheres = model.getSpheres()[materialId];
 
-        float value;
-        while (lineStream >> value)
-            lineData.push_back(value);
+        const size_t startOffset = spheres.size();
+        spheres.reserve(spheres.size() + numlines);
 
-        switch (lineData.size())
+        size_t i = 0;
+        std::string line;
+        std::stringstream msg;
+        msg << "Loading " << shortenString(blob.name) << " ..." << std::endl;
+        while (std::getline(stream, line))
         {
         case 3:
         {
-            const Vector4f position(lineData[0], lineData[1], lineData[2], 1.f);
-            model->addSphere(materialId,
-                             {transformation * position,
-                              _geometryParameters.getRadiusMultiplier()});
-            break;
+            const float newRadius = maxDim / 100.f;
+            BRAYNS_WARN << "Given radius "
+                        << _geometryParameters.getRadiusMultiplier()
+                        << " is too big for this scene, using radius "
+                        << newRadius << " now" << std::endl;
+
+            for (i = 0; i < numlines; ++i)
+                spheres[i + startOffset].radius = newRadius;
         }
         default:
             throw std::runtime_error("Invalid content in line " +
@@ -115,7 +123,7 @@ void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
 
 void XYZBLoader::importFromFile(const std::string& filename, Scene& scene,
                                 const size_t index,
-                                const Matrix4f& transformation,
+                                const Transformation& transformation,
                                 const size_t defaultMaterialId)
 {
     std::ifstream file(filename);

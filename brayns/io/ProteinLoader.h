@@ -40,11 +40,11 @@ public:
 
     void importFromFile(const std::string& fileName, Scene& scene,
                         const size_t index = 0,
-                        const Matrix4f& transformation = Matrix4f(),
+                        const Transformation& transformation = Matrix4f(),
                         const size_t defaultMaterialId = NO_MATERIAL) final;
 
     void importFromBlob(Blob&&, Scene&, const size_t = 0,
-                        const Matrix4f& = Matrix4f(),
+                        const Transformation& = Matrix4f(),
                         const size_t = NO_MATERIAL) final
     {
         throw std::runtime_error("Unsupported");

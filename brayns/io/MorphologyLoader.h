@@ -51,11 +51,12 @@ public:
     static std::set<std::string> getSupportedDataTypes();
 
     void importFromBlob(Blob&& blob, Scene& scene, const size_t index,
-                        const Matrix4f& transformation,
+                        const Transformation& transformation,
                         const size_t materialID) final;
 
     void importFromFile(const std::string& filename, Scene& scene,
-                        const size_t index, const Matrix4f& transformation,
+                        const size_t index,
+                        const Transformation& transformation,
                         const size_t materialID) final;
 
     /**
@@ -75,7 +76,7 @@ private:
     using MaterialFunc = std::function<size_t(brain::neuron::SectionType)>;
     bool _importMorphology(const servus::URI& source, const uint64_t index,
                            MaterialFunc materialFunc,
-                           const Matrix4f& transformation,
+                           const Transformation& transformation,
                            CompartmentReportPtr compartmentReport,
                            ParallelModelContainer& model);
     friend class CircuitLoader;

@@ -35,6 +35,19 @@ namespace brayns
 class Transformation : public BaseObject
 {
 public:
+    Transformation() = default;
+    Transformation(const Matrix4f& matrix)
+    {
+        _translation = matrix.getTranslation();
+        //        _rotation = matrix.getRotation(); TODO
+        //        _scale = matrix.getScale();
+    }
+    Matrix4f getMatrix() const
+    {
+        Matrix4f m(_rotation, _translation);
+        m = m * m.scale(_scale);
+        return m;
+    }
     const Vector3f& getTranslation() const { return _translation; }
     void setTranslation(const Vector3f& value)
     {
@@ -58,6 +71,7 @@ private:
     Vector3f _translation{0.f, 0.f, 0.f};
     Vector3f _scale{1.f, 1.f, 1.f};
     Quaternionf _rotation;
+    Matrix4f _matrix;
 
     SERIALIZATION_FRIEND(Transformation)
 };

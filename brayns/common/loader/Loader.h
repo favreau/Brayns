@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <brayns/common/Transformation.h>
 #include <brayns/common/types.h>
 
 #ifdef BRAYNS_USE_OPENMP
@@ -48,7 +49,7 @@ public:
      */
     virtual void importFromBlob(
         Blob&& blob, Scene& scene, const size_t index = 0,
-        const Matrix4f& transformation = Matrix4f(),
+        const Transformation& transformation = Transformation(),
         const size_t defaultMaterialId = NO_MATERIAL) = 0;
 
     /**
@@ -62,7 +63,7 @@ public:
      */
     virtual void importFromFile(
         const std::string& filename, Scene& scene, const size_t index = 0,
-        const Matrix4f& transformation = Matrix4f(),
+        const Transformation& transformation = Transformation(),
         const size_t defaultMaterialId = NO_MATERIAL) = 0;
 
     /**

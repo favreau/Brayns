@@ -330,8 +330,8 @@ private:
             // Load mesh from file
             const auto transformation =
                 _geometryParameters.getCircuitMeshTransformation()
-                    ? transformations[meshIndex]
-                    : Matrix4f();
+                    ? Transformation(transformations[meshIndex])
+                    : Transformation();
             try
             {
                 meshLoader.importFromFile(meshLoader.getMeshFilenameFromGID(
@@ -467,7 +467,7 @@ std::set<std::string> CircuitLoader::getSupportedDataTypes()
 
 void CircuitLoader::importFromBlob(Blob&& /*blob*/, Scene& /*scene*/,
                                    const size_t /*index*/,
-                                   const Matrix4f& /*transformation*/,
+                                   const Transformation& /*transformation*/,
                                    const size_t /*materialID*/)
 {
     throw std::runtime_error("Loading circuit from blob is not supported");
@@ -475,7 +475,7 @@ void CircuitLoader::importFromBlob(Blob&& /*blob*/, Scene& /*scene*/,
 
 void CircuitLoader::importFromFile(const std::string& filename, Scene& scene,
                                    const size_t /*index*/,
-                                   const Matrix4f& /*transformation*/,
+                                   const Transformation& /*transformation*/,
                                    const size_t /*materialID*/)
 {
     _impl->importCircuit(filename, {}, "", scene);

@@ -52,9 +52,9 @@ public:
     ModelDescriptor(ModelDescriptor&& rhs) = default;
     ModelDescriptor& operator=(ModelDescriptor&& rhs) = default;
 
-    ModelDescriptor(const size_t id, const std::string& name,
-                    const std::string& path, const ModelMetadata& metadata,
-                    ModelPtr model);
+    ModelDescriptor(const std::string& name, const std::string& path,
+                    const ModelMetadata& metadata,
+                    const Transformation& transformation, ModelPtr model);
 
     bool getEnabled() const { return _visible || _boundingBox; }
     bool getVisible() const { return _visible; }
@@ -89,7 +89,7 @@ private:
 };
 
 /**
- * The abstract Model class holds the geometry attached to an asset of
+ * @brief The asbtract Model class holds the geometry attached to an asset of
  * the scene (mesh, circuit, volume, etc). The model handles resources attached
  * to the geometry such as implementation specific classes, and acceleration
  * structures). Models provide a simple API to manipulate primitives (spheres,

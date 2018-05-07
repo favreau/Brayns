@@ -46,7 +46,7 @@ class ForeverLoader : public brayns::Loader
 {
 public:
     void importFromBlob(brayns::Blob&&, brayns::Scene&, const size_t,
-                        const brayns::Matrix4f&, const size_t) final
+                        const brayns::Transformation&, const size_t) final
     {
         for (;;)
         {
@@ -56,7 +56,7 @@ public:
     }
 
     void importFromFile(const std::string&, brayns::Scene&, const size_t,
-                        const brayns::Matrix4f&, const size_t) final
+                        const brayns::Transformation&, const size_t) final
     {
         for (;;)
         {

@@ -229,7 +229,7 @@ public:
     virtual void reset();
 
     /** @return the current size in bytes of the loaded geometry. */
-    size_t getSizeInBytes() const;
+    size_t getSizeInBytes() const { return _sizeInBytes; }
     ModelDescriptors& getModelDescriptors() { return _modelDescriptors; }
     /**
      * @brief initializeMaterials Initializes materials for all models in the

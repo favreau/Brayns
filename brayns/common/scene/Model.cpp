@@ -36,7 +36,6 @@ ModelDescriptor::ModelDescriptor(const std::string& name,
     , _name(name)
     , _path(path)
     , _metadata(metadata)
-    , _transformations{1}
     , _model(std::move(model))
 {
     _transformations.push_back(transformation);

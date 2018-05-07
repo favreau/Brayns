@@ -70,6 +70,7 @@ private:
     void _postLoad(const aiScene* aiScene, Model& model,
                    const size_t defaultMaterial,
                    const std::string& folder = "");
+
     size_t _getQuality() const;
 #endif
     const GeometryParameters& _geometryParameters;

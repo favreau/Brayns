@@ -69,7 +69,7 @@ public:
      */
     bool importMorphology(const servus::URI& source, Model& model,
                           const size_t index = 0,
-                          const Matrix4f& transformation = Matrix4f());
+                          const Transformation& transformation = Transformation());
 
 private:
     using CompartmentReportPtr = std::shared_ptr<brion::CompartmentReport>;

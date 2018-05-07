@@ -132,7 +132,7 @@ void MeshLoader::importFromFile(const std::string& fileName, Scene& scene,
 
 void MeshLoader::importFromBlob(Blob&& blob, Scene& scene,
                                 const size_t index BRAYNS_UNUSED,
-                                const Matrix4f& transformation,
+                                const Transformation& transformation,
                                 const size_t defaultMaterialId)
 {
     Assimp::Importer importer;
@@ -240,7 +240,6 @@ void MeshLoader::_createMaterials(Model& model, const aiScene* aiScene,
 }
 
 void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
-                           const Matrix4f& transformation,
                            const size_t defaultMaterialId,
                            const std::string& folder)
 {

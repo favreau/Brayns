@@ -69,6 +69,7 @@ public:
     {
         _updateValue(_transformation, transformation);
     }
+    void addInstance(const Transformation& transformation);
     const ModelMetadata& getMetadata() const { return _metadata; }
     size_t getID() const { return _id; }
     const std::string& getName() const { return _name; }

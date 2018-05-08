@@ -829,18 +829,20 @@ void Scene::_computeBounds()
     for (auto modelDescriptor : _modelDescriptors)
         if (modelDescriptor->getEnabled())
         {
-            auto bounds = modelDescriptor.getModel().getBounds();
-            const auto translation =
-                modelDescriptor.getTransformations()[0].getTranslation();
-            Boxf translatedBounds;
-            translatedBounds.merge(bounds.getMin() + translation);
-            translatedBounds.merge(bounds.getMax() + translation);
-            _bounds.merge(translatedBounds);
+            const auto& bounds = modelDescriptor.getModel().getBounds();
+            for (const auto& transformation :
+                 modelDescriptor.getTransformations())
+            {
+                _bounds.merge(bounds.getMin() +
+                              transformation.getTranslation());
+                _bounds.merge(bounds.getMax() +
+                              transformation.getTranslation());
+            }
             ++nbEnabledModels;
         }
-
     if (nbEnabledModels == 0)
         // If no model is enabled. return empty bounding box
         _bounds.merge({0, 0, 0});
+    BRAYNS_INFO << "World bounds: " << _bounds << std::endl;
 }
 }

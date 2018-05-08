@@ -205,37 +205,33 @@ void MeshLoader::_createMaterials(Model& model, const aiScene* aiScene,
             }
         }
 
-        aiColor4D value4f(0.f);
-        float value1f;
-        aimaterial->Get(AI_MATKEY_COLOR_DIFFUSE, value4f);
-        material->setDiffuseColor(Vector3f(value4f.r, value4f.g, value4f.b));
-
-        value1f = 0.f;
-        if (aimaterial->Get(AI_MATKEY_OPACITY, value1f) != AI_SUCCESS)
+        aiColor4D value4f{0.f};
+        float value1f{0.f};
+        if (aimaterial->Get(AI_MATKEY_COLOR_DIFFUSE, value4f) == AI_SUCCESS)
+        {
+            material->setDiffuseColor(
+                Vector3f(value4f.r, value4f.g, value4f.b));
             material->setOpacity(value4f.a);
-        else
-            material->setOpacity(fabs(value1f) < 0.01f ? 1.f : value1f);
+        }
 
-        value1f = 0.f;
-        aimaterial->Get(AI_MATKEY_REFLECTIVITY, value1f);
-        material->setReflectionIndex(value1f);
+        if (aimaterial->Get(AI_MATKEY_OPACITY, value1f) == AI_SUCCESS)
+            material->setOpacity(value1f);
 
-        value4f = aiColor4D(0.f);
-        aimaterial->Get(AI_MATKEY_COLOR_SPECULAR, value4f);
-        material->setSpecularColor(Vector3f(value4f.r, value4f.g, value4f.b));
+        if (aimaterial->Get(AI_MATKEY_REFLECTIVITY, value1f) == AI_SUCCESS)
+            material->setReflectionIndex(value1f);
 
-        value1f = 0.f;
-        aimaterial->Get(AI_MATKEY_SHININESS, value1f);
-        material->setSpecularExponent(fabs(value1f) < 0.01f ? 100.f : value1f);
+        if (aimaterial->Get(AI_MATKEY_COLOR_SPECULAR, value4f) == AI_SUCCESS)
+            material->setSpecularColor(
+                Vector3f(value4f.r, value4f.g, value4f.b));
 
-        value4f = aiColor4D(0.f);
-        aimaterial->Get(AI_MATKEY_COLOR_EMISSIVE, value4f);
-        material->setEmission(value4f.r);
+        if (aimaterial->Get(AI_MATKEY_SHININESS, value1f) == AI_SUCCESS)
+            material->setSpecularExponent(value1f);
 
-        value1f = 0.f;
-        aimaterial->Get(AI_MATKEY_REFRACTI, value1f);
-        material->setRefractionIndex(fabs(value1f - 1.f) < 0.01f ? 1.0f
-                                                                 : value1f);
+        if (aimaterial->Get(AI_MATKEY_COLOR_EMISSIVE, value4f) == AI_SUCCESS)
+            material->setEmission(value4f.r);
+
+        if (aimaterial->Get(AI_MATKEY_REFRACTI, value1f) == AI_SUCCESS)
+            material->setRefractionIndex(value1f);
     }
 }
 
@@ -259,7 +255,10 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
     for (size_t m = 0; m < aiScene->mNumMeshes; ++m)
     {
         auto mesh = aiScene->mMeshes[m];
-        auto& triangleMeshes = model.getTrianglesMeshes()[mesh->mMaterialIndex];
+        const auto materialId =
+            (defaultMaterialId == NO_MATERIAL ? mesh->mMaterialIndex
+                                              : defaultMaterialId);
+        auto& triangleMeshes = model.getTrianglesMeshes()[materialId];
 
         nbVertices += mesh->mNumVertices;
         triangleMeshes.vertices.reserve(nbVertices);
@@ -294,7 +293,7 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
         bool nonTriangulatedFaces = false;
         nbFaces += mesh->mNumFaces;
         triangleMeshes.indices.reserve(nbFaces);
-        const size_t offset = indexOffsets[mesh->mMaterialIndex];
+        const size_t offset = indexOffsets[materialId];
         for (size_t f = 0; f < mesh->mNumFaces; ++f)
         {
             if (mesh->mFaces[f].mNumIndices == 3)
@@ -311,7 +310,7 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
             BRAYNS_DEBUG
                 << "Some faces are not triangulated and have been removed"
                 << std::endl;
-        indexOffsets[mesh->mMaterialIndex] += mesh->mNumVertices;
+        indexOffsets[materialId] += mesh->mNumVertices;
     }
 
     BRAYNS_DEBUG << "Loaded " << nbVertices << " vertices and " << nbFaces

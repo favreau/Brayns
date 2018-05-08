@@ -416,6 +416,7 @@ void ProteinLoader::importFromFile(const std::string& fileName, Scene& scene,
                         atom.materialId = static_cast<int>(i);
                         break;
                     }
+                    i++;
                 }
                 ++i;
             }

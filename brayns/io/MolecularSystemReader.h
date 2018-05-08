@@ -73,6 +73,7 @@ private:
     bool _loadConfiguration(const std::string& fileName);
     bool _loadProteins();
     bool _loadPositions();
+    bool _loadEnvironmentMesh(Scene& scene);
     void _writePositionstoFile(const std::string& fileName);
 
     const GeometryParameters& _geometryParameters;
@@ -82,9 +83,11 @@ private:
     std::string _descriptorFilename;
     std::string _positionsFilename;
     std::string _calciumSimulationFolder;
+    std::string _environmentMesh;
     uint64_t _nbProteins;
     Proteins _proteins;
     ProteinPositions _proteinPositions;
+    float _scale{1};
 };
 }
 

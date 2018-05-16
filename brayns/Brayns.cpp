@@ -73,6 +73,8 @@
 #include <ospcommon/library.h>
 #endif
 
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
 #include <boost/progress.hpp>
 
 namespace
@@ -303,10 +305,11 @@ struct Brayns::Impl : public PluginAPI
                                 _parametersManager.getGeometryParameters()] {
                             return std::make_unique<MorphologyLoader>(params);
                         });
-        REGISTER_LOADER(CircuitLoader, [& params = _parametersManager] {
+        REGISTER_LOADER(CircuitLoader, [&] {
             return std::make_unique<CircuitLoader>(
-                params.getApplicationParameters(),
-                params.getGeometryParameters());
+                _parametersManager.getApplicationParameters(),
+                _parametersManager.getGeometryParameters(),
+                _engine->getScene());
         });
 
         const auto& paths =
@@ -547,11 +550,13 @@ private:
         const std::string& circuit(geometryParameters.getNESTCircuit());
         if (!circuit.empty())
         {
-            NESTLoader loader(geometryParameters);
+            NESTLoader loader(geometryParameters, scene);
 
             // need to import circuit first to determine _frameSize for report
             // loading
-            loader.importCircuit(circuit, scene);
+            auto model = scene.createModel();
+            if (loader.importCircuit(circuit, *model))
+                scene.addModel(std::move(model), "NEST Circuit", circuit);
 
             const std::string& cacheFile(geometryParameters.getNESTCacheFile());
             if (!geometryParameters.getNESTReport().empty() &&
@@ -603,11 +608,21 @@ private:
         BRAYNS_INFO << "Loading circuit configuration from " << filename
                     << std::endl;
         const std::string& report = geometryParameters.getCircuitReport();
-        CircuitLoader circuitLoader(applicationParameters, geometryParameters);
+        CircuitLoader circuitLoader(applicationParameters, geometryParameters,
+                                    scene);
         circuitLoader.setProgressCallback(progressUpdate);
 
         const servus::URI uri(filename);
-        circuitLoader.importCircuit(uri, targets, report, scene);
+        ModelMetadata metadata = {
+            {"density", std::to_string(geometryParameters.getCircuitDensity())},
+            {"report", geometryParameters.getCircuitReport()},
+            {"targets", geometryParameters.getCircuitTargets()},
+            {"mesh-filename-pattern",
+             geometryParameters.getCircuitMeshFilenamePattern()},
+            {"mesh-folder", geometryParameters.getCircuitMeshFolder()}};
+        auto model = scene.createModel();
+        if (circuitLoader.importCircuit(uri, targets, report, *model))
+            scene.addModel(std::move(model), "BBPCircuit", filename, metadata);
     }
 #endif // BRAYNS_USE_BRION
 
@@ -619,10 +634,12 @@ private:
     {
         auto& geometryParameters = _parametersManager.getGeometryParameters();
         auto& scene = _engine->getScene();
-        MolecularSystemReader molecularSystemReader(geometryParameters);
+        MolecularSystemReader molecularSystemReader(geometryParameters, scene);
         molecularSystemReader.setProgressCallback(progressUpdate);
         const auto fileName = geometryParameters.getMolecularSystemConfig();
-        molecularSystemReader.importFromFile(fileName, scene);
+        auto model = scene.createModel();
+        molecularSystemReader.importFromFile(fileName, *model);
+        scene.addModel(std::move(model), fs::basename(fileName), fileName);
     }
 
     void _setupCameraManipulator(const CameraMode mode)

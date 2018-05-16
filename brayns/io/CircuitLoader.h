@@ -40,19 +40,18 @@ class CircuitLoader : public Loader
 {
 public:
     CircuitLoader(const ApplicationParameters& applicationParameters,
-                  const GeometryParameters& geometryParameters);
+                  const GeometryParameters& geometryParameters, Scene& scene);
     ~CircuitLoader();
 
     static std::set<std::string> getSupportedDataTypes();
 
-    void importFromBlob(Blob&& blob, Scene& scene, const size_t index,
-                        const Transformation& transformation,
+    /** @copydoc Loader::importFromBlob */
+    void importFromBlob(Blob&& blob, Model& model, const size_t index,
                         const size_t materialID) final;
 
-    void importFromFile(const std::string& filename, Scene& scene,
-                        const size_t index,
-                        const Transformation& transformation,
-                        const size_t materialID) final;
+    /** @copydoc Loader::importFromFile */
+    void importFromFile(const std::string& filename, Model& model,
+                        const size_t index, const size_t materialID) final;
 
     /**
      * @brief Imports morphology from a circuit for the given target name
@@ -61,12 +60,12 @@ public:
      * the circuit configuration file is used. If such an entry does not exist,
      * all neurons are loaded.
      * @param report Compartment report to be loaded
-     * @param scene Scene into which the circuit is imported
+     * @param model Model into which the circuit is imported
      * @return True if the circuit is successfully loaded, false if the circuit
      * contains no cells.
      */
     bool importCircuit(const servus::URI& circuitConfig, const strings& targets,
-                       const std::string& report, Scene& scene);
+                       const std::string& report, Model& model);
 
 private:
     class Impl;

@@ -41,9 +41,8 @@ std::set<std::string> XYZBLoader::getSupportedDataTypes()
     return {"xyz"};
 }
 
-void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
+void XYZBLoader::importFromBlob(Blob&& blob, Model& model,
                                 const size_t index BRAYNS_UNUSED,
-                                const Transformation& transformation,
                                 const size_t defaultMaterialId BRAYNS_UNUSED)
 {
     BRAYNS_INFO << "Loading xyz " << blob.name << std::endl;
@@ -56,13 +55,11 @@ void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
     }
     stream.seekg(0);
 
-    auto model = scene.createModel();
-
     const auto name = boost::filesystem::basename({blob.name});
     const auto materialId =
         (defaultMaterialId == NO_MATERIAL ? 0 : defaultMaterialId);
-    model->createMaterial(materialId, name);
-    auto& spheres = model->getSpheres()[materialId];
+    model.createMaterial(materialId, name);
+    auto& spheres = model.getSpheres()[materialId];
 
     const size_t startOffset = spheres.size();
     spheres.reserve(spheres.size() + numlines);
@@ -73,30 +70,22 @@ void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
     msg << "Loading " << shortenString(blob.name) << " ..." << std::endl;
     while (std::getline(stream, line))
     {
-        const auto materialId =
-            (defaultMaterialId == NO_MATERIAL ? 0 : defaultMaterialId);
-        model.createMaterial(materialId, name);
-        auto& spheres = model.getSpheres()[materialId];
+        std::vector<float> lineData;
+        std::stringstream lineStream(line);
 
-        const size_t startOffset = spheres.size();
-        spheres.reserve(spheres.size() + numlines);
+        float value;
+        while (lineStream >> value)
+            lineData.push_back(value);
 
-        size_t i = 0;
-        std::string line;
-        std::stringstream msg;
-        msg << "Loading " << shortenString(blob.name) << " ..." << std::endl;
-        while (std::getline(stream, line))
+        switch (lineData.size())
         {
         case 3:
         {
-            const float newRadius = maxDim / 100.f;
-            BRAYNS_WARN << "Given radius "
-                        << _geometryParameters.getRadiusMultiplier()
-                        << " is too big for this scene, using radius "
-                        << newRadius << " now" << std::endl;
-
-            for (i = 0; i < numlines; ++i)
-                spheres[i + startOffset].radius = newRadius;
+            const Vector4f position(lineData[0], lineData[1], lineData[2], 1.f);
+            model.addSphere(materialId,
+                            {position,
+                             _geometryParameters.getRadiusMultiplier()});
+            break;
         }
         default:
             throw std::runtime_error("Invalid content in line " +
@@ -105,7 +94,7 @@ void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
         updateProgress(msg.str(), i++, numlines);
     }
 
-    const float maxDim = model->getBounds().getSize().find_max();
+    const float maxDim = model.getBounds().getSize().find_max();
     if (maxDim < 100 * _geometryParameters.getRadiusMultiplier())
     {
         const float newRadius = maxDim / 100.f;
@@ -117,13 +106,10 @@ void XYZBLoader::importFromBlob(Blob&& blob, Scene& scene,
         for (i = 0; i < numlines; ++i)
             spheres[i + startOffset].radius = newRadius;
     }
-
-    scene.addModel(std::move(model), name, blob.name);
 }
 
-void XYZBLoader::importFromFile(const std::string& filename, Scene& scene,
+void XYZBLoader::importFromFile(const std::string& filename, Model& model,
                                 const size_t index,
-                                const Transformation& transformation,
                                 const size_t defaultMaterialId)
 {
     std::ifstream file(filename);
@@ -133,6 +119,6 @@ void XYZBLoader::importFromFile(const std::string& filename, Scene& scene,
                     filename,
                     {std::istreambuf_iterator<char>(file),
                      std::istreambuf_iterator<char>()}},
-                   scene, index, transformation, defaultMaterialId);
+                   model, index, defaultMaterialId);
 }
 }

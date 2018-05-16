@@ -67,7 +67,6 @@ OSPRayScene::~OSPRayScene()
     for (auto& light : _ospLights)
         ospRelease(light);
     _ospLights.clear();
-}
 
     if (_rootModel)
         ospRelease(_rootModel);
@@ -100,22 +99,27 @@ void OSPRayScene::commit()
         if (modelDescriptor->getEnabled())
         {
             auto& impl = static_cast<OSPRayModel&>(modelDescriptor->getModel());
-            const auto& transformation = modelDescriptor->getTransformation();
+            const auto& transformations = modelDescriptor->getTransformations();
             if (modelDescriptor->getBoundingBox())
                 _addInstance(_rootModel, impl.getBoundingBoxModel(),
-                             transformation);
+                             transformations[0]);
 
             if (modelDescriptor->getVisible())
             {
-                BRAYNS_INFO << "Committing " << modelDescriptor->getName()
-                            << std::endl;
-                _addInstance(_rootModel, impl.getModel(), transformation);
+                BRAYNS_DEBUG << "Committing " << transformations.size()
+                             << " instances of " << modelDescriptor->getName()
+                             << " : " << modelDescriptor->getBounds()
+                             << std::endl;
+
+                for (const auto& transformation : transformations)
+                    _addInstance(_rootModel, impl.getModel(), transformation);
+
                 if (impl.getUseSimulationModel())
                 {
                     if (!_rootSimulationModel)
                         _rootSimulationModel = ospNewModel();
                     _addInstance(_rootSimulationModel,
-                                 impl.getSimulationModel(), transformation);
+                                 impl.getSimulationModel(), transformations[0]);
                 }
             }
             impl.logInformation();

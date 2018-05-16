@@ -106,13 +106,12 @@ void LoadDataFunctor::_performLoad(const std::function<void()>& loadData)
 
 void LoadDataFunctor::_loadData(Blob&& blob)
 {
-    _engine->getScene().load(std::move(blob), Matrix4f(), NO_MATERIAL,
-                             _getProgressFunc());
+    _engine->getScene().load(std::move(blob), NO_MATERIAL, _getProgressFunc());
 }
 
 void LoadDataFunctor::_loadData(const std::string& path)
 {
-    _engine->getScene().load(path, Matrix4f(), NO_MATERIAL, _getProgressFunc());
+    _engine->getScene().load(path, NO_MATERIAL, _getProgressFunc());
 }
 
 void LoadDataFunctor::_updateProgress(const std::string& message,

@@ -33,13 +33,13 @@ public:
 
     static std::set<std::string> getSupportedDataTypes();
 
-    void importFromBlob(Blob&& blob, Scene& scene, const size_t index = 0,
-                        const Transformation& transformation = Matrix4f(),
+    /** @copydoc Loader::importFromFile */
+    void importFromFile(const std::string& filename, Model& model,
+                        const size_t index = 0,
                         const size_t defaultMaterialId = NO_MATERIAL) final;
 
-    void importFromFile(const std::string& filename, Scene& scene,
-                        const size_t index = 0,
-                        const Transformation& transformation = Matrix4f(),
+    /** @copydoc Loader::importFromBlob */
+    void importFromBlob(Blob&& blob, Model& model, const size_t index = 0,
                         const size_t defaultMaterialId = NO_MATERIAL) final;
 
 private:

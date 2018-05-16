@@ -54,20 +54,14 @@ namespace brayns
 class NESTLoader : public Loader
 {
 public:
-    NESTLoader(const GeometryParameters& geometryParameters);
+    NESTLoader(const GeometryParameters& geometryParameters, Scene& scene);
 
-    void importFromBlob(Blob&&, Scene&, const size_t, const Transformation&,
-                        const size_t) final
-    {
-        throw std::runtime_error("Unsupported");
-    }
+    /** @copydoc Loader::importFromFile */
+    void importFromBlob(Blob&&, Model&, const size_t, const size_t) final;
 
-    void importFromFile(const std::string&, Scene&, const size_t,
-                        const Transformation&, const size_t) final
-    {
-        throw std::runtime_error("Unsupported");
-    }
-
+    /** @copydoc Loader::importFromBlob */
+    void importFromFile(const std::string&, Model&, const size_t,
+                        const size_t) final;
     /**
      * Imports a circuit into a scene. Every neuron is represented as a sphere,
      * with a given
@@ -75,9 +69,9 @@ public:
      * --radius-multiplier command line
      * argument.
      * @param filename File containing the circuit
-     * @param scene Scene in which spheres should be added
+     * @param model Model in which spheres should be added
      */
-    void importCircuit(const std::string& filename, Scene& scene);
+    bool importCircuit(const std::string& filename, Model& model);
 
     /**
      * Imports a spike report into the memory mapped cache file that will be
@@ -97,6 +91,7 @@ private:
     bool _load(const float timestamp);
 
     const GeometryParameters& _geometryParameters;
+    Scene& _scene;
     floats _values;
     uint32_ts _gids;
     uint64_t _frameSize;

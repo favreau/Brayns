@@ -101,13 +101,17 @@ void Scene::clearLights()
 }
 
 void Scene::addModel(ModelPtr model, const std::string& name,
-                     const std::string& path, const ModelMetadata& metadata)
+                     const std::string& path, const ModelMetadata& metadata,
+                     const Transformation& transformation)
 {
+    if (model->empty())
+        return;
+
     model->buildBoundingBox();
     model->commit();
     _modelDescriptors.push_back(
         std::make_shared<ModelDescriptor>(_modelID++, name, path, metadata,
-                                          std::move(model)));
+                                          std::move(model), transformation));
     markModified();
 }
 
@@ -259,18 +263,19 @@ bool Scene::empty() const
     return true;
 }
 
-void Scene::load(Blob&& blob, const Transformation& transformation,
-                 const size_t materialID, Loader::UpdateCallback cb)
+void Scene::load(Blob&& blob, const size_t materialID,
+                 Loader::UpdateCallback cb)
 {
+    auto model = createModel();
     auto loader = _loaderRegistry.createLoader(blob.type);
     loader->setProgressCallback(cb);
-    loader->importFromBlob(std::move(blob), *this, 0, transformation,
-                           materialID);
+    loader->importFromBlob(std::move(blob), *model, 0, materialID);
+    addModel(std::move(model), fs::basename(blob.name), blob.name);
     saveToCacheFile();
 }
 
-void Scene::load(const std::string& path, const Transformation& transformation,
-                 const size_t materialID, Loader::UpdateCallback cb)
+void Scene::load(const std::string& path, const size_t materialID,
+                 Loader::UpdateCallback cb)
 {
     if (fs::is_directory(path))
     {
@@ -304,18 +309,21 @@ void Scene::load(const std::string& path, const Transformation& transformation,
                 cb(msg, totalProgress + (amount / numFiles));
             };
 
+            auto model = createModel();
             loader->setProgressCallback(progressCb);
-            loader->importFromFile(currentPath, *this, index++, transformation,
-                                   materialID);
-
+            loader->importFromFile(currentPath, *model, index++, materialID);
+            addModel(std::move(model), boost::filesystem::basename(currentPath),
+                     currentPath);
             totalProgress += 1.f / numFiles;
         }
     }
     else
     {
+        auto model = createModel();
         auto loader = _loaderRegistry.createLoader(path);
         loader->setProgressCallback(cb);
-        loader->importFromFile(path, *this, 0, transformation, materialID);
+        loader->importFromFile(path, *model, 0, materialID);
+        addModel(std::move(model), boost::filesystem::basename(path), path);
     }
 }
 
@@ -827,19 +835,14 @@ void Scene::_computeBounds()
     size_t nbEnabledModels{0};
     _bounds.reset();
     for (auto modelDescriptor : _modelDescriptors)
+    {
         if (modelDescriptor->getEnabled())
         {
-            const auto& bounds = modelDescriptor.getModel().getBounds();
-            for (const auto& transformation :
-                 modelDescriptor.getTransformations())
-            {
-                _bounds.merge(bounds.getMin() +
-                              transformation.getTranslation());
-                _bounds.merge(bounds.getMax() +
-                              transformation.getTranslation());
-            }
+            _bounds.merge(modelDescriptor->getBounds());
             ++nbEnabledModels;
         }
+    }
+
     if (nbEnabledModels == 0)
         // If no model is enabled. return empty bounding box
         _bounds.merge({0, 0, 0});

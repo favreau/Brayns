@@ -122,10 +122,10 @@ public:
     /**
         Adds a model to the scene
       */
-    BRAYNS_API void addModel(ModelPtr model, const std::string& name,
-                             const std::string& path = "",
-                             const ModelMetadata& metadata = {},
-                             const Transformation& transformation = Transformation());
+    BRAYNS_API void addModel(
+        ModelPtr model, const std::string& name, const std::string& path = "",
+        const ModelMetadata& metadata = {},
+        const Transformation& transformation = Transformation());
 
     /**
         Removes a model from the scene
@@ -229,7 +229,7 @@ public:
     virtual void reset();
 
     /** @return the current size in bytes of the loaded geometry. */
-    size_t getSizeInBytes() const { return _sizeInBytes; }
+    size_t getSizeInBytes() const;
     ModelDescriptors& getModelDescriptors() { return _modelDescriptors; }
     /**
      * @brief initializeMaterials Initializes materials for all models in the
@@ -248,8 +248,7 @@ public:
      * @param materialID the default material ot use
      * @param cb the callback for progress updates from the loader
      */
-    void load(Blob&& blob, const Transformation& transformation,
-              const size_t materialID, Loader::UpdateCallback cb);
+    void load(Blob&& blob, const size_t materialID, Loader::UpdateCallback cb);
 
     /**
      * Load the data from the given file.
@@ -259,8 +258,8 @@ public:
      * @param materialID the default material ot use
      * @param cb the callback for progress updates from the loader
      */
-    void load(const std::string& path, const Transformation& transformation,
-              const size_t materialID, Loader::UpdateCallback cb);
+    void load(const std::string& path, const size_t materialID,
+              Loader::UpdateCallback cb);
 
     /** @return the registry for all supported loaders of this scene. */
     LoaderRegistry& getLoaderRegistry() { return _loaderRegistry; }

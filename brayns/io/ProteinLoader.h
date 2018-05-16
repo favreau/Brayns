@@ -38,13 +38,13 @@ public:
 
     static std::set<std::string> getSupportedDataTypes();
 
-    void importFromFile(const std::string& fileName, Scene& scene,
+    /** @copydoc Loader::importFromFile */
+    void importFromFile(const std::string& fileName, Model& model,
                         const size_t index = 0,
-                        const Transformation& transformation = Matrix4f(),
                         const size_t defaultMaterialId = NO_MATERIAL) final;
 
-    void importFromBlob(Blob&&, Scene&, const size_t = 0,
-                        const Transformation& = Matrix4f(),
+    /** @copydoc Loader::importFromBlob */
+    void importFromBlob(Blob&&, Model&, const size_t = 0,
                         const size_t = NO_MATERIAL) final
     {
         throw std::runtime_error("Unsupported");

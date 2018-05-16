@@ -33,36 +33,30 @@
 #include <brayns/io/MeshLoader.h>
 #endif
 
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+
 namespace brayns
 {
 class CircuitLoader::Impl
 {
 public:
     Impl(const ApplicationParameters& applicationParameters,
-         const GeometryParameters& geometryParameters, CircuitLoader& parent)
+         const GeometryParameters& geometryParameters, CircuitLoader& parent,
+         Scene& scene)
         : _parent(parent)
         , _applicationParameters(applicationParameters)
         , _geometryParameters(geometryParameters)
+        , _scene(scene)
     {
     }
 
     bool importCircuit(const std::string& source, const strings& targets,
-                       const std::string& report, Scene& scene)
+                       const std::string& report, Model& model)
     {
         bool returnValue = true;
         try
         {
-            // Model (one for the whole circuit)
-            ModelMetadata metadata = {
-                {"density",
-                 std::to_string(_geometryParameters.getCircuitDensity())},
-                {"report", _geometryParameters.getCircuitReport()},
-                {"targets", _geometryParameters.getCircuitTargets()},
-                {"mesh-filename-pattern",
-                 _geometryParameters.getCircuitMeshFilenamePattern()},
-                {"mesh-folder", _geometryParameters.getCircuitMeshFolder()}};
-            auto model = scene.createModel();
-
             // Open Circuit and select GIDs according to specified target
             const brion::BlueConfig bc(source);
             const brain::Circuit circuit(bc);
@@ -135,7 +129,7 @@ public:
                     if (compartmentReport)
                         allGids = compartmentReport->getGIDs();
                     // Attach simulation handler
-                    scene.setSimulationHandler(simulationHandler);
+                    _scene.setSimulationHandler(simulationHandler);
                 }
                 catch (const std::exception& e)
                 {
@@ -154,28 +148,25 @@ public:
             _morphologyTypes = circuit.getMorphologyTypes(allGids);
 
             // Import meshes
-            returnValue =
-                returnValue && _importMeshes(allGids, scene, transformations,
-                                             targetGIDOffsets);
+            returnValue = returnValue && _importMeshes(allGids, transformations,
+                                                       targetGIDOffsets);
 
             // Import morphologies
             const auto useSimulationModel =
                 _geometryParameters.getCircuitUseSimulationModel();
-            model->useSimulationModel(useSimulationModel);
+            model.useSimulationModel(useSimulationModel);
             if (_geometryParameters.getCircuitMeshFolder().empty() ||
                 useSimulationModel)
             {
                 MorphologyLoader morphLoader(_geometryParameters);
                 returnValue =
                     returnValue &&
-                    _importMorphologies(circuit, *model, allGids,
+                    _importMorphologies(circuit, model, allGids,
                                         transformations, targetGIDOffsets,
                                         compartmentReport, morphLoader);
             }
             // Create materials
-            model->createMissingMaterials();
-
-            scene.addModel(std::move(model), "Circuit", source, metadata);
+            model.createMissingMaterials();
         }
         catch (const std::exception& error)
         {
@@ -306,7 +297,7 @@ private:
     }
 
 #if (BRAYNS_USE_ASSIMP)
-    bool _importMeshes(const brain::GIDSet& gids, Scene& scene,
+    bool _importMeshes(const brain::GIDSet& gids,
                        const Matrix4fs& transformations,
                        const GIDOffsets& targetGIDOffsets)
     {
@@ -334,10 +325,13 @@ private:
                     : Transformation();
             try
             {
-                meshLoader.importFromFile(meshLoader.getMeshFilenameFromGID(
-                                              gid),
-                                          scene, meshIndex, transformation,
+                Transformations meshTransformations;
+                auto meshModel = _scene.createModel();
+                const auto fileName = meshLoader.getMeshFilenameFromGID(gid);
+                meshLoader.importFromFile(fileName, *meshModel, meshIndex,
                                           materialId);
+                _scene.addModel(std::move(meshModel), fs::basename(fileName),
+                                fileName);
             }
             catch (...)
             {
@@ -443,6 +437,7 @@ private:
     CircuitLoader& _parent;
     const ApplicationParameters& _applicationParameters;
     const GeometryParameters& _geometryParameters;
+    Scene& _scene;
     size_ts _layerIds;
     size_ts _electrophysiologyTypes;
     size_ts _morphologyTypes;
@@ -450,9 +445,10 @@ private:
 };
 
 CircuitLoader::CircuitLoader(const ApplicationParameters& applicationParameters,
-                             const GeometryParameters& geometryParameters)
+                             const GeometryParameters& geometryParameters,
+                             Scene& scene)
     : _impl(new CircuitLoader::Impl(applicationParameters, geometryParameters,
-                                    *this))
+                                    *this, scene))
 {
 }
 
@@ -465,26 +461,22 @@ std::set<std::string> CircuitLoader::getSupportedDataTypes()
     return {"BlueConfig", "BlueConfig3", "CircuitConfig", "circuit"};
 }
 
-void CircuitLoader::importFromBlob(Blob&& /*blob*/, Scene& /*scene*/,
-                                   const size_t /*index*/,
-                                   const Transformation& /*transformation*/,
-                                   const size_t /*materialID*/)
+void CircuitLoader::importFromBlob(Blob&&, Model&, const size_t, const size_t)
 {
     throw std::runtime_error("Loading circuit from blob is not supported");
 }
 
-void CircuitLoader::importFromFile(const std::string& filename, Scene& scene,
+void CircuitLoader::importFromFile(const std::string& filename, Model& model,
                                    const size_t /*index*/,
-                                   const Transformation& /*transformation*/,
                                    const size_t /*materialID*/)
 {
-    _impl->importCircuit(filename, {}, "", scene);
+    _impl->importCircuit(filename, {}, "", model);
 }
 
 bool CircuitLoader::importCircuit(const servus::URI& uri,
                                   const strings& targets,
-                                  const std::string& report, Scene& scene)
+                                  const std::string& report, Model& model)
 {
-    return _impl->importCircuit(uri.getPath(), targets, report, scene);
+    return _impl->importCircuit(uri.getPath(), targets, report, model);
 }
 }

@@ -44,14 +44,14 @@ public:
 
     static std::set<std::string> getSupportedDataTypes();
 
-    void importFromFile(const std::string& fileName, Scene& scene,
-                        const size_t index = 0,
-                        const Transformation& transformation = Transformation(),
-                        const size_t defaultMaterial = NO_MATERIAL) final;
+    /** @copydoc Loader::importFromBlob */
+    void importFromBlob(Blob&& blob, Model& model, const size_t index = 0,
+                        const size_t defaultMaterialId = NO_MATERIAL) final;
 
-    void importFromBlob(Blob&& blob, Scene& scene, const size_t index = 0,
-                        const Transformation& transformation = Transformation(),
-                        const size_t defaultMaterial = NO_MATERIAL) final;
+    /** @copydoc Loader::importFromBlob */
+    void importFromFile(const std::string& fileName, Model& model,
+                        const size_t index = 0,
+                        const size_t defaultMaterialId = NO_MATERIAL) final;
 
     /**
      * @brief getMeshFilenameFromGID Returns the name of the mesh file according
@@ -67,8 +67,7 @@ private:
     void _createMaterials(Model& model, const aiScene* aiScene,
                           const std::string& folder);
 
-    void _postLoad(const aiScene* aiScene, Model& model,
-                   const size_t defaultMaterial,
+    bool _postLoad(const aiScene* aiScene, Model& model, const size_t index,
                    const std::string& folder = "");
 
     size_t _getQuality() const;

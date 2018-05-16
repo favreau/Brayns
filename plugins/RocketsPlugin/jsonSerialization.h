@@ -302,7 +302,7 @@ inline void init(brayns::ModelDescriptor* g, ObjectHandler* h)
     h->add_property("metadata", &g->_metadata, Flags::Optional);
     h->add_property("name", &g->_name, Flags::Optional);
     h->add_property("path", &g->_path, Flags::Optional);
-    h->add_property("transformation", &g->_transformation, Flags::Optional);
+    h->add_property("transformation", &g->_transformations[0], Flags::Optional);
     h->add_property("visible", &g->_visible, Flags::Optional);
     h->set_flags(Flags::DisallowUnknownKey);
 }

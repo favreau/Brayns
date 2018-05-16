@@ -45,8 +45,8 @@ const size_t SERVER_PROCESS_RETRIES = 10; /*ms*/
 class ForeverLoader : public brayns::Loader
 {
 public:
-    void importFromBlob(brayns::Blob&&, brayns::Scene&, const size_t,
-                        const brayns::Transformation&, const size_t) final
+    void importFromBlob(brayns::Blob&&, brayns::Model&, const size_t,
+                        const size_t) final
     {
         for (;;)
         {
@@ -55,8 +55,8 @@ public:
         }
     }
 
-    void importFromFile(const std::string&, brayns::Scene&, const size_t,
-                        const brayns::Transformation&, const size_t) final
+    void importFromFile(const std::string&, brayns::Model&, const size_t,
+                        const size_t) final
     {
         for (;;)
         {

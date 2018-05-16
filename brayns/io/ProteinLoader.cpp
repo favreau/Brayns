@@ -320,18 +320,17 @@ std::set<std::string> ProteinLoader::getSupportedDataTypes()
     return {"pdb"};
 }
 
-void ProteinLoader::importFromFile(const std::string& fileName, Scene& scene,
-                                   const size_t index,
-                                   const Transformation& transformation,
+void ProteinLoader::importFromFile(const std::string& fileName, Model& model,
+                                   const size_t index BRAYNS_UNUSED,
                                    const size_t defaultMaterialId BRAYNS_UNUSED)
 {
     std::ifstream file(fileName.c_str());
     if (!file.is_open())
-        throw std::runtime_error("Could not open " + fileName);
+        throw std::runtime_error("Failed to open " + fileName);
+
+    const auto colorScheme = _geometryParameters.getColorScheme();
 
     size_t lineIndex{0};
-    std::map<size_t, Spheres> spheres;
-
     while (file.good())
     {
         std::string line;
@@ -395,36 +394,39 @@ void ProteinLoader::importFromFile(const std::string& fileName, Scene& scene,
             }
 
             // Material
-            atom.materialId = 0;
-            i = 0;
-            bool found = false;
-            const auto colorScheme = _geometryParameters.getColorScheme();
-            while (!found && i < colorMapSize)
+            atom.materialId = defaultMaterialId;
+            if (defaultMaterialId == NO_MATERIAL &&
+                colorScheme != ColorScheme::protein_by_id)
             {
-                if (atomName == colorMap[i].symbol)
+                i = 0;
+                bool found = false;
+                while (!found && i < colorMapSize)
                 {
-                    found = true;
-                    switch (colorScheme)
+                    if (atomName == colorMap[i].symbol)
                     {
-                    case ColorScheme::protein_chains:
-                        atom.materialId = abs(atom.chainId);
-                        break;
-                    case ColorScheme::protein_residues:
-                        atom.materialId = atom.residue;
-                        break;
-                    default:
-                        atom.materialId = static_cast<int>(i);
-                        break;
+                        found = true;
+                        switch (colorScheme)
+                        {
+                        case ColorScheme::protein_chains:
+                            atom.materialId = abs(atom.chainId);
+                            break;
+                        case ColorScheme::protein_residues:
+                            atom.materialId = atom.residue;
+                            break;
+                        default:
+                            atom.materialId = static_cast<int>(i);
+                            break;
+                        }
+                        atom.materialId = atom.materialId % colorMapSize;
                     }
-                    i++;
+                    ++i;
                 }
-                ++i;
             }
 
             // Radius
             atom.radius = DEFAULT_RADIUS;
             i = 0;
-            found = false;
+            bool found = false;
             while (!found && i < colorMapSize)
             {
                 if (atomName == atomic_radii[i].Symbol)
@@ -435,38 +437,24 @@ void ProteinLoader::importFromFile(const std::string& fileName, Scene& scene,
                 ++i;
             }
 
-            // Convert position from nanometers
-            const auto center =
-                transformation.getTranslation() + 0.01f * atom.position;
-
             // Convert radius from angstrom
-            const auto radius = 0.0001f * atom.radius *
+            const auto radius = 1.e-2f * atom.radius *
                                 _geometryParameters.getRadiusMultiplier();
 
-            const auto materialId = colorScheme == ColorScheme::protein_by_id
-                                        ? index
-                                        : atom.materialId;
-            spheres[materialId].push_back({center, radius});
+            model.addSphere(atom.materialId, {atom.position, radius});
         }
     }
     file.close();
 
-    auto model = scene.createModel();
-
     // Add materials and spheres
-    for (const auto& spheresPerMaterial : spheres)
+    for (const auto& spheres : model.getSpheres())
     {
-        const auto materialId = spheresPerMaterial.first;
+        const auto materialId = spheres.first;
         auto material =
-            model->createMaterial(materialId, colorMap[materialId].symbol);
+            model.createMaterial(materialId, colorMap[materialId].symbol);
         material->setDiffuseColor({colorMap[materialId].R / 255.f,
                                    colorMap[materialId].G / 255.f,
                                    colorMap[materialId].B / 255.f});
-        for (const auto& sphere : spheresPerMaterial.second)
-            model->addSphere(materialId, sphere);
     }
-
-    const auto modelName = boost::filesystem::basename({fileName});
-    scene.addModel(std::move(model), modelName, fileName);
 }
 }

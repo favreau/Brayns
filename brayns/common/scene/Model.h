@@ -52,9 +52,9 @@ public:
     ModelDescriptor(ModelDescriptor&& rhs) = default;
     ModelDescriptor& operator=(ModelDescriptor&& rhs) = default;
 
-    ModelDescriptor(const std::string& name, const std::string& path,
-                    const ModelMetadata& metadata,
-                    const Transformation& transformation, ModelPtr model);
+    ModelDescriptor(const size_t id, const std::string& name,
+                    const std::string& path, const ModelMetadata& metadata,
+                    ModelPtr model, const Transformation& transformation);
 
     bool getEnabled() const { return _visible || _boundingBox; }
     bool getVisible() const { return _visible; }
@@ -64,18 +64,21 @@ public:
     {
         _updateValue(_boundingBox, enabled);
     }
-    const Transformation& getTransformation() const { return _transformation; }
-    void setTransformation(const Transformation& transformation)
+    Transformation& getTransformation() { return _transformations[0]; }
+    Transformations& getTransformations() { return _transformations; }
+    void addTransformation(const Transformation& transformation)
     {
-        _updateValue(_transformation, transformation);
+        _transformations.push_back(transformation);
+        markModified();
     }
-    void addInstance(const Transformation& transformation);
     const ModelMetadata& getMetadata() const { return _metadata; }
     size_t getID() const { return _id; }
     const std::string& getName() const { return _name; }
     const std::string& getPath() const { return _path; }
     const Model& getModel() const { return *_model; }
     Model& getModel() { return *_model; }
+    Boxf getBounds() const;
+
 private:
     size_t _id{0};
     std::string _name;
@@ -83,7 +86,7 @@ private:
     ModelMetadata _metadata;
     bool _visible{true};
     bool _boundingBox{false};
-    Transformation _transformation;
+    Transformations _transformations;
     ModelPtr _model;
 
     SERIALIZATION_FRIEND(ModelDescriptor)
@@ -157,15 +160,6 @@ public:
     BRAYNS_API uint64_t addCone(const size_t materialId, const Cone& cone);
 
     /**
-     * Add a model to the model. The submodel will be added as an
-     * instance/reference at the given transformations as part of commit().
-     *
-     * Note that model is 'moved', so this model will own the added model from
-     * now on.
-     */
-    BRAYNS_API void addModel(ModelPtr model, const Transformations& transform);
-
-    /**
         Returns triangle meshes handled by the model
     */
     BRAYNS_API TrianglesMeshMap& getTrianglesMeshes()
@@ -233,13 +227,6 @@ protected:
     bool _conesDirty{true};
     TrianglesMeshMap _trianglesMeshes;
     bool _trianglesMeshesDirty{true};
-    struct SubModel
-    {
-        ModelPtr model;
-        Transformations transforms;
-    };
-    std::vector<SubModel> _models;
-    bool _modelsDirty{true};
     Boxf _bounds;
     bool _useSimulationModel{false};
 

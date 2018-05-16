@@ -44,15 +44,31 @@ const float DEFAULT_ALPHA = 1.f;
 
 namespace brayns
 {
-NESTLoader::NESTLoader(const GeometryParameters& geometryParameters)
+NESTLoader::NESTLoader(const GeometryParameters& geometryParameters,
+                       Scene& scene)
     : _geometryParameters(geometryParameters)
+    , _scene(scene)
     , _spikesStart(0.f)
     , _spikesEnd(0.f)
 {
 }
 
+void NESTLoader::importFromBlob(Blob&&, Model&, const size_t, const size_t)
+{
+    throw std::runtime_error(
+        "Loading NEST circuits from a blob is not supported");
+}
+
+/** @copydoc Loader::importFromBlob */
+void NESTLoader::importFromFile(const std::string&, Model&, const size_t,
+                                const size_t)
+{
+    throw std::runtime_error(
+        "Loading NEST circuits from a file is not supported");
+}
+
 #if (BRAYNS_USE_BRION)
-void NESTLoader::importCircuit(const std::string& filepath, Scene& scene)
+bool NESTLoader::importCircuit(const std::string& filepath, Model& model)
 {
     BRAYNS_INFO << "Loading NEST cells from circuit " << filepath << std::endl;
 
@@ -99,7 +115,7 @@ void NESTLoader::importCircuit(const std::string& filepath, Scene& scene)
                      float(zColor[gid]) / 256.f, DEFAULT_ALPHA);
     }
 
-    auto& transferFunction = scene.getTransferFunction();
+    auto& transferFunction = _scene.getTransferFunction();
     transferFunction.clear();
 
     // Realign materials
@@ -117,8 +133,7 @@ void NESTLoader::importCircuit(const std::string& filepath, Scene& scene)
     BRAYNS_INFO << "Number of materials: " << materialMapping.size()
                 << std::endl;
 
-    auto model = scene.createModel();
-    SpheresMap& spheres = model->getSpheres();
+    SpheresMap& spheres = model.getSpheres();
     spheres[0].reserve(_frameSize);
     _positions.reserve(_frameSize);
     const float radius = _geometryParameters.getRadiusMultiplier();
@@ -132,14 +147,13 @@ void NESTLoader::importCircuit(const std::string& filepath, Scene& scene)
             xColor[gid] * 65536 + yColor[gid] * 256 + zColor[gid];
         const Vector3f center(xPos[gid], yPos[gid], zPos[gid]);
         _positions.push_back(center);
-        model->addSphere(0,
-                         {center, radius, 0.f, {materialMapping[index], 0.f}});
+        model.addSphere(0,
+                        {center, radius, 0.f, {materialMapping[index], 0.f}});
         updateProgress("Loading neurons...", spheres[0].size(), _frameSize);
     }
 
-    scene.addModel(std::move(model), "NESTCircuit");
-
     BRAYNS_INFO << "Finished loading " << _frameSize << " neurons" << std::endl;
+    return true;
 }
 
 bool NESTLoader::importSpikeReport(const std::string& filename)

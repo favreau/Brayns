@@ -42,28 +42,26 @@ public:
      * Import the data from the blob and add it to the scene.
      *
      * @param blob the blob containing the data to import
-     * @param scene the scene where to add the loaded model to
+     * @param model the model where to add the loaded model to
      * @param index Index of the element, mainly used for material assignment
      * @param transformation the transformation to apply for the added model
      * @param defaultMaterialId the default material to use
      */
     virtual void importFromBlob(
-        Blob&& blob, Scene& scene, const size_t index = 0,
-        const Transformation& transformation = Transformation(),
+        Blob&& blob, Model& model, const size_t index = 0,
         const size_t defaultMaterialId = NO_MATERIAL) = 0;
 
     /**
      * Import the data from the given file and add it to the scene.
      *
      * @param filename the file containing the data to import
-     * @param scene the scene where to add the loaded model to
+     * @param model the model where to add the loaded model to
      * @param index Index of the element, mainly used for material assignment
      * @param transformation the transformation to apply for the added model
      * @param defaultMaterialId the default material to use
      */
     virtual void importFromFile(
-        const std::string& filename, Scene& scene, const size_t index = 0,
-        const Transformation& transformation = Transformation(),
+        const std::string& filename, Model& model, const size_t index = 0,
         const size_t defaultMaterialId = NO_MATERIAL) = 0;
 
     /**

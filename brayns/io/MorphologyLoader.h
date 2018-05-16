@@ -50,14 +50,13 @@ public:
 
     static std::set<std::string> getSupportedDataTypes();
 
-    void importFromBlob(Blob&& blob, Scene& scene, const size_t index,
-                        const Transformation& transformation,
+    /** @copydoc Loader::importFromBlob */
+    void importFromBlob(Blob&& blob, Model& model, const size_t index,
                         const size_t materialID) final;
 
-    void importFromFile(const std::string& filename, Scene& scene,
-                        const size_t index,
-                        const Transformation& transformation,
-                        const size_t materialID) final;
+    /** @copydoc Loader::importFromFile */
+    void importFromFile(const std::string& filename, Model& model,
+                        const size_t index, const size_t materialID) final;
 
     /**
      * @brief Imports morphology from a given SWC or H5 file
@@ -67,9 +66,9 @@ public:
      * @param transformation Transformation to apply to the morphology
      * @return True if the morphology is successfully loaded, false otherwise
      */
-    bool importMorphology(const servus::URI& source, Model& model,
-                          const size_t index = 0,
-                          const Transformation& transformation = Transformation());
+    bool importMorphology(
+        const servus::URI& source, Model& model, const size_t index = 0,
+        const Transformation& transformation = Transformation());
 
 private:
     using CompartmentReportPtr = std::shared_ptr<brion::CompartmentReport>;

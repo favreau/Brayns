@@ -314,29 +314,10 @@ void OSPRayModel::commit()
         _trianglesMeshesDirty = false;
     }
 
-    if (_modelsDirty)
-    {
-        for (const auto& entry : _models)
-        {
-            entry.model->commit();
-            auto ospModel = static_cast<OSPRayModel*>(entry.model.get());
-            for (const auto& transform : entry.transforms)
-            {
-                auto instance =
-                    ospNewInstance(ospModel->getModel(),
-                                   transformationToAffine3f(transform));
-                ospCommit(instance);
-                ospAddGeometry(_model, instance);
-                ospRelease(instance);
-            }
-        }
-        _modelsDirty = false;
-    }
-
     // Commit models
     ospCommit(_model);
-    ospCommit(_boundingBoxModel);
     ospCommit(_simulationModel);
+    ospCommit(_boundingBoxModel);
 }
 
 MaterialPtr OSPRayModel::createMaterial(const size_t materialId,

@@ -576,26 +576,19 @@ std::set<std::string> MorphologyLoader::getSupportedDataTypes()
     return {"h5", "swc"};
 }
 
-void MorphologyLoader::importFromBlob(Blob&& /*blob*/, Scene& /*scene*/,
+void MorphologyLoader::importFromBlob(Blob&& /*blob*/, Model& /*model*/,
                                       const size_t /*index*/,
-                                      const Transformation& /*transformation*/,
                                       const size_t /*materialID*/)
 {
     throw std::runtime_error("Load morphology from memory not supported");
 }
 
 void MorphologyLoader::importFromFile(
-    const std::string& fileName, Scene& scene, const size_t index,
-    const Transformation& transformation,
+    const std::string& fileName, Model& model, const size_t index,
     const size_t defaultMaterialId BRAYNS_UNUSED)
 {
-    const auto modelName = boost::filesystem::basename({fileName});
-    updateProgress("Loading " + modelName + " ...", 0, 100);
-    auto model = scene.createModel();
-    importMorphology(servus::URI(fileName), *model, index, transformation);
-    model->createMissingMaterials();
-    scene.addModel(std::move(model), modelName, fileName);
-    updateProgress("Loading " + modelName + " ...", 100, 100);
+    importMorphology(servus::URI(fileName), model, index);
+    model.createMissingMaterials();
 }
 
 bool MorphologyLoader::importMorphology(const servus::URI& uri, Model& model,

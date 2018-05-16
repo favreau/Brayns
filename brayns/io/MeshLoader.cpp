@@ -89,9 +89,8 @@ std::set<std::string> MeshLoader::getSupportedDataTypes()
 }
 
 #ifdef BRAYNS_USE_ASSIMP
-void MeshLoader::importFromFile(const std::string& fileName, Scene& scene,
+void MeshLoader::importFromFile(const std::string& fileName, Model& model,
                                 const size_t index BRAYNS_UNUSED,
-                                const Transformation& transformation,
                                 const size_t defaultMaterialId)
 {
     const boost::filesystem::path file = fileName;
@@ -123,16 +122,12 @@ void MeshLoader::importFromFile(const std::string& fileName, Scene& scene,
         throw std::runtime_error("Error finding meshes in scene");
 
     boost::filesystem::path filepath = fileName;
-    auto model = scene.createModel();
-    _postLoad(aiScene, *model, index, transformation, defaultMaterialId,
+    _postLoad(aiScene, model, defaultMaterialId,
               filepath.parent_path().string());
-    scene.addModel(std::move(model), boost::filesystem::basename(filepath),
-                   fileName);
 }
 
-void MeshLoader::importFromBlob(Blob&& blob, Scene& scene,
+void MeshLoader::importFromBlob(Blob&& blob, Model& model,
                                 const size_t index BRAYNS_UNUSED,
-                                const Transformation& transformation,
                                 const size_t defaultMaterialId)
 {
     Assimp::Importer importer;
@@ -148,10 +143,7 @@ void MeshLoader::importFromBlob(Blob&& blob, Scene& scene,
     if (!aiScene->HasMeshes())
         throw std::runtime_error("No meshes found");
 
-    auto model = scene.createModel();
-    _postLoad(aiScene, *model, index, transformation, defaultMaterialId);
-    scene.addModel(std::move(model), boost::filesystem::basename({blob.name}),
-                   blob.name);
+    _postLoad(aiScene, model, defaultMaterialId);
 }
 
 void MeshLoader::_createMaterials(Model& model, const aiScene* aiScene,
@@ -235,16 +227,11 @@ void MeshLoader::_createMaterials(Model& model, const aiScene* aiScene,
     }
 }
 
-void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
+bool MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
                            const size_t defaultMaterialId,
                            const std::string& folder)
 {
-    const size_t materialId =
-        _geometryParameters.getColorScheme() == ColorScheme::neuron_by_id
-            ? index
-            : defaultMaterialId;
-
-    if (materialId == NO_MATERIAL)
+    if (defaultMaterialId == NO_MATERIAL)
         _createMaterials(model, aiScene, folder);
     else
         model.createMaterial(defaultMaterialId, "Default");
@@ -315,6 +302,7 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
 
     BRAYNS_DEBUG << "Loaded " << nbVertices << " vertices and " << nbFaces
                  << " faces" << std::endl;
+    return true;
 }
 
 size_t MeshLoader::_getQuality() const
@@ -358,8 +346,8 @@ void MeshLoader::importFromFile(const std::string&, Scene&, const size_t,
     throw std::runtime_error(NO_ASSIMP_MESSAGE);
 }
 
-void MeshLoader::importFromBlob(Blob&&, Scene&, const size_t, const Transformation&,
-                                const size_t)
+void MeshLoader::importFromBlob(Blob&&, Scene&, const size_t,
+                                const Transformation&, const size_t)
 {
     throw std::runtime_error(NO_ASSIMP_MESSAGE);
 }

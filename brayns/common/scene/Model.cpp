@@ -27,11 +27,10 @@
 
 namespace brayns
 {
-ModelDescriptor::ModelDescriptor(const std::string& name,
+ModelDescriptor::ModelDescriptor(const size_t id, const std::string& name,
                                  const std::string& path,
-                                 const ModelMetadata& metadata,
-                                 const Transformation& transformation,
-                                 ModelPtr model)
+                                 const ModelMetadata& metadata, ModelPtr model,
+                                 const Transformation& transformation)
     : _id(id)
     , _name(name)
     , _path(path)
@@ -41,15 +40,22 @@ ModelDescriptor::ModelDescriptor(const std::string& name,
     _transformations.push_back(transformation);
 }
 
-void ModelDescriptor::addInstance(const Transformation& transformation)
+Boxf ModelDescriptor::getBounds() const
 {
-    _transformations.push_back(transformation);
+    Boxf bounds;
+    const auto& modelBounds = _model->getBounds();
+    const auto& transformation = _transformations[0];
+    bounds.merge((modelBounds.getMin() * transformation.getScale()) +
+                 transformation.getTranslation());
+    bounds.merge((modelBounds.getMax() * transformation.getScale()) +
+                 transformation.getTranslation());
+    return bounds;
 }
 
 bool Model::empty() const
 {
     return _spheres.empty() && _cylinders.empty() && _cones.empty() &&
-           _trianglesMeshes.empty() && _models.empty();
+           _trianglesMeshes.empty();
 }
 
 uint64_t Model::addSphere(const size_t materialId, const Sphere& sphere)
@@ -78,17 +84,10 @@ uint64_t Model::addCone(const size_t materialId, const Cone& cone)
     return _cones[materialId].size() - 1;
 }
 
-void Model::addModel(ModelPtr model, const Transformations& transform)
-{
-    _bounds.merge(model->getBounds());
-    _models.push_back({std::move(model), transform});
-    _modelsDirty = true;
-}
-
 bool Model::dirty() const
 {
     return _spheresDirty || _cylindersDirty || _conesDirty ||
-           _trianglesMeshesDirty || _modelsDirty;
+           _trianglesMeshesDirty;
 }
 
 void Model::setMaterialsColorMap(const MaterialsColorMap colorMap)

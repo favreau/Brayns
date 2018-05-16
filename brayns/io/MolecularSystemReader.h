@@ -53,30 +53,30 @@ public:
     /**
      * @brief Constructor
      * @param geometryParameters Geometry parameters
+     * @param scene Scene that will handle the molecular system
      */
-    MolecularSystemReader(const GeometryParameters& geometryParameters);
+    MolecularSystemReader(const GeometryParameters& geometryParameters,
+                          Scene& scene);
 
-    void importFromFile(const std::string& fileName, Scene& scene,
+    /** @copydoc Loader::importFromFile */
+    void importFromFile(const std::string& fileName, Model& model,
                         const size_t index = 0,
-                        const Transformation& transformation = Transformation(),
                         const size_t = NO_MATERIAL) final;
 
-    void importFromBlob(Blob&&, Scene&, const size_t = 0,
-                        const Transformation& = Transformation(),
-                        const size_t = NO_MATERIAL) final
-    {
-        throw std::runtime_error("Unsupported");
-    }
+    /** @copydoc Loader::importFromBlob */
+    void importFromBlob(Blob&&, Model&, const size_t = 0,
+                        const size_t = NO_MATERIAL) final;
 
 private:
-    bool _createScene(Scene& scene);
-    bool _loadConfiguration(const std::string& fileName);
-    bool _loadProteins();
-    bool _loadPositions();
-    bool _loadEnvironmentMesh(Scene& scene);
+    void _createSystem();
+    void _loadConfiguration(const std::string& fileName);
+    void _loadProteins();
+    void _loadPositions();
+    void _loadEnvironmentMesh();
     void _writePositionstoFile(const std::string& fileName);
 
     const GeometryParameters& _geometryParameters;
+    Scene& _scene;
     float _density{100};
     std::string _proteinFolder;
     std::string _meshFolder;
@@ -88,6 +88,7 @@ private:
     Proteins _proteins;
     ProteinPositions _proteinPositions;
     float _scale{1};
+    Boxf _bounds;
 };
 }
 

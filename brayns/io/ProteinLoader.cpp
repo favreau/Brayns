@@ -438,10 +438,11 @@ void ProteinLoader::importFromFile(const std::string& fileName, Model& model,
             }
 
             // Convert radius from angstrom
-            const auto radius = 1.e-2f * atom.radius *
+            const auto center = 1.e-2f * atom.position;
+            const auto radius = 1.e-4f * atom.radius *
                                 _geometryParameters.getRadiusMultiplier();
 
-            model.addSphere(atom.materialId, {atom.position, radius});
+            model.addSphere(atom.materialId, {center, radius});
         }
     }
     file.close();

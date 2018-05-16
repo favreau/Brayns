@@ -29,11 +29,11 @@ inline osp::affine3f transformationToAffine3f(
     const Transformation& transformation)
 {
     ospcommon::affine3f t(ospcommon::one);
+    // Translation
     const auto& translation = transformation.getTranslation();
     t *= t.translate({translation.x(), translation.y(), translation.z()});
-    const auto& scale = transformation.getScale();
-    t *= t.scale({scale.x(), scale.y(), scale.z()});
 
+    // Rotation
     const auto& matrix = transformation.getRotation().getRotationMatrix();
     const float x = atan2(matrix(2, 1), matrix(2, 2));
     const float y = atan2(-matrix(2, 0),
@@ -45,6 +45,10 @@ inline osp::affine3f transformationToAffine3f(
         t *= t.rotate({0, 1, 0}, y);
     if (z != 0.f)
         t *= t.rotate({0, 0, 1}, z);
+
+    // Scaling
+    const auto& scale = transformation.getScale();
+    t *= t.scale({scale.x(), scale.y(), scale.z()});
     return (osp::affine3f&)t;
 }
 }

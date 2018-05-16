@@ -86,7 +86,7 @@ void MolecularSystemReader::_createSystem()
     {
         // Scale mesh to match PDB units. PDB are in angstrom, and positions are
         // in micrometers
-        const float scale = _scale * 0.0001f;
+        const float scale = _scale * 0.01f;
         if (proteinCount % step == 0)
             try
             {
@@ -221,7 +221,6 @@ void MolecularSystemReader::_loadProteins()
                 pdbFile.close();
                 add = true;
             }
-#if 0
             else
             {
                 BRAYNS_WARN << pdbFilename << " needs to be downloaded"
@@ -237,7 +236,6 @@ void MolecularSystemReader::_loadProteins()
                 BRAYNS_INFO << command << ": " << status << std::endl;
                 add = (status == 0);
             }
-#endif
         }
         else if (!_meshFolder.empty())
         {

@@ -51,6 +51,8 @@ private:
     float _threshold;
     ospray::int32 _volumeSamplesPerRay;
     float _detectionDistance;
+    ospray::Ref<ospray::Data> _pfbData;
+    ospray::vec3i _pfbSize;
 };
 
 } // ::brayns

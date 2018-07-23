@@ -27,6 +27,22 @@
 
 namespace brayns
 {
+struct PowerFrameBufferElement
+{
+    float materialId;
+    Vector2f textureCoordinates;
+    Vector3f normal;
+    float shadowIntensity;
+    float ambientOcclusionIntensity;
+    float depth;
+};
+
+struct PowerFrameBuffer
+{
+    Vector2i size;
+    std::vector<PowerFrameBufferElement> data;
+};
+
 class Renderer
 {
 public:
@@ -51,10 +67,12 @@ public:
         return PickResult();
     }
 
+    PowerFrameBuffer& getPowerFrameBuffer() { return _powerFrameBuffer; }
 protected:
     const AnimationParameters& _animationParameters;
     const RenderingParameters& _renderingParameters;
     ScenePtr _scene;
+    PowerFrameBuffer _powerFrameBuffer;
 };
 }
 #endif // RENDERER_H

@@ -49,6 +49,8 @@ void SimulationRenderer::commit()
     _transferFunctionRange = getParam1f("transferFunctionRange", 0.f);
     _threshold = getParam1f("threshold", _transferFunctionMinValue);
     _detectionDistance = getParam1f("detectionDistance", 15.f);
+    _pfbData = getParamData("pfbData");
+    _pfbSize = getParam3i("pfbSize", ospray::vec3i(0.f));
 
     ispc::SimulationRenderer_set(
         getIE(), (_simulationModel ? _simulationModel->getIE() : nullptr),
@@ -65,7 +67,8 @@ void SimulationRenderer::commit()
             ? (ispc::vec3f*)_transferFunctionEmissionData->data
             : NULL,
         _transferFunctionSize, _transferFunctionMinValue,
-        _transferFunctionRange, _threshold, _detectionDistance);
+        _transferFunctionRange, _threshold, _detectionDistance,
+        _pfbData ? (float*)_pfbData->data : NULL, (ispc::vec3i&)_pfbSize);
 }
 
 SimulationRenderer::SimulationRenderer()

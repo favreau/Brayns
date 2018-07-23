@@ -51,6 +51,7 @@ private:
     std::string _name;
     OSPRayCamera* _camera{nullptr};
     OSPRenderer _renderer;
+    OSPData _ospPowerFrameBuffer{nullptr};
     float _variance{std::numeric_limits<float>::max()};
     bool _dirty{true};
 };

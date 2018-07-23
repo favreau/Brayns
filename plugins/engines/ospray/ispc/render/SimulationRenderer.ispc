@@ -35,6 +35,10 @@ struct SimulationRenderer
     uint64 simulationDataSize;
     float threshold;
     float detectionDistance;
+
+    // Power frame buffer
+    uniform float* uniform pfbData;
+    vec3i pfbSize;
 };
 
 struct ShadingAttributes
@@ -60,6 +64,10 @@ struct ShadingAttributes
     float volumeIntensity;
     vec3f shadingContribution;
     vec3f finalContribution;
+    int materialId;
+    vec2f texCoords;
+    float shadowIntensity;
+    float aoIntensity;
 };
 
 inline void initializeShadingAttributes(
@@ -68,6 +76,10 @@ inline void initializeShadingAttributes(
 {
     attributes.self = self;
     attributes.dg = 0;
+
+    // Material
+    attributes.materialId = -1;
+    attributes.texCoords = make_vec2f(0.f);
 
     // Final contribution
     attributes.finalContribution = make_vec3f(0.f);
@@ -94,6 +106,8 @@ inline void initializeShadingAttributes(
 
     // Shading contribution
     attributes.shadingContribution = make_vec3f(0.f);
+    attributes.shadowIntensity = 0.f;
+    attributes.aoIntensity = 0.f;
 
     // Other attributes
     attributes.reflection = 0.f;
@@ -520,7 +534,24 @@ inline vec3f SimulationRenderer_shadeRay(
 
             // Z-Depth
             if (depth == 0)
+            {
                 sample.z = ray.t;
+
+                // Power frame buffer
+                const size_t index =
+                    (sample.sampleID.y * self->pfbSize.x + sample.sampleID.x) *
+                    self->pfbSize.z;
+
+                self->pfbData[index + 0] = attributes.materialId;
+                self->pfbData[index + 1] = attributes.texCoords.x;
+                self->pfbData[index + 2] = attributes.texCoords.y;
+                self->pfbData[index + 3] = attributes.normal.y;
+                self->pfbData[index + 4] = attributes.normal.y;
+                self->pfbData[index + 5] = attributes.normal.y;
+                self->pfbData[index + 6] = attributes.shadowIntensity;
+                self->pfbData[index + 7] = attributes.aoIntensity;
+                self->pfbData[index + 8] = sample.z;
+            }
 
             if (attributes.opacity > 0.01f && moreRebounds)
             {
@@ -625,13 +656,14 @@ export void SimulationRenderer_set(
     const uniform bool& shadingEnabled, const uniform int& randomNumber,
     const uniform float& timestamp, const uniform int& spp,
     const uniform bool& electronShadingEnabled, void** uniform lights,
-    const uniform int32 numLights,const uniform int32& volumeSamplesPerRay,
+    const uniform int32 numLights, const uniform int32& volumeSamplesPerRay,
     uniform float* uniform simulationData,
     const uniform uint64& simulationDataSize, uniform vec4f* uniform colormap,
     uniform vec3f* uniform emissionIntensitiesMap,
     const uniform int32 colorMapSize, const uniform float& colorMapMinValue,
     const uniform float& colorMapRange, const uniform float& threshold,
-    const uniform float& detectionDistance)
+    const uniform float& detectionDistance, uniform float* uniform pfbData,
+    const uniform vec3i& pfbSize)
 {
     uniform SimulationRenderer* uniform self =
         (uniform SimulationRenderer * uniform)_self;
@@ -667,4 +699,7 @@ export void SimulationRenderer_set(
 
     self->threshold = threshold;
     self->detectionDistance = detectionDistance;
+
+    self->pfbData = (uniform float* uniform)pfbData;
+    self->pfbSize = pfbSize;
 }

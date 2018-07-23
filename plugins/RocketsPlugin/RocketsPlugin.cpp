@@ -41,6 +41,8 @@
 #include <rockets/jsonrpc/server.h>
 #include <rockets/server.h>
 
+#include <fstream>
+
 #include "BinaryRequests.h"
 #include "ImageGenerator.h"
 
@@ -79,6 +81,7 @@ const std::string METHOD_REMOVE_MODEL = "remove-model";
 const std::string METHOD_SCHEMA = "schema";
 const std::string METHOD_UPDATE_INSTANCE = "update-instance";
 const std::string METHOD_UPDATE_MODEL = "update-model";
+const std::string METHOD_POWER_FRAME_BUFFER = "get-power-frame-buffer";
 
 // JSONRPC notifications
 const std::string METHOD_CHUNK = "chunk";
@@ -586,6 +589,7 @@ public:
         _handleGET(ENDPOINT_STATISTICS, _engine->getStatistics());
 
         _handleFrameBuffer();
+        _handlePowerFrameBuffer();
         _handleSimulationHistogram();
 
         _handleSchemaRPC();
@@ -785,6 +789,30 @@ public:
                                               _engine->getCamera());
                        _engine->triggerRender();
                    });
+    }
+
+    void _handlePowerFrameBuffer()
+    {
+        RpcDocumentation doc{"Exports power frame to specified binary file",
+                             "filename", "Name of the binary file"};
+        _handleRPC<SchemaParam, bool>(
+            METHOD_POWER_FRAME_BUFFER, doc,
+            [engine = _engine](const auto& filename) {
+                std::ofstream ofs(filename.endpoint, std::ios::binary);
+                if (ofs.good())
+                {
+                    auto& fb = engine->getRenderer().getPowerFrameBuffer();
+                    const auto& buffer = fb.data;
+                    ofs.write(reinterpret_cast<const char*>(&fb.size),
+                              sizeof(Vector2ui));
+                    ofs.write(reinterpret_cast<const char*>(buffer.data()),
+                              buffer.size() * sizeof(PowerFrameBufferElement));
+                    ofs.close();
+                    return true;
+                }
+                else
+                    return false;
+            });
     }
 
     void _handleSnapshot()

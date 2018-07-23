@@ -50,6 +50,31 @@ void OSPRayRenderer::render(FrameBufferPtr frameBuffer)
         std::static_pointer_cast<OSPRayFrameBuffer>(frameBuffer);
     osprayFrameBuffer->lock();
 
+    // Power frame buffer
+    if (frameBuffer->isModified() && _ospPowerFrameBuffer)
+    {
+        ospRelease(_ospPowerFrameBuffer);
+        _ospPowerFrameBuffer = nullptr;
+    }
+
+    if (!_ospPowerFrameBuffer)
+    {
+        BRAYNS_INFO << "Committing Power Frame Buffer" << std::endl;
+        const auto size = frameBuffer->getSize();
+        _powerFrameBuffer.size = size;
+        _powerFrameBuffer.data.resize(size.x() * size.y());
+
+        _ospPowerFrameBuffer =
+            ospNewData(_powerFrameBuffer.data.size() * sizeof(PowerFrameBuffer),
+                       OSP_FLOAT, _powerFrameBuffer.data.data(),
+                       OSP_DATA_SHARED_BUFFER);
+        ospCommit(_ospPowerFrameBuffer);
+        ospSetData(_renderer, "pfbData", _ospPowerFrameBuffer);
+        ospSet3i(_renderer, "pfbSize", size.x(), size.y(),
+                 sizeof(PowerFrameBuffer) / sizeof(float));
+        ospCommit(_renderer);
+    }
+
     _variance = ospRenderFrame(osprayFrameBuffer->impl(), _renderer,
                                OSP_FB_COLOR | OSP_FB_DEPTH | OSP_FB_ACCUM);
 
@@ -109,6 +134,7 @@ void OSPRayRenderer::commit()
     ospSetObject(_renderer, "world", scene->getModel());
     ospSetObject(_renderer, "simulationModel", scene->simulationModelImpl());
     ospCommit(_renderer);
+
     _dirty = false;
 }
 

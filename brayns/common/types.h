@@ -284,6 +284,13 @@ enum class MaterialsColorMap
     pastel          // Random pastel colors
 };
 
+enum class MaterialShadingMode
+{
+    none = 0,
+    diffuse = 1,
+    electron = 2
+};
+
 /**
  * The different modes for moving the camera.
  */
@@ -364,6 +371,6 @@ struct RpcParameterDescription
     std::string paramName;
     std::string paramDescription;
 };
-}
+} // namespace brayns
 
 #endif // TYPES_H

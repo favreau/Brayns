@@ -275,7 +275,7 @@ inline vec4f getVolumeContribution(
     float shadowIntensity = 0.f;
 
     // Introduce a bit of randomness to smooth the shading
-    t0 -= getRandomValue(sample, self->randomNumber) * ((t1 - t0) * 0.01f);
+    // t0 -= getRandomValue(sample, self->randomNumber) * ((t1 - t0) * 0.01f);
 
     // Ray marching
     unsigned int shadingOccurence = 0;

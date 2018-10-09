@@ -38,12 +38,12 @@ set(OSPRAY_MODULE_OPTIX_CU
   cuda/geometry/TrianglesMesh.cu
   cuda/renderer/Phong.cu
 )
+
 CUDA_GET_SOURCES_AND_OPTIONS(source_files cmake_options options ${ARGN})
 CUDA_WRAP_SRCS(ospray_module_optix
   PTX generated_files ${OSPRAY_MODULE_OPTIX_CU} ${cmake_options}
   OPTIONS ${options}
 )
-
 
 set(OSPRAY_MODULE_OPTIX_PTX
   ospray_module_optix_generated_Camera.cu.ptx

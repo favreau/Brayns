@@ -191,7 +191,8 @@ class Statistics;
 enum class EngineType
 {
     ospray,
-    optix
+    optix,
+    solr
 };
 
 /** Define the frame buffer format */

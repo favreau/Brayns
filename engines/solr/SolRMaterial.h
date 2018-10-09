@@ -1,8 +1,8 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
+/* Copyright (c) 2015-2018, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Daniel Nachbaur <daniel.nachbaur@epfl.ch>
+ * Responsible Author: Cyrille Favreau <cyrille.favreau@epfl.ch>
  *
- * This file is part of https://github.com/BlueBrain/ospray-modules
+ * This file is part of Brayns <https://github.com/BlueBrain/Brayns>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
@@ -18,29 +18,27 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#pragma once
+#ifndef SOLRMATERIAL_H
+#define SOLRMATERIAL_H
 
-#include <ospray/SDK/camera/Camera.h>
+#include <solr/solr.h>
 
-#include <optixu/optixpp_namespace.h>
-#include <optixu/optixu_math_stream_namespace.h>
+#include <brayns/common/material/Material.h>
 
-namespace bbp
+namespace brayns
 {
-namespace optix
+class SolRMaterial : public Material
 {
-struct Camera : public ospray::Camera
-{
-    Camera();
-    ~Camera();
+public:
+    SolRMaterial(solr::GPUKernel* kernel);
+    ~SolRMaterial();
 
-    std::string toString() const override;
-    void commit() override;
+    void commit() final;
 
 private:
-    ::optix::Context _context;
-    ::optix::Program _camera{nullptr};
-    std::array<::optix::Program, 2> _missProgram;
+    size_t _id;
+    solr::GPUKernel* _kernel{nullptr};
 };
-} // namespace optix
-} // namespace bbp
+} // namespace brayns
+
+#endif // SOLRMATERIAL_H

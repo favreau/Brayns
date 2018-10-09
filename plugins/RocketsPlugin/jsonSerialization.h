@@ -70,7 +70,7 @@ struct ModelProperties
     size_t modelID;
     PropertyMap properties;
 };
-}
+} // namespace brayns
 
 STATICJSON_DECLARE_ENUM(brayns::GeometryQuality,
                         {"low", brayns::GeometryQuality::low},
@@ -503,7 +503,7 @@ inline void init(brayns::AnimationParameters* a, ObjectHandler* h)
     h->add_property("unit", &a->_unit, Flags::Optional);
     h->set_flags(Flags::DisallowUnknownKey);
 }
-}
+} // namespace staticjson
 
 // for rockets::jsonrpc
 template <class T>

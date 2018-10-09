@@ -18,22 +18,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OSPRAYENGINE_H
-#define OSPRAYENGINE_H
+#ifndef SOLRENGINE_H
+#define SOLRENGINE_H
+
+#include <solr/solr.h>
 
 #include <brayns/common/engine/Engine.h>
 
 namespace brayns
 {
 /**
- * OSPRay implementation of the ray-tracing engine.
+ * SolR implementation of the ray-tracing engine.
  */
-class OSPRayEngine : public Engine
+class SolREngine : public Engine
 {
 public:
-    OSPRayEngine(ParametersManager& parametersManager);
+    SolREngine(ParametersManager& parametersManager);
 
-    ~OSPRayEngine();
+    ~SolREngine();
 
     /** @copydoc Engine::name */
     EngineType name() const final;
@@ -53,8 +55,6 @@ public:
     /** @copydoc Engine::getMinimumFrameSize */
     Vector2ui getMinimumFrameSize() const final;
 
-    /** @copydoc Engine::haveDeflectPixelOp */
-    bool haveDeflectPixelOp() const final { return _haveDeflectPixelOp; }
     FrameBufferPtr createFrameBuffer(const Vector2ui& frameSize,
                                      FrameBufferFormat frameBufferFormat,
                                      bool accumulation) const final;
@@ -66,15 +66,15 @@ public:
         const RenderingParameters& renderingParameters) const final;
 
 private:
-    uint32_t _getOSPDataFlags() const;
-
     void _createCameras();
     void _createRenderers();
 
     bool _haveDeflectPixelOp{false};
     bool _useDynamicLoadBalancer{false};
-    EngineType _type{EngineType::ospray};
+    EngineType _type{EngineType::solr};
+
+    solr::GPUKernel* _kernel{nullptr};
 };
 } // namespace brayns
 
-#endif // OSPRAYENGINE_H
+#endif // SOLRENGINE_H

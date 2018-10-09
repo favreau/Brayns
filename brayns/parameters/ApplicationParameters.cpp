@@ -51,8 +51,9 @@ const std::string DEFAULT_TMP_FOLDER = "/tmp";
 
 const std::map<std::string, brayns::EngineType> ENGINES = {
     {"ospray", brayns::EngineType::ospray},
-    {"optix", brayns::EngineType::optix}};
-}
+    {"optix", brayns::EngineType::optix},
+    {"solr", brayns::EngineType::solr}};
+} // namespace
 
 namespace brayns
 {
@@ -191,4 +192,4 @@ const std::string& ApplicationParameters::getEngineAsString(
             return kv.first;
     throw std::runtime_error("Could not get engine as string");
 }
-}
+} // namespace brayns

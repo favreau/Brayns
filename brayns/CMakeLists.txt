@@ -25,6 +25,10 @@ if(TARGET braynsOSPRayEnginePlugin)
   list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE braynsOSPRayEnginePlugin)
 endif()
 
+if(TARGET braynsSolREnginePlugin)
+  list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE braynsSolREnginePlugin)
+endif()
+
 if(TARGET DeflectPlugin)
   list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE DeflectPlugin)
 endif()

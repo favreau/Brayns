@@ -26,6 +26,9 @@
 #if (BRAYNS_USE_OSPRAY)
 #include <engines/ospray/OSPRayEngine.h>
 #endif
+#if (BRAYNS_USE_SOLR)
+#include <engines/solr/SolREngine.h>
+#endif
 
 namespace brayns
 {
@@ -48,6 +51,10 @@ std::unique_ptr<Engine> EngineFactory::create(
 #if (BRAYNS_USE_OSPRAY)
         if (name == EngineType::ospray || name == EngineType::optix)
             return std::make_unique<OSPRayEngine>(_parametersManager);
+#endif
+#if (BRAYNS_USE_SOLR)
+        if (name == EngineType::solr)
+            return std::make_unique<SolREngine>(_parametersManager);
 #endif
     }
     catch (const std::runtime_error& e)

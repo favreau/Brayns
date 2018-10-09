@@ -156,5 +156,5 @@ void Camera::commit()
 }
 
 OSP_REGISTER_CAMERA(Camera, perspective);
-}
-}
+} // namespace optix
+} // namespace bbp

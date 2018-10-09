@@ -116,6 +116,14 @@ else()
   endif()
 endif()
 
+# Sol-R Engine
+find_package(SolR)
+if(SOLR_FOUND)
+  add_subdirectory(engines/solr)
+  list(APPEND COMMON_FIND_PACKAGE_DEFINES BRAYNS_USE_SOLR)
+  include_directories(${SOLR_INCLUDE_DIRS})
+endif()
+
 # Mesh loading
 common_find_package(assimp SYSTEM)
 if(ASSIMP_FOUND)

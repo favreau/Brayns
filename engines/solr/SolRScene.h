@@ -18,29 +18,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef OSPRAYSCENE_H
-#define OSPRAYSCENE_H
+#ifndef SolRSCENE_H
+#define SolRSCENE_H
+
+#include <solr/solr.h>
 
 #include <brayns/common/scene/Scene.h>
 #include <brayns/common/types.h>
-
-#include <ospray.h>
 
 namespace brayns
 {
 /**
 
-   OSPRay specific scene
+   SolR specific scene
 
-   This object is the OSPRay specific implementation of a scene
+   This object is the SolR specific implementation of a scene
 
 */
-class OSPRayScene : public Scene
+class SolRScene : public Scene
 {
 public:
-    OSPRayScene(ParametersManager& parametersManager,
-                const size_t memoryManagementFlags);
-    ~OSPRayScene();
+    SolRScene(solr::GPUKernel* kernel, ParametersManager& parametersManager);
+    ~SolRScene();
 
     /** @copydoc Scene::commit */
     void commit() final;
@@ -59,39 +58,8 @@ public:
                                          const DataType type) const final;
     ModelPtr createModel() const final;
 
-    OSPModel getModel() { return _rootModel; }
-    OSPModel simulationModelImpl() { return _rootSimulationModel; }
-    OSPData lightData() { return _ospLightData; }
-    OSPData simulationData() { return _ospSimulationData; }
-    OSPData transferFunctionDiffuseData()
-    {
-        return _ospTransferFunctionDiffuseData;
-    }
-    OSPData transferFunctionEmissionData()
-    {
-        return _ospTransferFunctionEmissionData;
-    }
-
 private:
-    void _commitSimulationData();
-    bool _commitVolumeData();
-
-    OSPModel _rootModel{nullptr};
-    OSPModel _rootSimulationModel{nullptr};
-
-    std::vector<OSPLight> _ospLights;
-    OSPData _ospLightData{nullptr};
-
-    OSPData _ospSimulationData{nullptr};
-
-    OSPTransferFunction _ospTransferFunction{nullptr};
-
-    OSPData _ospTransferFunctionEmissionData{nullptr};
-    OSPData _ospTransferFunctionDiffuseData{nullptr};
-
-    size_t _memoryManagementFlags{0};
-
-    ModelDescriptors _activeModels;
+    solr::GPUKernel* _kernel;
 };
 } // namespace brayns
-#endif // OSPRAYSCENE_H
+#endif // SolRSCENE_H

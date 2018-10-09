@@ -1,6 +1,8 @@
-/* Copyright (c) 2015-2018, EPFL/Blue Brain Project
+/* Copyright (c) 2015-2016, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Cyrille Favreau <cyrille.favreau@epfl.ch>
+ *
+ * Based on OSPRay implementation
  *
  * This file is part of Brayns <https://github.com/BlueBrain/Brayns>
  *
@@ -18,115 +20,98 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "OSPRayMaterial.h"
+#include "ExtendedOBJMaterial.h"
+#include "ExtendedOBJMaterial_ispc.h"
+#include <ospray/SDK/common/Data.h>
 
-#include <brayns/common/log.h>
-
-#include <cassert>
+#define OSP_REGISTER_EXMATERIAL(InternalClassName, external_name)          \
+    extern "C" ospray::Material* ospray_create_material__##external_name() \
+    {                                                                      \
+        return new InternalClassName;                                      \
+    }
 
 namespace brayns
 {
-struct TextureTypeMaterialAttribute
+namespace obj
 {
-    TextureType type;
-    std::string attribute;
-};
-
-static TextureTypeMaterialAttribute textureTypeMaterialAttribute[8] = {
-    {TT_DIFFUSE, "map_kd"},
-    {TT_NORMALS, "map_bump"},
-    {TT_BUMP, "map_bump"},
-    {TT_SPECULAR, "map_ks"},
-    {TT_EMISSIVE, "map_ns"},
-    {TT_OPACITY, "map_d"},
-    {TT_REFLECTION, "map_reflection"},
-    {TT_REFRACTION, "map_refraction"}};
-
-OSPRayMaterial::OSPRayMaterial()
-    : _ospMaterial(ospNewMaterial(nullptr, "ExtendedOBJMaterial"))
+void ExtendedOBJMaterial::commit()
 {
+    if (ispcEquivalent == nullptr)
+        ispcEquivalent = ispc::ExtendedOBJMaterial_create(this);
+
+    // Opacity
+    map_d = (ospray::Texture2D*)getParamObject("map_d", nullptr);
+    xform_d = getTextureTransform("map_d");
+    d = getParam1f("d", 1.f);
+
+    // Diffuse color
+    Kd = getParam3f("kd", ospray::vec3f(.8f));
+    map_Kd = (ospray::Texture2D*)getParamObject("map_kd", nullptr);
+    xform_Kd = getTextureTransform("map_kd");
+
+    // Specular color
+    Ks = getParam3f("ks", ospray::vec3f(0.f));
+    map_Ks = (ospray::Texture2D*)getParamObject("map_ks", nullptr);
+    xform_Ks = getTextureTransform("map_ks");
+
+    // Specular exponent
+    Ns = getParam1f("ns", 10.f);
+    map_Ns = (ospray::Texture2D*)getParamObject("map_ns", nullptr);
+    xform_Ns = getTextureTransform("map_ns");
+
+    // Bump mapping
+    map_Bump = (ospray::Texture2D*)getParamObject("map_bump", nullptr);
+    xform_Bump = getTextureTransform("map_bump");
+    rot_Bump = xform_Bump.l.orthogonal().transposed();
+
+    // Refraction mapping
+    refraction = getParam1f("refraction", 0.f);
+    xform_Refraction = getTextureTransform("map_refraction");
+    map_Refraction =
+        (ospray::Texture2D*)getParamObject("map_refraction", nullptr);
+
+    // Reflection mapping
+    reflection = getParam1f("reflection", 0.f);
+    xform_Reflection = getTextureTransform("map_reflection");
+    map_Reflection =
+        (ospray::Texture2D*)getParamObject("map_reflection", nullptr);
+
+    // Light emission mapping
+    a = getParam1f("a", 0.f);
+    xform_a = getTextureTransform("map_a");
+    map_a = (ospray::Texture2D*)getParamObject("map_a", nullptr);
+
+    // Glossiness
+    glossiness = getParam1f("glossiness", 1.f);
+
+    // Cast simulation data
+    castSimulationData = getParam1i("cast_simulation_data", true);
+
+    // Shading mode
+    shadingMode = static_cast<MaterialShadingMode>(
+        getParam1i("shading_mode",
+                   static_cast<int>(MaterialShadingMode::none)));
+
+    ispc::ExtendedOBJMaterial_set(
+        getIE(), map_d ? map_d->getIE() : nullptr,
+        (const ispc::AffineSpace2f&)xform_d, d,
+        map_Refraction ? map_Refraction->getIE() : nullptr,
+        (const ispc::AffineSpace2f&)xform_Refraction, refraction,
+        map_Reflection ? map_Reflection->getIE() : nullptr,
+        (const ispc::AffineSpace2f&)xform_Reflection, reflection,
+        map_a ? map_a->getIE() : nullptr, (const ispc::AffineSpace2f&)xform_a,
+        a, glossiness, castSimulationData, map_Kd ? map_Kd->getIE() : nullptr,
+        (const ispc::AffineSpace2f&)xform_Kd, (ispc::vec3f&)Kd,
+        map_Ks ? map_Ks->getIE() : nullptr,
+        (const ispc::AffineSpace2f&)xform_Ks, (ispc::vec3f&)Ks,
+        map_Ns ? map_Ns->getIE() : nullptr,
+        (const ispc::AffineSpace2f&)xform_Ns, Ns,
+        map_Bump ? map_Bump->getIE() : nullptr,
+        (const ispc::AffineSpace2f&)xform_Bump,
+        (const ispc::LinearSpace2f&)rot_Bump,
+        (const ispc::MaterialShadingMode&)shadingMode);
 }
 
-OSPRayMaterial::~OSPRayMaterial()
-{
-    if (_ospMaterial)
-        ospRelease(_ospMaterial);
-}
-
-void OSPRayMaterial::commit()
-{
-    if (!isModified())
-        return;
-
-    ospSet3f(_ospMaterial, "kd", _diffuseColor.x(), _diffuseColor.y(),
-             _diffuseColor.z());
-    ospSet3f(_ospMaterial, "ks", _specularColor.x(), _specularColor.y(),
-             _specularColor.z());
-    ospSet1f(_ospMaterial, "ns", _specularExponent);
-    ospSet1f(_ospMaterial, "d", _opacity);
-    ospSet1f(_ospMaterial, "refraction", _refractionIndex);
-    ospSet1f(_ospMaterial, "reflection", _reflectionIndex);
-    ospSet1f(_ospMaterial, "a", _emission);
-    ospSet1f(_ospMaterial, "glossiness", _glossiness);
-    ospSet1i(_ospMaterial, "cast_simulation_data", _castSimulationData);
-    ospSet1i(_ospMaterial, "shading_mode", static_cast<uint8_t>(_shadingMode));
-
-    // Textures
-    for (const auto& textureType : textureTypeMaterialAttribute)
-        ospSetObject(_ospMaterial, textureType.attribute.c_str(), nullptr);
-
-    for (const auto& textureDescriptor : _textureDescriptors)
-    {
-        const auto texType = textureDescriptor.first;
-        auto texture = getTexture(texType);
-        if (texture)
-        {
-            auto ospTexture = _createOSPTexture2D(texture);
-            const auto str =
-                textureTypeMaterialAttribute[texType].attribute.c_str();
-            ospSetObject(_ospMaterial, str, ospTexture);
-            ospRelease(ospTexture);
-        }
-    }
-
-    ospCommit(_ospMaterial);
-    resetModified();
-}
-
-OSPTexture2D OSPRayMaterial::_createOSPTexture2D(Texture2DPtr texture)
-{
-    OSPTextureFormat type = OSP_TEXTURE_R8; // smallest valid type as default
-    if (texture->getDepth() == 1)
-    {
-        if (texture->getNbChannels() == 1)
-            type = OSP_TEXTURE_R8;
-        if (texture->getNbChannels() == 3)
-            type = OSP_TEXTURE_RGB8;
-        if (texture->getNbChannels() == 4)
-            type = OSP_TEXTURE_RGBA8;
-    }
-    else if (texture->getDepth() == 4)
-    {
-        if (texture->getNbChannels() == 1)
-            type = OSP_TEXTURE_R32F;
-        if (texture->getNbChannels() == 3)
-            type = OSP_TEXTURE_RGB32F;
-        if (texture->getNbChannels() == 4)
-            type = OSP_TEXTURE_RGBA32F;
-    }
-
-    BRAYNS_DEBUG << "Creating OSPRay texture from " << texture->getFilename()
-                 << ": " << texture->getWidth() << "x" << texture->getHeight()
-                 << "x" << (int)type << std::endl;
-
-    osp::vec2i texSize{int(texture->getWidth()), int(texture->getHeight())};
-    OSPTexture2D ospTexture =
-        ospNewTexture2D(texSize, type, texture->getRawData(),
-                        OSP_TEXTURE_SHARED_BUFFER);
-
-    assert(ospTexture);
-    ospCommit(ospTexture);
-
-    return ospTexture;
-}
+OSP_REGISTER_EXMATERIAL(ExtendedOBJMaterial, ExtendedOBJMaterial);
+} // namespace obj
 } // namespace brayns

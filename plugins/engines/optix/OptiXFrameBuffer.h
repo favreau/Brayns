@@ -72,12 +72,12 @@ private:
     optix::PostprocessingStage _tonemapStage{nullptr};
     optix::PostprocessingStage _denoiserStage{nullptr};
 
-    size_t _numNonDenoisedFrames{4}; // number of frames that show the original
+    size_t _numNonDenoisedFrames{2}; // number of frames that show the original
                                      // image before switching on denoising
     float _denoiseBlend{
-        0.f}; // Defines the amount of the original image that is
-              // blended with the denoised result ranging from
-              // 0.0 to 1.0
+        0.1f}; // Defines the amount of the original image that is
+               // blended with the denoised result ranging from
+               // 0.0 to 1.0
 
     bool _postprocessingStagesInitialized{false};
 };

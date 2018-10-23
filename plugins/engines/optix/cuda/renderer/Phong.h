@@ -74,7 +74,11 @@ rtDeclareVariable(float4, jitter4, , );
 rtDeclareVariable(float3, bg_color, , );
 
 // Volume
+#if USE_16BIT_VOLUMES
+rtBuffer<short> volumeData;
+#else
 rtBuffer<unsigned char> volumeData;
+#endif
 rtDeclareVariable(uint3, volumeDimensions, , );
 rtDeclareVariable(float3, volumeOffset, , );
 rtDeclareVariable(float3, volumeElementSpacing, , );
@@ -140,8 +144,12 @@ static __device__ float getVolumeShadowContribution(const optix::Ray& volumeRay)
                         (ulong)floor(point.y) * volumeDimensions.x +
                         (ulong)floor(point.z) * volumeDimensions.x *
                             volumeDimensions.y);
+#if USE_16BIT_VOLUMES
+            const unsigned short v = volumeData[index * 2];
+            const unsigned char voxelValue = v / 256;
+#else
             const unsigned char voxelValue = volumeData[index];
-
+#endif
             const float normalizedValue =
                 (float)colorMapSize * ((float)voxelValue - colorMapMinValue) /
                 colorMapRange;
@@ -185,7 +193,13 @@ static __device__ float4 getVolumeContribution(const optix::Ray& volumeRay,
                                   (ulong)floor(point.y) * volumeDimensions.x +
                                   (ulong)floor(point.z) * volumeDimensions.x *
                                       volumeDimensions.y);
+
+#if USE_16BIT_VOLUMES
+            const unsigned short v = volumeData[index * 2];
+            const unsigned char voxelValue = v / 256;
+#else
             const unsigned char voxelValue = volumeData[index];
+#endif
 
             const float normalizedValue =
                 ((float)voxelValue - colorMapMinValue) / colorMapRange;
@@ -298,7 +312,12 @@ static __device__ float4
                                     (ulong)floor(p.y) * volumeDimensions.x +
                                     (ulong)floor(p.z) * volumeDimensions.x *
                                         volumeDimensions.y);
+#if USE_16BIT_VOLUMES
+                        const unsigned short v = volumeData[index * 2];
+                        const unsigned char voxelValue = v / 256;
+#else
                         const unsigned char voxelValue = volumeData[index];
+#endif
 
                         const float normalizedValue =
                             ((float)voxelValue - colorMapMinValue) /

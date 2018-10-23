@@ -231,9 +231,13 @@ void OptiXScene::buildGeometry()
                 << totalGPUMemory / 1048576 << " MB)" << std::endl;
     BRAYNS_INFO << "----------------------------------------" << std::endl;
 
-    // Initialize Volume data
+// Initialize Volume data
+#if USE_16BIT_VOLUMES
+    _volumeBuffer = _context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_SHORT, 0);
+#else
     _volumeBuffer =
         _context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_UNSIGNED_BYTE, 0);
+#endif
     _context["volumeData"]->setBuffer(_volumeBuffer);
     _context["volumeDimensions"]->setUint(0, 0, 0);
     _context["volumeScale"]->setFloat(0.f, 0.f, 0.f);
@@ -729,8 +733,13 @@ void OptiXScene::commitVolumeData()
     VolumeHandlerPtr volumeHandler = getVolumeHandler();
     if (!volumeHandler || !volumeHandler->getData())
     {
+#if USE_16BIT_VOLUMES
+        _volumeBuffer =
+            _context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_SHORT, 0);
+#else
         _volumeBuffer =
             _context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_UNSIGNED_BYTE, 0);
+#endif
         _context["volumeData"]->setBuffer(_volumeBuffer);
         _context["volumeDimensions"]->setUint(0, 0, 0);
         _context["volumeScale"]->setFloat(0.f, 0.f, 0.f);
@@ -747,10 +756,16 @@ void OptiXScene::commitVolumeData()
         if (_volumeBuffer)
             _volumeBuffer->destroy();
 
+#if USE_16BIT_VOLUMES
+        _volumeBuffer = _context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_SHORT,
+                                               volumeHandler->getSize());
+        uint64_t size = volumeHandler->getSize() * sizeof(short);
+#else
         _volumeBuffer =
             _context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_UNSIGNED_BYTE,
                                    volumeHandler->getSize());
         uint64_t size = volumeHandler->getSize() * sizeof(unsigned char);
+#endif
         if (size != 0)
         {
             memcpy(_volumeBuffer->map(), data, size);
@@ -783,6 +798,8 @@ void OptiXScene::commitVolumeData()
 
 void OptiXScene::commitTransferFunctionData()
 {
+    BRAYNS_INFO << "Commit transfer function data" << std::endl;
+
     if (!_colorMapBuffer)
         _colorMapBuffer =
             _context->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT4,

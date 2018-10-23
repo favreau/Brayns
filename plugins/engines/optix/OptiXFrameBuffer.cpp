@@ -38,8 +38,8 @@ const std::string VARIABLE_EXPOSURE = "exposure";
 const std::string VARIABLE_GAMMA = "gamma";
 const std::string VARIABLE_BLEND = "blend";
 
-const float DEFAULT_EXPOSURE = 2.0f;
-const float DEFAULT_GAMMA = 2.2f;
+const float DEFAULT_EXPOSURE = 1.5f;
+const float DEFAULT_GAMMA = 1.0f;
 }
 
 namespace brayns
@@ -136,12 +136,12 @@ void OptiXFrameBuffer::resize(const Vector2ui& frameSize)
 
 void OptiXFrameBuffer::clear()
 {
-    _accumulationFrameNumber = 1u;
+    _accumulationFrameNumber = 0u;
 }
 
 void OptiXFrameBuffer::map()
 {
-    // Post processing
+    // Initialization
     if (_accumulationType == AccumulationType::ai_denoised)
         if (!_postprocessingStagesInitialized)
             _initializePostProcessingStages();
@@ -152,32 +152,34 @@ void OptiXFrameBuffer::map()
     rtBufferMap(_outputBuffer->get(), &_colorData);
 
     if (_accumulationType == AccumulationType::none)
-        _context[CUDA_FRAME_NUMBER]->setUint(1u);
+        _context[CUDA_FRAME_NUMBER]->setUint(0u);
     else
-        _context[CUDA_FRAME_NUMBER]->setUint(_accumulationFrameNumber++);
+        _context[CUDA_FRAME_NUMBER]->setUint(_accumulationFrameNumber);
 
     _colorBuffer = (uint8_t*)(_colorData);
 
+    // Post processing
     if (_accumulationType == AccumulationType::ai_denoised)
     {
-        if (!_denoisedBuffer)
-            return;
         const bool useDenoiser =
-            (_accumulationFrameNumber > _numNonDenoisedFrames);
+            (_accumulationFrameNumber >= _numNonDenoisedFrames);
+
         if (useDenoiser)
             rtBufferMap(_denoisedBuffer->get(), &_floatData);
         else
             rtBufferMap(_tonemappedBuffer->get(), &_floatData);
+
         _floatBuffer = (float*)_floatData;
     }
+    ++_accumulationFrameNumber;
 }
 
 void OptiXFrameBuffer::unmap()
 {
+    // Post processing stages
     const bool useDenoiser =
         (_accumulationFrameNumber >= _numNonDenoisedFrames);
     if (_accumulationType == AccumulationType::ai_denoised)
-        // Post processing stages
         if (_commandListWithDenoiser && _commandListWithoutDenoiser)
         {
             optix::Variable(_denoiserStage->queryVariable(VARIABLE_BLEND))
@@ -191,23 +193,22 @@ void OptiXFrameBuffer::unmap()
             }
             catch (...)
             {
+                BRAYNS_ERROR << "Hum... something went wrong!" << std::endl;
             }
         }
 
     // Unmap
     if (!_outputBuffer)
         return;
+
     rtBufferUnmap(_outputBuffer->get());
     _colorBuffer = nullptr;
 
     if (_accumulationType == AccumulationType::ai_denoised)
     {
-        if (!_denoisedBuffer)
-            return;
         if (useDenoiser)
             rtBufferUnmap(_denoisedBuffer->get());
-        else
-            rtBufferUnmap(_tonemappedBuffer->get());
+        rtBufferUnmap(_tonemappedBuffer->get());
     }
     _floatBuffer = nullptr;
 }

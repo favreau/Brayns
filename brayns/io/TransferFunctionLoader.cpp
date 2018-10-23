@@ -59,10 +59,15 @@ bool TransferFunctionLoader::loadFromFile(const std::string& filename,
 
     while (validParsing && std::getline(file, line))
     {
-        std::vector<uint> lineData;
+        if (nbEntries == 0)
+        {
+            ++nbEntries;
+            continue;
+        }
+        std::vector<float> lineData;
         std::stringstream lineStream(line);
 
-        size_t value;
+        float value;
         while (lineStream >> value)
             lineData.push_back(value);
 
@@ -70,15 +75,15 @@ bool TransferFunctionLoader::loadFromFile(const std::string& filename,
         {
         case 3:
         {
-            Vector4f diffuse(lineData[0] / 255.f, lineData[1] / 255.f,
-                             lineData[2] / 255.f, DEFAULT_ALPHA);
+            Vector4f diffuse(lineData[0], lineData[1], lineData[2],
+                             DEFAULT_ALPHA);
             transferFunction.getDiffuseColors().push_back(diffuse);
             break;
         }
         case 4:
         {
-            Vector4f diffuse(lineData[0] / 255.f, lineData[1] / 255.f,
-                             lineData[2] / 255.f, lineData[3] / 255.f);
+            Vector4f diffuse(lineData[0], lineData[1], lineData[2],
+                             lineData[3]);
             transferFunction.getDiffuseColors().push_back(diffuse);
             break;
         }
@@ -90,7 +95,7 @@ bool TransferFunctionLoader::loadFromFile(const std::string& filename,
         ++nbEntries;
     }
 
-    _range = Vector2f(0.f, nbEntries);
+    _range = Vector2f(0.f, nbEntries - 2);
     transferFunction.setValuesRange(_range);
     BRAYNS_INFO << "Transfer function values range: " << _range << std::endl;
     file.close();

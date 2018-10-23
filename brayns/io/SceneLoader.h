@@ -72,7 +72,7 @@ private:
     typedef std::vector<Node> Nodes;
 
     bool _parsePositions(const std::string& filename);
-#ifdef BRAYNS_USE_BRION
+#if (BRAYNS_USE_BRION)
     void _importMorphology(Scene& scene, const Node& node,
                            const Matrix4f& transformation);
 #endif

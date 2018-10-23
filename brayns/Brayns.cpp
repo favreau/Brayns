@@ -307,8 +307,10 @@ private:
     {
         _updateAnimation();
 
+#if (BRAYNS_USE_DEFLECT || BRAYNS_USE_NETWORKING)
         _extensionPluginFactory->execute(_engine, _keyboardHandler,
                                          *_cameraManipulator);
+#endif
 
         const Vector2ui windowSize =
             _parametersManager.getApplicationParameters().getWindowSize();

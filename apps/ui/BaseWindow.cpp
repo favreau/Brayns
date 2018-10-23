@@ -46,7 +46,7 @@ namespace
 {
 const int GLUT_WHEEL_SCROLL_UP = 3;
 const int GLUT_WHEEL_SCROLL_DOWN = 4;
-}
+} // namespace
 
 namespace brayns
 {
@@ -134,11 +134,13 @@ BaseWindow::BaseWindow(Brayns& brayns, const FrameBufferMode frameBufferMode)
     BRAYNS_INFO << "Camera       :" << _brayns.getEngine().getCamera()
                 << std::endl;
     BRAYNS_INFO << "Motion speed :" << motionSpeed << std::endl;
+
+    const auto& rp = _brayns.getParametersManager().getRenderingParameters();
+    if (rp.getAccumulationType() == AccumulationType::ai_denoised)
+        _frameBufferMode = FrameBufferMode::COLOR_F32;
 }
 
-BaseWindow::~BaseWindow()
-{
-}
+BaseWindow::~BaseWindow() {}
 
 void BaseWindow::mouseButton(const int button, const bool released,
                              const Vector2i& pos)
@@ -502,4 +504,4 @@ void BaseWindow::_toggleFrameBuffer()
     mode = (mode + 1) % 3;
     _frameBufferMode = static_cast<FrameBufferMode>(mode);
 }
-}
+} // namespace brayns

@@ -5,7 +5,7 @@
 # This file is part of Brayns <https://github.com/BlueBrain/Brayns>
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(Brayns VERSION 0.4.0)
+project(Brayns VERSION 0.5.0)
 set(Brayns_VERSION_ABI 1)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake
@@ -62,7 +62,7 @@ common_find_package(Brion)
 common_find_package(Servus)
 common_find_package(HDF5 SYSTEM COMPONENTS C CXX)
 if(TARGET Brion AND TARGET Servus AND HDF5_FOUND)
-  option(BRAYNS_BRION_ENABLED "Activate Brion" ON)
+  option(BRAYNS_BRION_ENABLED "Activate Brion" OFF)
 else()
   unset(BRAYNS_BRION_ENABLED)
 endif()

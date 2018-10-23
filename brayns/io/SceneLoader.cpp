@@ -22,11 +22,12 @@
 
 #include <brayns/common/log.h>
 #include <brayns/common/scene/Scene.h>
+#include <brayns/defines.h>
 #include <brayns/io/MeshLoader.h>
 #include <brayns/io/MorphologyLoader.h>
 #include <fstream>
 
-#ifdef BRAYNS_USE_BRION
+#if (BRAYNS_USE_BRION)
 #include <servus/uri.h>
 #endif
 
@@ -37,7 +38,7 @@ SceneLoader::SceneLoader(const ApplicationParameters& applicationParameters,
     : _applicationParameters(applicationParameters)
     , _geometryParameters(geometryParameters)
 {
-#ifndef BRAYNS_USE_BRION
+#if (BRAYNS_USE_BRION)
     BRAYNS_UNUSED_VAR(_applicationParameters);
 #endif
 }
@@ -94,7 +95,7 @@ bool SceneLoader::_parsePositions(const std::string& filename)
     return true;
 }
 
-#ifdef BRAYNS_USE_BRION
+#if (BRAYNS_USE_BRION)
 void SceneLoader::_importMorphology(Scene& scene, const Node& node,
                                     const Matrix4f& transformation)
 {
@@ -133,7 +134,7 @@ bool SceneLoader::_processNodes(Scene& scene, MeshLoader& meshLoader)
                              _geometryParameters.getRadiusMultiplier()});
             break;
         case FileType::morphology:
-#ifdef BRAYNS_USE_BRION
+#if (BRAYNS_USE_BRION)
             _importMorphology(scene, node, transformation);
 #endif
             break;

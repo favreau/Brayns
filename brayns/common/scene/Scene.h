@@ -137,6 +137,11 @@ public:
 
     BRAYNS_API ModelDescriptorPtr getModel(const size_t id) const;
 
+    BRAYNS_API ModelDescriptors& getModelDescriptors()
+    {
+        return _modelDescriptors;
+    }
+
     /**
         Builds a default scene made of a Cornell box, a reflective cube, and
         a transparent sphere
@@ -218,7 +223,7 @@ public:
          - Number of vertices
          - Vertices
          - Number of indices
-         - Indices
+         - IndicesgetModelDescriptors
          - Number of normals
          - Normals
          - Number of texture coordinates

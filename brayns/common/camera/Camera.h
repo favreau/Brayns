@@ -60,6 +60,9 @@ public:
 
     BRAYNS_API void setInitialState(const Boxd& boundingBox);
 
+    BRAYNS_API void setInitialState(const Vector3d& position,
+                                    const Quaterniond& quaternion);
+
     /**
        Sets camera position
        @param position The x, y, z coordinates of the camera position
@@ -115,6 +118,7 @@ public:
         const bool environmentMap BRAYNS_UNUSED){};
 
     virtual bool isSideBySideStereo() const { return false; }
+
 private:
     Vector3d _position;
     Vector3d _target;
@@ -131,6 +135,6 @@ private:
 };
 
 std::ostream& operator<<(std::ostream& os, Camera& camera);
-}
+} // namespace brayns
 
 #endif

@@ -75,6 +75,15 @@ void Camera::setInitialState(const Boxd& boundingBox)
                 << std::endl;
 }
 
+void Camera::setInitialState(const Vector3d& position,
+                             const Quaterniond& quaternion)
+{
+    const auto& rotation = quaternion.getRotationMatrix();
+    const Vector3d lookat = rotation * Vector3f(0.0, 0.0, 1.0);
+    const Vector3d up = rotation * Vector3f(0.0, 1.0, 0.0);
+    setInitialState(position, lookat, up);
+}
+
 void Camera::reset()
 {
     set(_initialPosition, _initialTarget, _initialUp);
@@ -91,4 +100,4 @@ std::ostream& operator<<(std::ostream& os, Camera& camera)
        << "," << up.y() << "," << up.z();
     return os;
 }
-}
+} // namespace brayns

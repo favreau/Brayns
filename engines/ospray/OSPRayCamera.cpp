@@ -60,7 +60,11 @@ void OSPRayCamera::commit()
         ospRelease(clipPlaneData);
     }
     else
+    {
+        // ospRemoveParam leaks objects, so we set it to null first
+        ospSetData(_camera, "clipPlanes", nullptr);
         ospRemoveParam(_camera, "clipPlanes");
+    }
 
     ospCommit(_camera);
 }
@@ -71,11 +75,11 @@ void OSPRayCamera::setEnvironmentMap(const bool environmentMap)
     ospCommit(_camera);
 }
 
-void OSPRayCamera::setClipPlanes(const ClipPlanes& clipPlanes)
+void OSPRayCamera::setClipPlanes(const Planes& planes)
 {
-    if (_clipPlanes == clipPlanes)
+    if (_clipPlanes == planes)
         return;
-    _clipPlanes = clipPlanes;
+    _clipPlanes = planes;
     markModified(false);
 }
 
@@ -96,4 +100,4 @@ void OSPRayCamera::createOSPCamera()
     _currentOSPCamera = getCurrentType();
     markModified();
 }
-}
+} // namespace brayns

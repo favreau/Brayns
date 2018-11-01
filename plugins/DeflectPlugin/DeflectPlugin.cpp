@@ -52,7 +52,7 @@ std::future<T> make_ready_future(const T value)
     promise.set_value(value);
     return promise.get_future();
 }
-}
+} // namespace
 
 namespace brayns
 {
@@ -309,7 +309,7 @@ private:
 
         auto& frameBuffer = engine.getFrameBuffer();
         frameBuffer.map();
-        if (frameBuffer.getColorBuffer())
+        if (frameBuffer.getByteBuffer())
         {
             _copyToLastImage(frameBuffer);
             _sendFuture = _sendLastImage();
@@ -322,9 +322,8 @@ private:
     void _copyToLastImage(FrameBuffer& frameBuffer)
     {
         const auto& size = frameBuffer.getSize();
-        const size_t bufferSize =
-            size.x() * size.y() * frameBuffer.getColorDepth();
-        void* data = frameBuffer.getColorBuffer();
+        const size_t bufferSize = size.x() * size.y() * frameBuffer.getDepth();
+        void* data = frameBuffer.getByteBuffer();
 
         _lastImage.data.resize(bufferSize);
         memcpy(_lastImage.data.data(), data, bufferSize);
@@ -412,4 +411,4 @@ void DeflectPlugin::postRender()
 {
     _impl->postRender();
 }
-}
+} // namespace brayns

@@ -33,7 +33,7 @@ inline void INPLACESWAP(T& a, T& b)
     b ^= a;
     a ^= b;
 }
-}
+} // namespace
 namespace brayns
 {
 namespace freeimage
@@ -65,12 +65,12 @@ bool SwapRedBlue32(FIBITMAP* freeImage)
 ImagePtr getImageFromFrameBuffer(FrameBuffer& frameBuffer)
 {
     frameBuffer.map();
-    const auto colorBuffer = frameBuffer.getColorBuffer();
+    const auto colorBuffer = frameBuffer.getByteBuffer();
     const auto& size = frameBuffer.getSize();
 
     ImagePtr image(FreeImage_ConvertFromRawBits(
-        colorBuffer, size.x(), size.y(), frameBuffer.getColorDepth() * size.x(),
-        8 * frameBuffer.getColorDepth(), 0xFF0000, 0x00FF00, 0x0000FF, false));
+        colorBuffer, size.x(), size.y(), frameBuffer.getDepth() * size.x(),
+        8 * frameBuffer.getDepth(), 0xFF0000, 0x00FF00, 0x0000FF, false));
 
     frameBuffer.unmap();
 
@@ -109,7 +109,7 @@ std::string getBase64Image(FrameBuffer& frameBuffer, const std::string& format,
     FreeImage_AcquireMemory(memory.get(), &pixels, &numPixels);
     return {base64_encode(pixels, numPixels)};
 }
-}
-}
+} // namespace freeimage
+} // namespace brayns
 
 #endif

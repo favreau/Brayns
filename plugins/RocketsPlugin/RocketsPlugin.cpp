@@ -93,6 +93,10 @@ const std::string METHOD_SCHEMA = "schema";
 const std::string METHOD_SET_MODEL_PROPERTIES = "set-model-properties";
 const std::string METHOD_UPDATE_INSTANCE = "update-instance";
 const std::string METHOD_UPDATE_MODEL = "update-model";
+const std::string METHOD_ADD_CLIP_PLANE = "add-clip-plane";
+const std::string METHOD_GET_CLIP_PLANES = "get-clip-planes";
+const std::string METHOD_UPDATE_CLIP_PLANE = "update-clip-plane";
+const std::string METHOD_REMOVE_CLIP_PLANES = "remove-clip-planes";
 
 // JSONRPC notifications
 const std::string METHOD_CHUNK = "chunk";
@@ -134,7 +138,7 @@ std::string getRequestEndpointName(const std::string& endpoint)
 {
     return "get-" + endpoint;
 }
-}
+} // namespace
 
 namespace brayns
 {
@@ -345,16 +349,15 @@ public:
 #endif
     }
 
-    void _rebroadcast(const std::string& endpoint,
-                      const rockets::ws::Request& request)
+    void _rebroadcast(const std::string& endpoint, const std::string& message,
+                      const std::set<uintptr_t>& filter)
     {
-        _delayedNotify([&, request] {
+        _delayedNotify([&, message, filter] {
             if (_rocketsServer->getConnectionCount() > 1)
             {
                 const auto& msg =
-                    rockets::jsonrpc::makeNotification(endpoint,
-                                                       request.message);
-                _rocketsServer->broadcastText(msg, {request.clientID});
+                    rockets::jsonrpc::makeNotification(endpoint, message);
+                _rocketsServer->broadcastText(msg, filter);
             }
         });
     }
@@ -366,14 +369,15 @@ public:
     struct ScopedCurrentClient
     {
         ScopedCurrentClient(uintptr_t& currentClientID, const uintptr_t newID)
-            : _currentClientID(&currentClientID)
+            : _currentClientID(currentClientID)
         {
-            *_currentClientID = newID;
+            _currentClientID = newID;
         }
 
-        ~ScopedCurrentClient() { *_currentClientID = NO_CURRENT_CLIENT; }
+        ~ScopedCurrentClient() { _currentClientID = NO_CURRENT_CLIENT; }
+
     private:
-        uintptr_t* _currentClientID;
+        uintptr_t& _currentClientID;
     };
 
     void _bindEndpoint(const std::string& method,
@@ -400,6 +404,26 @@ public:
             try
             {
                 const auto& ret = action(std::move(params));
+                return Response{to_json(ret)};
+            }
+            catch (const rockets::jsonrpc::response_error& e)
+            {
+                return Response{Response::Error{e.what(), e.code}};
+            }
+        });
+    }
+
+    template <typename RetVal>
+    void _bindEndpoint(const std::string& method,
+                       std::function<RetVal()> action)
+    {
+        _jsonrpcServer->bind(method, [&, action](
+                                         rockets::jsonrpc::Request request) {
+            ScopedCurrentClient scope(_currentClientID, request.clientID);
+
+            try
+            {
+                const auto& ret = action();
                 return Response{to_json(ret)};
             }
             catch (const rockets::jsonrpc::response_error& e)
@@ -461,38 +485,37 @@ public:
         // Create new throttle for that endpoint
         _throttle[endpoint];
 
-        obj.onModified(
-            [&, endpoint=getNotificationEndpointName(endpoint), throttleTime](const auto& base) {
-                auto& throttle = _throttle[endpoint];
+        obj.onModified([&, endpoint = getNotificationEndpointName(endpoint),
+                        throttleTime](const auto& base) {
+            auto& throttle = _throttle[endpoint];
 
-                // throttle itself is not thread-safe, but we can get called
-                // from different threads (c.f. async model load)
-                std::lock_guard<std::mutex> lock(throttle.first);
+            // throttle itself is not thread-safe, but we can get called
+            // from different threads (c.f. async model load)
+            std::lock_guard<std::mutex> lock(throttle.first);
 
-                const auto& castedObj = static_cast<const T&>(base);
-                const auto notify = [&rocketsServer=_rocketsServer,
-                                     clientID=_currentClientID, endpoint,
-                                     json=to_json(castedObj)]
-                {
-                    const auto& msg =
-                        rockets::jsonrpc::makeNotification(endpoint, json);
-                    if(clientID == NO_CURRENT_CLIENT)
-                        rocketsServer->broadcastText(msg);
-                    else
-                        rocketsServer->broadcastText(msg, {clientID});
-                };
-                const auto delayedNotify = [&, notify]{
-                    this->_delayedNotify(notify);
-                };
-
-                // non-throttled, direct notify can happen directly if we are
-                // not in the middle handling an incoming message; delayed
-                // notify must be dispatched to the main thread
-                if(_currentClientID == NO_CURRENT_CLIENT)
-                    throttle.second(notify, delayedNotify, throttleTime);
+            const auto& castedObj = static_cast<const T&>(base);
+            const auto notify = [& rocketsServer = _rocketsServer,
+                                 clientID = _currentClientID, endpoint,
+                                 json = to_json(castedObj)] {
+                const auto& msg =
+                    rockets::jsonrpc::makeNotification(endpoint, json);
+                if (clientID == NO_CURRENT_CLIENT)
+                    rocketsServer->broadcastText(msg);
                 else
-                    throttle.second(delayedNotify, delayedNotify, throttleTime);
-            });
+                    rocketsServer->broadcastText(msg, {clientID});
+            };
+            const auto delayedNotify = [&, notify] {
+                this->_delayedNotify(notify);
+            };
+
+            // non-throttled, direct notify can happen directly if we are
+            // not in the middle handling an incoming message; delayed
+            // notify must be dispatched to the main thread
+            if (_currentClientID == NO_CURRENT_CLIENT)
+                throttle.second(notify, delayedNotify, throttleTime);
+            else
+                throttle.second(delayedNotify, delayedNotify, throttleTime);
+        });
     }
 
     template <class T>
@@ -507,14 +530,15 @@ public:
                     POST postUpdateFunc)
     {
         using namespace rockets::http;
-        _rocketsServer->handle(Method::PUT, endpoint, [&obj, preUpdateFunc,
-                                                       postUpdateFunc](
-                                                          const Request& req) {
-            return make_ready_response(
-                from_json(obj, req.body, preUpdateFunc, postUpdateFunc)
-                    ? Code::OK
-                    : Code::BAD_REQUEST);
-        });
+        _rocketsServer->handle(Method::PUT, endpoint,
+                               [&obj, preUpdateFunc,
+                                postUpdateFunc](const Request& req) {
+                                   return make_ready_response(
+                                       from_json(obj, req.body, preUpdateFunc,
+                                                 postUpdateFunc)
+                                           ? Code::OK
+                                           : Code::BAD_REQUEST);
+                               });
 
         _handleObjectSchema(endpoint, obj);
 
@@ -551,6 +575,14 @@ public:
     {
         _bindEndpoint<P, R>(desc.methodName, action);
         _handleSchema(desc.methodName, buildJsonRpcSchemaRequest<P, R>(desc));
+    }
+
+    template <class R>
+    void _handleRPC(const RpcDescription& desc, std::function<R()> action)
+    {
+        _bindEndpoint<R>(desc.methodName, action);
+        _handleSchema(desc.methodName,
+                      buildJsonRpcSchemaRequestReturnOnly<R>(desc));
     }
 
     template <class P>
@@ -635,9 +667,8 @@ public:
                     auto progressUpdate =
                         uvw::Loop::getDefault()->resource<uvw::TimerHandle>();
 
-                    auto sendProgress =
-                        [ progressCb, &progress = task->progress ]
-                    {
+                    auto sendProgress = [progressCb,
+                                         &progress = task->progress] {
                         progress.consume(progressCb);
                     };
                     progressUpdate->on<uvw::TimerEvent>(
@@ -794,6 +825,11 @@ public:
         _handleGetModelProperties();
         _handleModelPropertiesSchema();
 
+        _handleAddClipPlane();
+        _handleGetClipPlanes();
+        _handleUpdateClipPlane();
+        _handleRemoveClipPlanes();
+
         _handleGetInstances();
         _handleUpdateInstance();
 
@@ -914,8 +950,7 @@ public:
     void _handleCamera()
     {
         auto& camera = _engine->getCamera();
-        auto preUpdate = [types = camera.getTypes()](const Camera& obj)
-        {
+        auto preUpdate = [types = camera.getTypes()](const Camera& obj) {
             if (obj.getCurrentType().empty())
                 return true;
             return std::find(types.begin(), types.end(),
@@ -934,8 +969,7 @@ public:
                              rp.getCurrentRenderer()) !=
                    rp.getRenderers().end();
         };
-        auto postUpdate = [& renderer = _engine->getRenderer()](auto& rp)
-        {
+        auto postUpdate = [& renderer = _engine->getRenderer()](auto& rp) {
             renderer.setCurrentType(rp.getCurrentRenderer());
         };
         _handleGET(ENDPOINT_RENDERER, params);
@@ -984,11 +1018,10 @@ public:
 
     void _handleQuit()
     {
-        _handleRPC({METHOD_QUIT, "Quit the application"},
-                   [engine = _engine] {
-                       engine->setKeepRunning(false);
-                       engine->triggerRender();
-                   });
+        _handleRPC({METHOD_QUIT, "Quit the application"}, [engine = _engine] {
+            engine->setKeepRunning(false);
+            engine->triggerRender();
+        });
     }
 
     void _handleResetCamera()
@@ -1006,10 +1039,9 @@ public:
         const RpcParameterDescription desc{
             METHOD_SNAPSHOT, "Make a snapshot of the current view", "settings",
             "Snapshot settings for quality and size"};
-        auto func =
-            [ engine = _engine,
-              &imageGenerator = _imageGenerator ](auto&& params, const auto)
-        {
+        auto func = [engine = _engine,
+                     &imageGenerator = _imageGenerator](auto&& params,
+                                                        const auto) {
             using SnapshotTask = DeferredTask<ImageGenerator::ImageBase64>;
             return std::make_shared<SnapshotTask>(
                 SnapshotFunctor{*engine, std::move(params), imageGenerator});
@@ -1065,6 +1097,67 @@ public:
         });
     }
 
+    void _handleAddClipPlane()
+    {
+        const RpcParameterDescription desc{
+            METHOD_ADD_CLIP_PLANE,
+            "Add a clip plane; returns the clip plane descriptor", "plane",
+            "An array of 4 floats"};
+
+        _handleRPC<Plane, ClipPlanePtr>(desc, [&](const Plane& plane) {
+            auto& scene = _engine->getScene();
+            auto clipPlane = scene.getClipPlane(scene.addClipPlane(plane));
+            _rebroadcast(METHOD_UPDATE_CLIP_PLANE, to_json(clipPlane),
+                         {_currentClientID});
+            return clipPlane;
+        });
+    }
+
+    void _handleGetClipPlanes()
+    {
+        _handleRPC<ClipPlanes>({METHOD_GET_CLIP_PLANES, "Get all clip planes"},
+                               [engine = _engine]() {
+                                   auto& scene = engine->getScene();
+                                   return scene.getClipPlanes();
+                               });
+    }
+
+    void _handleUpdateClipPlane()
+    {
+        const RpcParameterDescription desc{
+            METHOD_UPDATE_CLIP_PLANE,
+            "Update a clip plane with the given coefficients", "clip_plane",
+            "Plane id and equation"};
+        _handleRPC<ClipPlane, bool>(desc, [&](const ClipPlane& newPlane) {
+            auto& scene = _engine->getScene();
+            if (auto plane = scene.getClipPlane(newPlane.getID()))
+            {
+                plane->setPlane(newPlane.getPlane());
+                _rebroadcast(METHOD_UPDATE_CLIP_PLANE, to_json(newPlane),
+                             {_currentClientID});
+                _engine->triggerRender();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    void _handleRemoveClipPlanes()
+    {
+        const RpcParameterDescription desc{
+            METHOD_REMOVE_CLIP_PLANES,
+            "Remove clip planes from the scene given their gids", "ids",
+            "Array of clip planes IDs"};
+        _handleRPC<size_ts, bool>(desc, [&](const size_ts& ids) {
+            for (const auto id : ids)
+                _engine->getScene().removeClipPlane(id);
+            _rebroadcast(METHOD_REMOVE_CLIP_PLANES, to_json(ids),
+                         {_currentClientID});
+            _engine->triggerRender();
+            return true;
+        });
+    }
+
     void _handleAddModel()
     {
         const RpcParameterDescription desc{
@@ -1073,8 +1166,7 @@ public:
             "model_param",
             "Model parameters including name, path, transformation, etc."};
 
-        auto func = [engine = _engine](const auto& modelParam, const auto)
-        {
+        auto func = [engine = _engine](const auto& modelParam, const auto) {
             return std::make_shared<AddModelTask>(modelParam, engine);
         };
         _handleTask<ModelParams, ModelDescriptorPtr>(desc, func);
@@ -1089,6 +1181,7 @@ public:
         _handleRPC<size_ts, bool>(desc, [engine = _engine](const size_ts& ids) {
             for (const auto id : ids)
                 engine->getScene().removeModel(id);
+            engine->getScene().markModified();
             engine->triggerRender();
             return true;
         });
@@ -1126,9 +1219,9 @@ public:
             METHOD_GET_MODEL_PROPERTIES,
             "Get the properties of the given model", "id", "the model ID"};
 
-        _jsonrpcServer->bind<ModelID, PropertyMap>(
-            desc.methodName, [engine = _engine](const ModelID& id) {
-                auto model = engine->getScene().getModel(id.modelID);
+        _jsonrpcServer->bind<ObjectID, PropertyMap>(
+            desc.methodName, [engine = _engine](const ObjectID& id) {
+                auto model = engine->getScene().getModel(id.id);
                 if (!model)
                     throw rockets::jsonrpc::response_error("Model not found",
                                                            MODEL_NOT_FOUND);
@@ -1136,7 +1229,7 @@ public:
             });
 
         _handleSchema(METHOD_GET_MODEL_PROPERTIES,
-                      buildJsonRpcSchemaRequest<ModelID, PropertyMap>(desc));
+                      buildJsonRpcSchemaRequest<ObjectID, PropertyMap>(desc));
     }
 
     void _handleSetModelProperties()
@@ -1176,7 +1269,8 @@ public:
                 model->setProperties(props);
                 _engine->triggerRender();
 
-                this->_rebroadcast(METHOD_SET_MODEL_PROPERTIES, request);
+                this->_rebroadcast(METHOD_SET_MODEL_PROPERTIES, request.message,
+                                   {request.clientID});
 
                 return Response{to_json(true)};
             }
@@ -1197,10 +1291,10 @@ public:
         _jsonrpcServer->bind(
             METHOD_MODEL_PROPERTIES_SCHEMA,
             [engine = _engine](const auto& request) {
-                ModelID modelID;
+                ObjectID modelID;
                 if (::from_json(modelID, request.message))
                 {
-                    auto model = engine->getScene().getModel(modelID.modelID);
+                    auto model = engine->getScene().getModel(modelID.id);
                     if (!model)
                         return Response{Response::Error{"Model not found",
                                                         MODEL_NOT_FOUND}};
@@ -1212,17 +1306,17 @@ public:
             });
 
         _handleSchema(METHOD_MODEL_PROPERTIES_SCHEMA,
-                      buildJsonRpcSchemaRequest<ModelID, std::string>(desc));
+                      buildJsonRpcSchemaRequest<ObjectID, std::string>(desc));
     }
 
     void _handleGetInstances()
     {
         const RpcParameterDescription desc{METHOD_GET_INSTANCES,
                                            "Get instances", "id, range",
-                                           "ModelID and result range"};
+                                           "Model id and result range"};
         _handleRPC<GetInstances, ModelInstances>(
             desc,
-            [engine = _engine](const GetInstances& param)->ModelInstances {
+            [engine = _engine](const GetInstances& param) -> ModelInstances {
                 auto id = param.modelID;
                 auto& scene = engine->getScene();
                 auto model = scene.getModel(id);
@@ -1265,7 +1359,8 @@ public:
                 scene.markModified(false);
 
                 _engine->triggerRender();
-                _rebroadcast(METHOD_UPDATE_INSTANCE, request);
+                _rebroadcast(METHOD_UPDATE_INSTANCE, request.message,
+                             {request.clientID});
 
                 return Response{to_json(true)};
             });
@@ -1375,9 +1470,10 @@ void RocketsPlugin::registerNotification(
     const RpcParameterDescription& desc, const PropertyMap& input,
     const std::function<void(PropertyMap)>& action)
 {
-    _impl->_jsonrpcServer->connect(desc.methodName, [
-        name = desc.methodName, input, action, engine = _impl->_engine
-    ](const auto& request) {
+    _impl->_jsonrpcServer->connect(desc.methodName, [name = desc.methodName,
+                                                     input, action,
+                                                     engine = _impl->_engine](
+                                                        const auto& request) {
         PropertyMap params = input;
         if (::from_json(params, request.message))
         {
@@ -1396,7 +1492,7 @@ void RocketsPlugin::registerNotification(const RpcDescription& desc,
                                          const std::function<void()>& action)
 {
     _impl->_jsonrpcServer->connect(desc.methodName,
-                                   [ action, engine = _impl->_engine ] {
+                                   [action, engine = _impl->_engine] {
                                        action();
                                        engine->triggerRender();
                                    });
@@ -1409,9 +1505,9 @@ void RocketsPlugin::registerRequest(
     const PropertyMap& output,
     const std::function<PropertyMap(PropertyMap)>& action)
 {
-    _impl->_bindEndpoint(desc.methodName, [
-        name = desc.methodName, input, action, engine = _impl->_engine
-    ](const auto& request) {
+    _impl->_bindEndpoint(desc.methodName, [name = desc.methodName, input,
+                                           action, engine = _impl->_engine](
+                                              const auto& request) {
         PropertyMap params = input;
         if (::from_json(params, request.message))
         {
@@ -1432,8 +1528,7 @@ void RocketsPlugin::registerRequest(const RpcDescription& desc,
                                     const std::function<PropertyMap()>& action)
 {
     _impl->_jsonrpcServer->bind(desc.methodName,
-                                [ action,
-                                  engine = _impl->_engine ](const auto&) {
+                                [action, engine = _impl->_engine](const auto&) {
                                     engine->triggerRender();
                                     return Response{to_json(action())};
                                 });
@@ -1445,7 +1540,7 @@ void RocketsPlugin::registerRequest(const RpcDescription& desc,
 void RocketsPlugin::_registerRequest(const std::string& name,
                                      const RetParamFunc& action)
 {
-    _impl->_jsonrpcServer->bind(name, [ action, engine = _impl->_engine ](
+    _impl->_jsonrpcServer->bind(name, [action, engine = _impl->_engine](
                                           const auto& request) {
         engine->triggerRender();
         return Response{action(request.message)};
@@ -1455,17 +1550,17 @@ void RocketsPlugin::_registerRequest(const std::string& name,
 void RocketsPlugin::_registerRequest(const std::string& name,
                                      const RetFunc& action)
 {
-    _impl->_jsonrpcServer->bind(name, [ action,
-                                        engine = _impl->_engine ](const auto&) {
-        engine->triggerRender();
-        return Response{action()};
-    });
+    _impl->_jsonrpcServer->bind(name,
+                                [action, engine = _impl->_engine](const auto&) {
+                                    engine->triggerRender();
+                                    return Response{action()};
+                                });
 }
 
 void RocketsPlugin::_registerNotification(const std::string& name,
                                           const ParamFunc& action)
 {
-    _impl->_jsonrpcServer->connect(name, [ action, engine = _impl->_engine ](
+    _impl->_jsonrpcServer->connect(name, [action, engine = _impl->_engine](
                                              const auto& request) {
         action(request.message);
         engine->triggerRender();
@@ -1475,9 +1570,9 @@ void RocketsPlugin::_registerNotification(const std::string& name,
 void RocketsPlugin::_registerNotification(const std::string& name,
                                           const VoidFunc& action)
 {
-    _impl->_jsonrpcServer->connect(name, [ action, engine = _impl->_engine ] {
+    _impl->_jsonrpcServer->connect(name, [action, engine = _impl->_engine] {
         action();
         engine->triggerRender();
     });
 }
-}
+} // namespace brayns

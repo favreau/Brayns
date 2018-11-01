@@ -56,13 +56,6 @@ OSPRayEngine::OSPRayEngine(ParametersManager& parametersManager)
         argv.push_back("--osp:erroroutput");
         argv.push_back("cerr");
 
-        if (ap.getEngine() == EngineType::optix)
-        {
-            _type = EngineType::optix;
-            argv.push_back("--osp:module:optix");
-            argv.push_back("--osp:device:optix");
-        }
-
         if (_parametersManager.getApplicationParameters()
                 .getParallelRendering())
         {
@@ -121,15 +114,11 @@ OSPRayEngine::OSPRayEngine(ParametersManager& parametersManager)
     _frameSize = getSupportedFrameSize(
         _parametersManager.getApplicationParameters().getWindowSize());
 
-    bool accumulation = rp.getAccumulation();
-    if (!_parametersManager.getApplicationParameters().getFilters().empty())
-        accumulation = false;
-
     _frameBuffer =
         createFrameBuffer(_frameSize,
                           haveDeflectPixelOp() ? FrameBufferFormat::none
                                                : FrameBufferFormat::rgba_i8,
-                          accumulation);
+                          rp.getAccumulation());
     if (haveDeflectPixelOp())
         std::static_pointer_cast<OSPRayFrameBuffer>(_frameBuffer)
             ->enableDeflectPixelOp();
@@ -146,17 +135,6 @@ OSPRayEngine::~OSPRayEngine()
     _frameBuffer.reset();
     _renderer.reset();
     _camera.reset();
-
-    // HACK: need ospFinish() here; currently used by optix module to properly
-    // destroy optix context
-    if (name() == EngineType::optix)
-        ospLoadModule("exit");
-}
-
-EngineType OSPRayEngine::name() const
-{
-    // can be ospray or optix
-    return _type;
 }
 
 void OSPRayEngine::commit()
@@ -269,8 +247,6 @@ void OSPRayEngine::_createRenderers()
             properties.setProperty({"detectionOnDifferentMaterial",
                                     "Detection on different material", false});
             properties.setProperty(
-                {"electronShadingEnabled", "Electron shading", false});
-            properties.setProperty(
                 {"surfaceShadingEnabled", "Surface shading", true});
         }
         if (renderer == "basic_simulation")
@@ -286,11 +262,6 @@ void OSPRayEngine::_createRenderers()
                 {"aoWeight", "Ambient occlusion weight", 0., {0., 1.}});
             properties.setProperty(
                 {"detectionDistance", "Detection distance", 15.});
-            properties.setProperty(
-                {"shading",
-                 "Shading",
-                 (int)AdvancedSimulationRenderer::Shading::none,
-                 {"None", "Diffuse", "Electron"}});
             properties.setProperty(
                 {"shadows", "Shadow intensity", 0., {0., 1.}});
             properties.setProperty(
@@ -383,7 +354,7 @@ void OSPRayEngine::_createCameras()
     for (const auto& camera : rp.getCameras())
     {
         PropertyMap properties;
-        if (camera == "perspective" || camera == "clippedperspective")
+        if (camera == "perspective")
         {
             properties.setProperty(fovy);
             properties.setProperty(aspect);
@@ -423,4 +394,4 @@ void OSPRayEngine::_createCameras()
     _camera->setEnvironmentMap(
         !_parametersManager.getSceneParameters().getEnvironmentMap().empty());
 }
-}
+} // namespace brayns

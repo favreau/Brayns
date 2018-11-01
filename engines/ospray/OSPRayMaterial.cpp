@@ -33,14 +33,14 @@ struct TextureTypeMaterialAttribute
 };
 
 static TextureTypeMaterialAttribute textureTypeMaterialAttribute[8] = {
-    {TT_DIFFUSE, "map_kd"},
-    {TT_NORMALS, "map_bump"},
-    {TT_BUMP, "map_bump"},
-    {TT_SPECULAR, "map_ks"},
-    {TT_EMISSIVE, "map_ns"},
-    {TT_OPACITY, "map_d"},
-    {TT_REFLECTION, "map_reflection"},
-    {TT_REFRACTION, "map_refraction"}};
+    {TextureType::diffuse, "map_kd"},
+    {TextureType::normals, "map_bump"},
+    {TextureType::bump, "map_bump"},
+    {TextureType::specular, "map_ks"},
+    {TextureType::emissive, "map_ns"},
+    {TextureType::opacity, "map_d"},
+    {TextureType::reflection, "map_reflection"},
+    {TextureType::refraction, "map_refraction"}};
 
 OSPRayMaterial::OSPRayMaterial()
     : _ospMaterial(ospNewMaterial(nullptr, "ExtendedOBJMaterial"))
@@ -69,6 +69,7 @@ void OSPRayMaterial::commit()
     ospSet1f(_ospMaterial, "a", _emission);
     ospSet1f(_ospMaterial, "glossiness", _glossiness);
     ospSet1i(_ospMaterial, "cast_simulation_data", _castSimulationData);
+    ospSet1i(_ospMaterial, "shading_mode", static_cast<uint8_t>(_shadingMode));
 
     // Textures
     for (const auto& textureType : textureTypeMaterialAttribute)
@@ -82,7 +83,8 @@ void OSPRayMaterial::commit()
         {
             auto ospTexture = _createOSPTexture2D(texture);
             const auto str =
-                textureTypeMaterialAttribute[texType].attribute.c_str();
+                textureTypeMaterialAttribute[static_cast<int>(texType)]
+                    .attribute.c_str();
             ospSetObject(_ospMaterial, str, ospTexture);
             ospRelease(ospTexture);
         }
@@ -128,4 +130,4 @@ OSPTexture2D OSPRayMaterial::_createOSPTexture2D(Texture2DPtr texture)
 
     return ospTexture;
 }
-}
+} // namespace brayns

@@ -53,4 +53,4 @@ ospray::Material* AbstractRenderer::createMaterial(const char*)
 {
     return new brayns::obj::ExtendedOBJMaterial;
 }
-}
+} // namespace brayns

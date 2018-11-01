@@ -35,9 +35,6 @@ public:
 
     ~OSPRayEngine();
 
-    /** @copydoc Engine::name */
-    EngineType name() const final;
-
     /** @copydoc Engine::commit */
     void commit() final;
 
@@ -75,6 +72,6 @@ private:
     bool _useDynamicLoadBalancer{false};
     EngineType _type{EngineType::ospray};
 };
-}
+} // namespace brayns
 
 #endif // OSPRAYENGINE_H

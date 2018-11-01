@@ -34,7 +34,7 @@ namespace
 {
 const float CALCIUM_RADIUS = 0.00194f;
 const size_t CALCIUM_MATERIAL_ID = 0;
-}
+} // namespace
 
 namespace brayns
 {
@@ -113,5 +113,6 @@ void CADiffusionSimulationHandler::setFrame(Scene& scene, const size_t frame)
         model->addSphere(CALCIUM_MATERIAL_ID, {position, CALCIUM_RADIUS});
     _modelID = scene.addModel(
         std::make_shared<ModelDescriptor>(std::move(model), modelName));
+    scene.markModified();
 }
-}
+} // namespace brayns

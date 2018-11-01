@@ -46,7 +46,7 @@ namespace
 {
 const int GLUT_WHEEL_SCROLL_UP = 3;
 const int GLUT_WHEEL_SCROLL_DOWN = 4;
-}
+} // namespace
 
 namespace brayns
 {
@@ -134,11 +134,16 @@ BaseWindow::BaseWindow(Brayns& brayns, const FrameBufferMode frameBufferMode)
     BRAYNS_INFO << "Camera       :" << _brayns.getEngine().getCamera()
                 << std::endl;
     BRAYNS_INFO << "Motion speed :" << motionSpeed << std::endl;
+
+    if (_brayns.getParametersManager()
+            .getRenderingParameters()
+            .getPostProcessingFilters())
+        // Force frame buffer to COLOR_F32 is post processing filters are
+        // enabled at startup
+        _frameBufferMode = FrameBufferMode::COLOR_F32;
 }
 
-BaseWindow::~BaseWindow()
-{
-}
+BaseWindow::~BaseWindow() {}
 
 void BaseWindow::mouseButton(const int button, const bool released,
                              const Vector2i& pos)
@@ -227,9 +232,6 @@ void BaseWindow::reshape(const Vector2i& newSize)
 
     auto& applicationParameters = _brayns.getParametersManager();
     applicationParameters.getApplicationParameters().setWindowSize(_windowSize);
-
-    if (!applicationParameters.getApplicationParameters().getFilters().empty())
-        _screenSpaceProcessor.resize(_windowSize.x(), _windowSize.y());
 }
 
 void BaseWindow::activate()
@@ -265,7 +267,7 @@ void BaseWindow::display()
     _brayns.commitAndRender(renderInput, renderOutput);
 
     GLenum format = GL_RGBA;
-    switch (renderOutput.colorBufferFormat)
+    switch (renderOutput.frameBufferFormat)
     {
     case FrameBufferFormat::bgra_i8:
         format = GL_BGRA;
@@ -277,22 +279,25 @@ void BaseWindow::display()
         format = GL_RGBA;
     }
 
-    if (_brayns.getParametersManager()
-            .getApplicationParameters()
-            .getFilters()
-            .empty())
     {
         GLenum type = GL_FLOAT;
         GLvoid* buffer = 0;
         switch (_frameBufferMode)
         {
-        case FrameBufferMode::COLOR:
+        case FrameBufferMode::COLOR_I8:
             type = GL_UNSIGNED_BYTE;
-            buffer = renderOutput.colorBuffer.data();
+            buffer = renderOutput.byteBuffer.data();
             break;
-        case FrameBufferMode::DEPTH:
+        case FrameBufferMode::COLOR_F32:
+        {
+            type = GL_FLOAT;
+            format = GL_BGRA;
+            buffer = renderOutput.floatBuffer.data();
+            break;
+        }
+        case FrameBufferMode::DEPTH_F32:
             format = GL_LUMINANCE;
-            buffer = renderOutput.depthBuffer.data();
+            buffer = renderOutput.floatBuffer.data();
             break;
         default:
             glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -305,23 +310,6 @@ void BaseWindow::display()
                          format, type, buffer);
         }
     }
-    else
-    {
-        ScreenSpaceProcessorData ssProcData;
-
-        ssProcData.width = _windowSize.x();
-        ssProcData.height = _windowSize.y();
-
-        ssProcData.colorFormat = format;
-        ssProcData.colorBuffer = renderOutput.colorBuffer.data();
-        ssProcData.colorType = GL_UNSIGNED_BYTE;
-
-        ssProcData.depthFormat = GL_LUMINANCE;
-        ssProcData.depthBuffer = renderOutput.depthBuffer.data();
-        ssProcData.depthType = GL_FLOAT;
-
-        _screenSpaceProcessor.draw(ssProcData);
-    }
 
     if (_displayHelp)
     {
@@ -332,7 +320,7 @@ void BaseWindow::display()
         glDisable(GL_COLOR_LOGIC_OP);
     }
 
-    float* buffer = renderOutput.depthBuffer.data();
+    float* buffer = renderOutput.floatBuffer.data();
     _gid = -1;
     if (buffer &&
         _brayns.getEngine().getRenderer().getCurrentType() == "particle")
@@ -354,12 +342,6 @@ void BaseWindow::display()
 
 void BaseWindow::clearPixels()
 {
-    if (!_brayns.getParametersManager()
-             .getApplicationParameters()
-             .getFilters()
-             .empty())
-        _screenSpaceProcessor.clear();
-
     glClearColor(0.f, 0.f, 0.f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -399,12 +381,6 @@ void BaseWindow::create(const char* title, const size_t width,
     glutMouseFunc(glut3dMouseFunc);
     glutPassiveMotionFunc(glut3dPassiveMouseFunc);
     glutIdleFunc(glut3dIdle);
-
-    if (!_brayns.getParametersManager()
-             .getApplicationParameters()
-             .getFilters()
-             .empty())
-        _screenSpaceProcessor.init(width, height);
 
     _registerKeyboardShortcuts();
 }
@@ -487,9 +463,11 @@ void BaseWindow::_renderBitmapString(const float x, const float y,
 
 void BaseWindow::_toggleFrameBuffer()
 {
-    if (_frameBufferMode == FrameBufferMode::DEPTH)
-        _frameBufferMode = FrameBufferMode::COLOR;
-    else
-        _frameBufferMode = FrameBufferMode::DEPTH;
+    size_t mode = static_cast<size_t>(_frameBufferMode);
+    mode = (mode + 1) % 3;
+    _frameBufferMode = static_cast<FrameBufferMode>(mode);
+    _brayns.getParametersManager()
+        .getRenderingParameters()
+        .setPostProcessingFilters(mode == 1);
 }
-}
+} // namespace brayns

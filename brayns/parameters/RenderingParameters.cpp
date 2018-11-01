@@ -26,6 +26,8 @@
 namespace
 {
 const std::string PARAM_ACCUMULATION = "disable-accumulation";
+const std::string PARAM_POST_PROCESSING_FILTERS =
+    "enable-post-processing-filters";
 const std::string PARAM_BACKGROUND_COLOR = "background-color";
 const std::string PARAM_CAMERA = "camera";
 const std::string PARAM_HEAD_LIGHT = "no-head-light";
@@ -38,9 +40,9 @@ const std::array<std::string, 8> RENDERER_NAMES = {
     {"basic", "proximity", "basic_simulation", "advanced_simulation",
      "raycast_Ng", "raycast_Ns", "scivis", "pathtracing"}};
 
-const std::array<std::string, 4> CAMERA_TYPE_NAMES = {
-    {"perspective", "orthographic", "panoramic", "clippedperspective"}};
-}
+const std::array<std::string, 3> CAMERA_TYPE_NAMES = {
+    {"perspective", "orthographic", "panoramic"}};
+} // namespace
 
 namespace brayns
 {
@@ -56,8 +58,11 @@ RenderingParameters::RenderingParameters()
         "Disable accumulation")(PARAM_BACKGROUND_COLOR.c_str(),
                                 po::value<floats>()->multitoken(),
                                 "Background color [float float float]")(
+        PARAM_POST_PROCESSING_FILTERS.c_str(),
+        po::bool_switch()->default_value(false),
+        "Enable post processing filters (OptiX engine only)")(
         PARAM_CAMERA.c_str(), po::value<std::string>(),
-        "Camera [perspective|orthographic|panoramic|clippedperspective]")(
+        "Camera [perspective|orthographic|panoramic]")(
         PARAM_HEAD_LIGHT.c_str(), po::bool_switch()->default_value(false),
         "Disable light source attached to camera origin.")(
         PARAM_VARIANCE_THRESHOLD.c_str(), po::value<float>(),
@@ -92,6 +97,7 @@ void RenderingParameters::parse(const po::variables_map& vm)
     if (vm.count(PARAM_SPP))
         _spp = vm[PARAM_SPP].as<size_t>();
     _accumulation = !vm[PARAM_ACCUMULATION].as<bool>();
+    _postProcessingFilters = vm[PARAM_POST_PROCESSING_FILTERS].as<bool>();
     if (vm.count(PARAM_BACKGROUND_COLOR))
     {
         floats values = vm[PARAM_BACKGROUND_COLOR].as<floats>();
@@ -131,5 +137,7 @@ void RenderingParameters::print()
                 << asString(_accumulation) << std::endl;
     BRAYNS_INFO << "Max. accumulation frames          : " << _maxAccumFrames
                 << std::endl;
+    BRAYNS_INFO << "Post processing filters           : "
+                << asString(_postProcessingFilters) << std::endl;
 }
-}
+} // namespace brayns

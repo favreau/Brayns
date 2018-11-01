@@ -29,7 +29,7 @@ namespace brayns
 {
 ImageGenerator::~ImageGenerator()
 {
-#ifdef BRAYNS_USE_LIBJPEGTURBO
+#if (BRAYNS_USE_LIBJPEGTURBO)
     if (_compressor)
         tjDestroy(_compressor);
 #endif
@@ -58,8 +58,8 @@ ImageGenerator::ImageJPEG ImageGenerator::createJPEG(
 {
 #ifdef BRAYNS_USE_LIBJPEGTURBO
     frameBuffer.map();
-    auto colorBuffer = frameBuffer.getColorBuffer();
-    if (!colorBuffer)
+    auto byteBuffer = frameBuffer.getByteBuffer();
+    if (!byteBuffer)
     {
         frameBuffer.unmap();
         return ImageJPEG();
@@ -78,7 +78,7 @@ ImageGenerator::ImageJPEG ImageGenerator::createJPEG(
 
     const auto& frameSize = frameBuffer.getSize();
     ImageJPEG image;
-    image.data = _encodeJpeg(frameSize.x(), frameSize.y(), colorBuffer,
+    image.data = _encodeJpeg(frameSize.x(), frameSize.y(), byteBuffer,
                              pixelFormat, quality, image.size);
     frameBuffer.unmap();
     return image;
@@ -114,4 +114,4 @@ ImageGenerator::ImageJPEG::JpegData ImageGenerator::_encodeJpeg(
     return ImageJPEG::JpegData{tjJpegBuf};
 }
 #endif
-}
+} // namespace brayns

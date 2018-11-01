@@ -89,7 +89,6 @@ public:
 
     /** Max render FPS to limit */
     size_t getMaxRenderFPS() const { return _maxRenderFPS; }
-    const strings& getFilters() const { return _filters; }
     void setFrameExportFolder(const std::string& folder)
     {
         _updateValue(_frameExportFolder, folder);
@@ -114,6 +113,7 @@ public:
 
     const strings& getInputPaths() const { return _inputPaths; }
     po::positional_options_description& posArgs() { return _positionalArgs; }
+
 protected:
     void parse(const po::variables_map& vm) final;
 
@@ -124,7 +124,6 @@ protected:
     Vector2d _windowSize;
     bool _benchmarking{false};
     size_t _jpegCompression;
-    strings _filters;
     std::string _frameExportFolder;
     std::string _tmpFolder;
     bool _synchronousMode{false};
@@ -140,6 +139,6 @@ protected:
 
     SERIALIZATION_FRIEND(ApplicationParameters)
 };
-}
+} // namespace brayns
 
 #endif // APPLICATIONPARAMETERS_H

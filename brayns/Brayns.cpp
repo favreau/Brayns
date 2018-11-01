@@ -44,7 +44,6 @@
 #include <brayns/io/TransferFunctionLoader.h>
 #include <brayns/io/VolumeLoader.h>
 #include <brayns/io/XYZBLoader.h>
-#include <brayns/io/simulation/SpikeSimulationHandler.h>
 
 #include <brayns/tasks/AddModelTask.h>
 
@@ -58,14 +57,7 @@
 #include <plugins/DeflectPlugin/DeflectPlugin.h>
 #endif
 
-#ifdef BRAYNS_USE_BRION
-#include <brayns/io/CircuitLoader.h>
-#include <brayns/io/MorphologyLoader.h>
-#include <brayns/io/NESTLoader.h>
-#include <servus/uri.h>
-#endif
-
-#ifdef BRAYNS_USE_OSPRAY
+#if (BRAYNS_USE_OSPRAY)
 #include <ospcommon/library.h>
 #endif
 
@@ -76,7 +68,7 @@ namespace
 const float DEFAULT_TEST_ANIMATION_FRAME = 10000;
 const float DEFAULT_MOTION_ACCELERATION = 1.5f;
 const size_t LOADING_PROGRESS_DATA = 100;
-}
+} // namespace
 
 #define REGISTER_LOADER(LOADER, FUNC) \
     registry.registerLoader({std::bind(&LOADER::getSupportedDataTypes), FUNC});
@@ -144,7 +136,7 @@ struct Brayns::Impl : public PluginAPI
 
     void loadPlugins()
     {
-#ifdef BRAYNS_USE_OSPRAY
+#if (BRAYNS_USE_OSPRAY)
         for (const auto& pluginParam :
              _parametersManager.getApplicationParameters().getPlugins())
         {
@@ -172,7 +164,7 @@ struct Brayns::Impl : public PluginAPI
                     argv[i] = &tmpArgs[i].front();
 
                 ExtensionPlugin* (*createFunc)(PluginAPI*, int, char**) =
-                    (ExtensionPlugin * (*)(PluginAPI*, int, char**))createSym;
+                    (ExtensionPlugin * (*)(PluginAPI*, int, char**)) createSym;
                 auto plugin = createFunc(this, argc, argv.data());
 
                 _extensionPluginFactory.add(ExtensionPluginPtr{plugin});
@@ -306,36 +298,27 @@ struct Brayns::Impl : public PluginAPI
 
         auto& registry = _engine->getScene().getLoaderRegistry();
         REGISTER_LOADER(MeshLoader,
-                        ([&scene = _engine->getScene(), & params = _parametersManager.getGeometryParameters()] {
+                        ([& scene = _engine->getScene(),
+                          &params =
+                              _parametersManager.getGeometryParameters()] {
                             return std::make_unique<MeshLoader>(scene, params);
                         }));
         REGISTER_LOADER(ProteinLoader,
-                        ([&scene = _engine->getScene(), & params =
-                                _parametersManager.getGeometryParameters()] {
-                            return std::make_unique<ProteinLoader>(scene, params);
+                        ([& scene = _engine->getScene(),
+                          &params =
+                              _parametersManager.getGeometryParameters()] {
+                            return std::make_unique<ProteinLoader>(scene,
+                                                                   params);
                         }));
         REGISTER_LOADER(VolumeLoader,
-                        ([&scene = _engine->getScene(), & params =
-                                _parametersManager.getVolumeParameters()] {
-                            return std::make_unique<VolumeLoader>(scene, params);
+                        ([& scene = _engine->getScene(),
+                          &params = _parametersManager.getVolumeParameters()] {
+                            return std::make_unique<VolumeLoader>(scene,
+                                                                  params);
                         }));
         REGISTER_LOADER(XYZBLoader, ([& scene = _engine->getScene()] {
                             return std::make_unique<XYZBLoader>(scene);
                         }));
-#if (BRAYNS_USE_BRION)
-        REGISTER_LOADER(MorphologyLoader,
-                        ([&scene = _engine->getScene(), & params =
-                                _parametersManager.getGeometryParameters()] {
-                            return std::make_unique<MorphologyLoader>(scene, params);
-                        }));
-        REGISTER_LOADER(
-            CircuitLoader,
-            ([& scene = _engine->getScene(), &params = _parametersManager ] {
-                return std::make_unique<CircuitLoader>(
-                    scene, params.getApplicationParameters(),
-                    params.getGeometryParameters());
-            }));
-#endif
 
         const auto& paths =
             _parametersManager.getApplicationParameters().getInputPaths();
@@ -374,22 +357,19 @@ struct Brayns::Impl : public PluginAPI
     {
         FrameBuffer& frameBuffer = _engine->getFrameBuffer();
         frameBuffer.map();
-        const Vector2i& frameSize = frameBuffer.getSize();
-        uint8_t* colorBuffer = frameBuffer.getColorBuffer();
-        if (colorBuffer)
-        {
-            const size_t size =
-                frameSize.x() * frameSize.y() * frameBuffer.getColorDepth();
-            renderOutput.colorBuffer.assign(colorBuffer, colorBuffer + size);
-            renderOutput.colorBufferFormat = frameBuffer.getFrameBufferFormat();
-        }
+        const auto& frameSize = frameBuffer.getSize();
 
-        float* depthBuffer = frameBuffer.getDepthBuffer();
-        if (depthBuffer)
-        {
-            const size_t size = frameSize.x() * frameSize.y();
-            renderOutput.depthBuffer.assign(depthBuffer, depthBuffer + size);
-        }
+        const auto size =
+            frameSize.x() * frameSize.y() * frameBuffer.getDepth();
+
+        auto byteBuffer = frameBuffer.getByteBuffer();
+        renderOutput.frameBufferFormat = frameBuffer.getFrameBufferFormat();
+        if (byteBuffer)
+            renderOutput.byteBuffer.assign(byteBuffer, byteBuffer + size);
+
+        auto floatBuffer = frameBuffer.getFloatBuffer();
+        if (floatBuffer)
+            renderOutput.floatBuffer.assign(floatBuffer, floatBuffer + size);
 
         renderOutput.frameSize = frameSize;
 
@@ -414,6 +394,7 @@ struct Brayns::Impl : public PluginAPI
         return _actionInterface.get();
     }
     Scene& getScene() final { return _engine->getScene(); }
+
 private:
     void _updateAnimation()
     {
@@ -467,102 +448,13 @@ private:
             loadingProgress += tic;
         }
 
-#if (BRAYNS_USE_BRION)
-        if (!geometryParameters.getNESTCircuit().empty())
-        {
-            _loadNESTCircuit();
-            loadingProgress += tic;
-        }
-
-        if (!geometryParameters.getCircuitConfiguration().empty())
-            _loadCircuitConfiguration(updateProgress);
-#endif
-
         if (!geometryParameters.getMolecularSystemConfig().empty())
             _loadMolecularSystem(updateProgress);
 
         scene.saveToCacheFile();
         scene.buildEnvironmentMap();
+        scene.markModified();
     }
-
-#if (BRAYNS_USE_BRION)
-    /**
-     * Loads data from a NEST circuit file (command line parameter
-     * --nest-circuit)
-     */
-    void _loadNESTCircuit()
-    {
-        auto& geometryParameters = _parametersManager.getGeometryParameters();
-        auto& scene = _engine->getScene();
-
-        const std::string& circuit(geometryParameters.getNESTCircuit());
-        if (!circuit.empty())
-        {
-            NESTLoader loader(scene, geometryParameters);
-
-            // need to import circuit first to determine _frameSize for report
-            // loading
-            auto model = loader.importFromFile(circuit);
-
-            const std::string& cacheFile(geometryParameters.getNESTCacheFile());
-            if (!geometryParameters.getNESTReport().empty() &&
-                cacheFile.empty())
-                throw std::runtime_error(
-                    "Need cache file to visualize simulation data");
-
-            if (!cacheFile.empty())
-            {
-                SpikeSimulationHandlerPtr simulationHandler(
-                    new SpikeSimulationHandler(
-                        _parametersManager.getGeometryParameters()));
-                if (!simulationHandler->attachSimulationToCacheFile(cacheFile))
-                {
-                    if (!loader.importSpikeReport(
-                            geometryParameters.getNESTReport()))
-                    {
-                        throw std::runtime_error(
-                            "Could not load spike report, aborting");
-                    }
-
-                    if (!simulationHandler->attachSimulationToCacheFile(
-                            cacheFile))
-                    {
-                        throw std::runtime_error(
-                            "Could load cache file, aborting");
-                    }
-                }
-
-                scene.setSimulationHandler(simulationHandler);
-            }
-            scene.addModel(model);
-        }
-    }
-
-    /**
-        Loads morphologies from circuit configuration (command line
-       parameter --circuit-configuration)
-    */
-    void _loadCircuitConfiguration(const Loader::UpdateCallback& progressUpdate)
-    {
-        auto& applicationParameters =
-            _parametersManager.getApplicationParameters();
-        auto& geometryParameters = _parametersManager.getGeometryParameters();
-        auto& scene = _engine->getScene();
-        const std::string& filename =
-            geometryParameters.getCircuitConfiguration();
-        const auto& targets = geometryParameters.getCircuitTargetsAsStrings();
-
-        BRAYNS_INFO << "Loading circuit configuration from " << filename
-                    << std::endl;
-        const std::string& report = geometryParameters.getCircuitReport();
-        CircuitLoader circuitLoader(scene, applicationParameters,
-                                    geometryParameters);
-        circuitLoader.setProgressCallback(progressUpdate);
-
-        const servus::URI uri(filename);
-        scene.addModel(circuitLoader.importCircuit(uri, targets, report));
-    }
-#endif // BRAYNS_USE_BRION
 
     /**
         Loads molecular system from configuration (command line parameter
@@ -576,6 +468,7 @@ private:
         molecularSystemReader.setProgressCallback(progressUpdate);
         const auto fileName = geometryParameters.getMolecularSystemConfig();
         scene.addModel(molecularSystemReader.importFromFile(fileName));
+        scene.markModified();
     }
 
     void _setupCameraManipulator(const CameraMode mode)
@@ -680,8 +573,9 @@ private:
             'g', "Enable/Disable animation playback",
             std::bind(&Brayns::Impl::_toggleAnimationPlayback, this));
         _keyboardHandler.registerKeyboardShortcut(
-            'x', "Set animation frame to " +
-                     std::to_string(DEFAULT_TEST_ANIMATION_FRAME),
+            'x',
+            "Set animation frame to " +
+                std::to_string(DEFAULT_TEST_ANIMATION_FRAME),
             std::bind(&Brayns::Impl::_defaultAnimationFrame, this));
         _keyboardHandler.registerKeyboardShortcut(
             '|', "Create cache file ",
@@ -1062,4 +956,4 @@ AbstractManipulator& Brayns::getCameraManipulator()
 {
     return _impl->getCameraManipulator();
 }
-}
+} // namespace brayns

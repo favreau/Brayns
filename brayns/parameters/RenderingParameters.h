@@ -70,6 +70,13 @@ public:
     bool getHeadLight() const { return _headLight; }
     /** If the rendering should be refined by accumulating multiple passes */
     bool getAccumulation() const { return _accumulation; }
+    /** Is AI denoised enabled */
+    bool getPostProcessingFilters() const { return _postProcessingFilters; }
+    void setPostProcessingFilters(const bool value)
+    {
+        _updateValue(_postProcessingFilters, value);
+    }
+
     /**
      * @return the threshold where accumulation stops if the variance error
      * reaches this value.
@@ -95,6 +102,7 @@ public:
         _updateValue(_maxAccumFrames, value);
     }
     size_t getMaxAccumFrames() const { return _maxAccumFrames; }
+
 protected:
     void initializeDefaultRenderers();
     void parse(const po::variables_map& vm) final;
@@ -105,6 +113,7 @@ protected:
     std::deque<std::string> _cameraTypeNames;
     int _spp{1};
     bool _accumulation{true};
+    bool _postProcessingFilters{false};
     Vector3d _backgroundColor{0., 0., 0.};
     bool _headLight{true};
     double _varianceThreshold{-1.};
@@ -112,5 +121,5 @@ protected:
 
     SERIALIZATION_FRIEND(RenderingParameters)
 };
-}
+} // namespace brayns
 #endif // RENDERINGPARAMETERS_H

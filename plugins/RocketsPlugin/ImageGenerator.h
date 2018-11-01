@@ -21,6 +21,7 @@
 #pragma once
 
 #include <brayns/common/types.h>
+#include <brayns/defines.h>
 
 #ifdef BRAYNS_USE_LIBJPEGTURBO
 #include <turbojpeg.h>
@@ -59,7 +60,7 @@ public:
 
     struct ImageJPEG
     {
-#ifdef BRAYNS_USE_LIBJPEGTURBO
+#if (BRAYNS_USE_LIBJPEGTURBO)
         struct tjDeleter
         {
             void operator()(uint8_t* ptr) { tjFree(ptr); }
@@ -82,7 +83,7 @@ public:
     ImageJPEG createJPEG(FrameBuffer& frameBuffer, uint8_t quality);
 
 private:
-#ifdef BRAYNS_USE_LIBJPEGTURBO
+#if (BRAYNS_USE_LIBJPEGTURBO)
     tjhandle _compressor{tjInitCompress()};
 
     ImageJPEG::JpegData _encodeJpeg(uint32_t width, uint32_t height,
@@ -90,4 +91,4 @@ private:
                                     uint8_t quality, unsigned long& dataSize);
 #endif
 };
-}
+} // namespace brayns

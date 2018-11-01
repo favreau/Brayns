@@ -45,8 +45,8 @@ public:
     {
         return std::unique_lock<std::mutex>(_mapMutex);
     }
-    uint8_t* getColorBuffer() final { return _colorBuffer; }
-    float* getDepthBuffer() final { return _depthBuffer; }
+    uint8_t* getByteBuffer() final { return _byteBuffer; }
+    float* getFloatBuffer() final { return _floatBuffer; }
     OSPFrameBuffer impl() { return _frameBuffer; }
     void enableDeflectPixelOp();
     void setStreamingParams(const StreamParameters& params, bool stereo);
@@ -57,12 +57,12 @@ private:
     void _mapUnsafe();
 
     OSPFrameBuffer _frameBuffer;
-    uint8_t* _colorBuffer;
-    float* _depthBuffer;
+    uint8_t* _byteBuffer;
+    float* _floatBuffer;
     OSPPixelOp _pixelOp{nullptr};
 
     // protect map/unmap vs ospRenderFrame
     std::mutex _mapMutex;
 };
-}
+} // namespace brayns
 #endif // OSPRAYFRAMEBUFFER_H

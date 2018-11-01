@@ -10,8 +10,10 @@
 # ".mic"-suffix trick, so we'll put libraries into separate
 # directories (names 'intel64' and 'mic', respectively)
 
-set(BRAYNSOSPRAYPLUGIN_ISPC_SOURCES
-  ispc/camera/ClippedPerspectiveCamera.ispc
+set(BRAYNS_OSPRAY_ENGINE_ISPC_SOURCES
+  ispc/camera/utils.ispc
+  ispc/camera/OrthographicCamera.ispc
+  ispc/camera/PerspectiveCamera.ispc
   ispc/geometry/ExtendedCones.ispc
   ispc/geometry/ExtendedCylinders.ispc
   ispc/geometry/ExtendedSDFGeometries.ispc
@@ -26,7 +28,7 @@ set(BRAYNSOSPRAYPLUGIN_ISPC_SOURCES
   ispc/render/utils/SkyBox.ispc
 )
 
-set(BRAYNSOSPRAYENGINEPLUGIN_SOURCES
+set(BRAYNS_OSPRAY_ENGINE_SOURCES
   OSPRayCamera.cpp
   OSPRayEngine.cpp
   OSPRayFrameBuffer.cpp
@@ -36,7 +38,8 @@ set(BRAYNSOSPRAYENGINEPLUGIN_SOURCES
   OSPRayScene.cpp
   OSPRayVolume.cpp
   utils.cpp
-  ispc/camera/ClippedPerspectiveCamera.cpp
+  ispc/camera/OrthographicCamera.cpp
+  ispc/camera/PerspectiveCamera.cpp
   ispc/geometry/ExtendedCones.cpp
   ispc/geometry/ExtendedCylinders.cpp
   ispc/geometry/ExtendedSDFGeometries.cpp
@@ -50,9 +53,9 @@ set(BRAYNSOSPRAYENGINEPLUGIN_SOURCES
   ispc/render/utils/AbstractRenderer.cpp
   ispc/render/utils/SimulationRenderer.cpp
 )
-list(APPEND BRAYNSOSPRAYENGINEPLUGIN_SOURCES ${BRAYNSOSPRAYPLUGIN_ISPC_SOURCES})
+list(APPEND BRAYNS_OSPRAY_ENGINE_SOURCES ${BRAYNS_OSPRAY_ENGINE_ISPC_SOURCES})
 
-set(BRAYNSOSPRAYENGINEPLUGIN_HEADERS
+set(BRAYNS_OSPRAY_ENGINE_HEADERS
   OSPRayCamera.h
   OSPRayEngine.h
   OSPRayFrameBuffer.h
@@ -61,7 +64,8 @@ set(BRAYNSOSPRAYENGINEPLUGIN_HEADERS
   OSPRayRenderer.h
   OSPRayScene.h
   OSPRayVolume.h
-  ispc/camera/ClippedPerspectiveCamera.h
+  ispc/camera/OrthographicCamera.h
+  ispc/camera/PerspectiveCamera.h
   ispc/geometry/ExtendedCones.h
   ispc/geometry/ExtendedCylinders.h
   ispc/geometry/ExtendedSDFGeometries.h
@@ -76,7 +80,7 @@ set(BRAYNSOSPRAYENGINEPLUGIN_HEADERS
   ispc/render/utils/SimulationRenderer.h
 )
 
-set(BRAYNSOSPRAYENGINEPLUGIN_HEADERS
+set(BRAYNS_OSPRAY_ENGINE_HEADERS
   utils.h
 )
 
@@ -85,7 +89,7 @@ set_source_files_properties(
     OSPRayMaterial.cpp
     PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
 
-set(BRAYNSOSPRAYENGINEPLUGIN_LINK_LIBRARIES
+set(BRAYNS_OSPRAY_ENGINE_LINK_LIBRARIES
     PRIVATE vmmlib braynsCommon braynsParameters ${OSPRAY_LIBRARIES}
 )
 
@@ -101,12 +105,12 @@ endif()
 
 # Compile ispc code
 include_directories_ispc(${PROJECT_SOURCE_DIR} ${OSPRAY_INCLUDE_DIRS})
-ospray_ispc_compile(${BRAYNSOSPRAYPLUGIN_ISPC_SOURCES})
-list(APPEND BRAYNSOSPRAYENGINEPLUGIN_SOURCES ${ISPC_OBJECTS})
+ospray_ispc_compile(${BRAYNS_OSPRAY_ENGINE_ISPC_SOURCES})
+list(APPEND BRAYNS_OSPRAY_ENGINE_SOURCES ${ISPC_OBJECTS})
 
 # Compile C++ code
-set(BRAYNSOSPRAYENGINEPLUGIN_OMIT_LIBRARY_HEADER ON)
-set(BRAYNSOSPRAYENGINEPLUGIN_OMIT_VERSION_HEADERS ON)
-set(BRAYNSOSPRAYENGINEPLUGIN_EXPORT ON)
+set(BRAYNS_OSPRAY_ENGINE_OMIT_LIBRARY_HEADER ON)
+set(BRAYNS_OSPRAY_ENGINE_OMIT_VERSION_HEADERS ON)
+set(BRAYNS_OSPRAY_ENGINE_EXPORT ON)
 
-common_library(braynsOSPRayEnginePlugin)
+common_library(brayns_ospray_engine)

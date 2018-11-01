@@ -46,9 +46,6 @@ public:
     explicit Engine(ParametersManager& parametersManager);
     virtual ~Engine() = default;
 
-    /** @return the name of the engine */
-    virtual EngineType name() const = 0;
-
     /**
      * Commits changes to the engine. This include scene, camera and renderer
      * modifications
@@ -147,6 +144,7 @@ public:
         const RenderingParameters& renderingParameters) const = 0;
 
     auto& getParametersManager() { return _parametersManager; }
+
 protected:
     void _render(const RenderInput& renderInput, RenderOutput& renderOutput);
     void _render();
@@ -163,6 +161,6 @@ protected:
 
     bool _keepRunning{true};
 };
-}
+} // namespace brayns
 
 #endif // ENGINE_H

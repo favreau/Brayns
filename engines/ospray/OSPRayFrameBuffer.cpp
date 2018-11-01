@@ -31,8 +31,8 @@ OSPRayFrameBuffer::OSPRayFrameBuffer(const Vector2ui& frameSize,
                                      const bool accumulation)
     : FrameBuffer(frameSize, colorDepth, accumulation)
     , _frameBuffer(0)
-    , _colorBuffer(0)
-    , _depthBuffer(0)
+    , _byteBuffer(0)
+    , _floatBuffer(0)
 {
     resize(frameSize);
 }
@@ -142,8 +142,8 @@ void OSPRayFrameBuffer::_mapUnsafe()
     if (_frameBufferFormat == FrameBufferFormat::none)
         return;
 
-    _colorBuffer = (uint8_t*)ospMapFrameBuffer(_frameBuffer, OSP_FB_COLOR);
-    _depthBuffer = (float*)ospMapFrameBuffer(_frameBuffer, OSP_FB_DEPTH);
+    _byteBuffer = (uint8_t*)ospMapFrameBuffer(_frameBuffer, OSP_FB_COLOR);
+    _floatBuffer = (float*)ospMapFrameBuffer(_frameBuffer, OSP_FB_DEPTH);
 }
 
 void OSPRayFrameBuffer::unmap()
@@ -157,16 +157,16 @@ void OSPRayFrameBuffer::_unmapUnsafe()
     if (_frameBufferFormat == FrameBufferFormat::none)
         return;
 
-    if (_colorBuffer)
+    if (_byteBuffer)
     {
-        ospUnmapFrameBuffer(_colorBuffer, _frameBuffer);
-        _colorBuffer = 0;
+        ospUnmapFrameBuffer(_byteBuffer, _frameBuffer);
+        _byteBuffer = nullptr;
     }
 
-    if (_depthBuffer)
+    if (_floatBuffer)
     {
-        ospUnmapFrameBuffer(_depthBuffer, _frameBuffer);
-        _depthBuffer = 0;
+        ospUnmapFrameBuffer(_floatBuffer, _frameBuffer);
+        _floatBuffer = nullptr;
     }
 }
 
@@ -178,4 +178,4 @@ void OSPRayFrameBuffer::setAccumulation(const bool accumulation)
         _recreate();
     }
 }
-}
+} // namespace brayns

@@ -158,12 +158,12 @@ void MeshLoader::_createMaterials(Model& model, const aiScene* aiScene,
 
         const size_t NB_TEXTURE_TYPES = 6;
         TextureTypeMapping textureTypeMapping[NB_TEXTURE_TYPES] = {
-            {aiTextureType_DIFFUSE, TextureType::TT_DIFFUSE},
-            {aiTextureType_NORMALS, TextureType::TT_NORMALS},
-            {aiTextureType_SPECULAR, TextureType::TT_SPECULAR},
-            {aiTextureType_EMISSIVE, TextureType::TT_EMISSIVE},
-            {aiTextureType_OPACITY, TextureType::TT_OPACITY},
-            {aiTextureType_REFLECTION, TextureType::TT_REFLECTION}};
+            {aiTextureType_DIFFUSE, TextureType::diffuse},
+            {aiTextureType_NORMALS, TextureType::normals},
+            {aiTextureType_SPECULAR, TextureType::specular},
+            {aiTextureType_EMISSIVE, TextureType::emissive},
+            {aiTextureType_OPACITY, TextureType::opacity},
+            {aiTextureType_REFLECTION, TextureType::reflection}};
 
         for (size_t textureType = 0; textureType < NB_TEXTURE_TYPES;
              ++textureType)

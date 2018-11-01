@@ -96,10 +96,9 @@ inline float sdConePill(const vec3f& p, const vec3f p0, const vec3f p1,
 
     const float thicknessAt = mix(radius_bottom, radius_top, b);
     const float thickness =
-        useSigmoid
-            ? 0.5 * (thicknessAt +
-                     mix(radius_bottom, radius_top, smootherstep(b)))
-            : thicknessAt;
+        useSigmoid ? 0.5 * (thicknessAt +
+                            mix(radius_bottom, radius_top, smootherstep(b)))
+                   : thicknessAt;
 
     return length(p - Pb) - thickness;
 }
@@ -209,7 +208,7 @@ static void ExtendedSDFGeometries_postIntersect(
     uniform int64 flags)
 {
     uniform ExtendedSDFGeometries* uniform this =
-        (uniform ExtendedSDFGeometries * uniform)geometry;
+        (uniform ExtendedSDFGeometries * uniform) geometry;
     dg.geometry = geometry;
     vec3f Ng = ray.Ng;
     vec3f Ns = Ng;
@@ -380,7 +379,7 @@ void ExtendedSDFGeometries_intersect(uniform ExtendedSDFGeometries* uniform
         return;
 
     const float t_in = intersect(geometry, ray.org, ray.dir, primID);
-    if (t_in > 0 && t_in > ray.t0 && t_in < ray.t)
+    if (t_in > 0.f && t_in > ray.t0 && t_in < ray.t)
     {
         vec3f pos = ray.org + t_in * ray.dir;
 
@@ -407,8 +406,8 @@ export void ExtendedSDFGeometriesGeometry_set(
     int uniform numNeighbours, void* uniform geometries)
 {
     uniform ExtendedSDFGeometries* uniform geom =
-        (uniform ExtendedSDFGeometries * uniform)_geom;
-    uniform Model* uniform model = (uniform Model * uniform)_model;
+        (uniform ExtendedSDFGeometries * uniform) _geom;
+    uniform Model* uniform model = (uniform Model * uniform) _model;
 
     uniform uint32 geomID =
         rtcNewUserGeometry(model->embreeSceneHandle, numExtendedSDFGeometries);
@@ -416,9 +415,9 @@ export void ExtendedSDFGeometriesGeometry_set(
     geom->geometry.model = model;
     geom->geometry.geomID = geomID;
     geom->numExtendedSDFGeometries = numExtendedSDFGeometries;
-    geom->geometryRefs = (uniform uint64 * uniform)data;
-    geom->neighbours = (uniform uint64 * uniform)neighbours;
-    geom->geometries = (uniform ExtendedSDFGeometry * uniform)geometries;
+    geom->geometryRefs = (uniform uint64 * uniform) data;
+    geom->neighbours = (uniform uint64 * uniform) neighbours;
+    geom->geometries = (uniform ExtendedSDFGeometry * uniform) geometries;
 
     // NOTE: geom->data is always smaller than geom->geometries
     geom->useSafeIncrement =

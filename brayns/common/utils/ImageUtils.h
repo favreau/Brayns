@@ -20,6 +20,7 @@
 #pragma once
 
 #include <brayns/common/types.h>
+#include <brayns/defines.h>
 
 #ifdef BRAYNS_USE_FREEIMAGE
 #include <FreeImage.h>
@@ -53,7 +54,7 @@ bool SwapRedBlue32(FIBITMAP* freeImage);
 ImagePtr getImageFromFrameBuffer(FrameBuffer& frameBuffer);
 std::string getBase64Image(FrameBuffer& frameBuffer, const std::string& format,
                            const int quality);
-}
-}
+} // namespace freeimage
+} // namespace brayns
 
 #endif

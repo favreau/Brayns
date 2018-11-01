@@ -45,9 +45,9 @@ public:
 
     /**
        Set the clipping planes to use in this camera.
-       Currently, this only works for the clippedperspective camera.
+       Only implemented in the perspective and orthographic cameras.
     */
-    void setClipPlanes(const ClipPlanes& clipPlanes);
+    void setClipPlanes(const Planes& planes);
 
     /** @copydoc Camera::setEnvironmentMap */
     void setEnvironmentMap(const bool environmentMap) final;
@@ -64,7 +64,7 @@ public:
 private:
     OSPCamera _camera{nullptr};
     std::string _currentOSPCamera;
-    ClipPlanes _clipPlanes;
+    Planes _clipPlanes;
 };
-}
+} // namespace brayns
 #endif // OSPRAYCAMERA_H

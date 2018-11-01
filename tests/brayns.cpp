@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(defaults)
 
     auto& fb = brayns.getEngine().getFrameBuffer();
     BOOST_CHECK(!fb.getColorBuffer());
-    BOOST_CHECK_EQUAL(fb.getColorDepth(), 4);
+    BOOST_CHECK_EQUAL(fb.getDepth(), 4);
     BOOST_CHECK(!fb.getDepthBuffer());
     BOOST_CHECK_EQUAL(fb.getSize(), brayns::Vector2i(800, 600));
 

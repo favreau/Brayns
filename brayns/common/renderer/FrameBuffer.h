@@ -38,9 +38,9 @@ public:
     virtual void map() = 0;
     virtual void unmap() = 0;
 
-    virtual uint8_t* getColorBuffer() = 0;
-    virtual size_t getColorDepth();
-    virtual float* getDepthBuffer() = 0;
+    virtual uint8_t* getByteBuffer() = 0;
+    virtual float* getFloatBuffer() = 0;
+    virtual size_t getDepth();
 
     virtual void resize(const Vector2ui& frameSize) = 0;
 
@@ -57,11 +57,12 @@ public:
 
     void incrementAccumFrames() { ++_accumFrames; }
     size_t numAccumFrames() const { return _accumFrames; }
+
 protected:
     Vector2ui _frameSize;
     FrameBufferFormat _frameBufferFormat;
     bool _accumulation;
     std::atomic_size_t _accumFrames{0};
 };
-}
+} // namespace brayns
 #endif // FRAMEBUFFER_H

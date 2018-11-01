@@ -54,4 +54,4 @@ void Material::setTexture(const std::string& fileName, const TextureType& type)
     _textureDescriptors[type] = _textures[fileName];
     markModified();
 }
-}
+} // namespace brayns

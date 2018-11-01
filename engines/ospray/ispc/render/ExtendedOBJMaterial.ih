@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <brayns/common/commonTypes.h>
+
 #include <ospray/SDK/common/Material.ih>
 #include <ospray/SDK/math/vec.ih>
 #include <ospray/SDK/texture/Texture2D.ih>
@@ -42,7 +44,7 @@ struct ExtendedOBJMaterial
     float Ns;
     TextureParam map_Bump;
     linear2f rot_Bump;
-    uniform Volume *uniform volume;
+    uniform Volume* uniform volume;
 
     float glossiness;
     bool castSimulationData;
@@ -52,4 +54,5 @@ struct ExtendedOBJMaterial
     float refraction;
     TextureParam map_reflection;
     float reflection;
+    MaterialShadingMode shadingMode;
 };

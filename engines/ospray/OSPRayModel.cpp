@@ -43,7 +43,7 @@ OSPData allocateVectorData(const std::vector<VecT>& vec,
     return ospNewData(totBytes / ospray::sizeOf(ospType), ospType, vec.data(),
                       memoryManagementFlags);
 }
-}
+} // namespace
 
 namespace brayns
 {
@@ -124,8 +124,6 @@ void OSPRayModel::buildBoundingBox()
     addCylinder(BOUNDINGBOX_MATERIAL_ID, {positions[1], positions[5], radius});
     addCylinder(BOUNDINGBOX_MATERIAL_ID, {positions[2], positions[6], radius});
     addCylinder(BOUNDINGBOX_MATERIAL_ID, {positions[3], positions[7], radius});
-
-    ospCommit(_boundingBoxModel);
 }
 
 void OSPRayModel::_commitSpheres(const size_t materialId)
@@ -478,4 +476,4 @@ MaterialPtr OSPRayModel::createMaterial(const size_t materialId,
     _materials[materialId] = material;
     return material;
 }
-}
+} // namespace brayns

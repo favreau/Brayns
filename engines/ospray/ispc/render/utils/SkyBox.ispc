@@ -28,6 +28,9 @@ vec4f skyboxMapping(const uniform Renderer* uniform renderer,
                     const varying Ray& ray,
                     const uniform ExtendedOBJMaterial* uniform bgMaterial)
 {
+    if (!bgMaterial)
+        return make_vec4f(0.f);
+
     varying vec4f result = make_vec4f(bgMaterial->Kd);
 
     const varying float radius = 1e6;

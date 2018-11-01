@@ -6,7 +6,7 @@
 # This file is part of Brayns <https://github.com/BlueBrain/Brayns>
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(Brayns VERSION 0.7.1)
+project(Brayns VERSION 0.8.0)
 set(Brayns_VERSION_ABI 1)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake
@@ -27,9 +27,6 @@ if($ENV{TRAVIS})
   if(NOT DEFINED BRAYNS_DEFLECT_ENABLED)
     set(BRAYNS_DEFLECT_ENABLED ON)
   endif()
-  if(NOT DEFINED BRAYNS_BRION_ENABLED)
-    set(BRAYNS_BRION_ENABLED ON)
-  endif()
 endif()
 include(Common)
 
@@ -37,7 +34,15 @@ include(Common)
 common_find_package(Boost REQUIRED COMPONENTS
   filesystem system program_options unit_test_framework)
 common_find_package(vmmlib REQUIRED)
-common_find_package(OpenMP)
+
+FIND_PACKAGE( OpenMP)
+if(OPENMP_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+include_directories(SYSTEM ${OpenMP_INCLUDE_PATH})
+
 common_find_package(LibArchive)
 common_find_package(libuv 1.8)
 
@@ -64,7 +69,7 @@ list(APPEND LCOV_EXCLUDE '${PROJECT_SOURCE_DIR}/async++/include/async++/*'
 # HTTP messaging
 common_find_package(LibJpegTurbo)
 common_find_package(Rockets)
-if(TARGET Rockets)
+if(ROCKETS_FOUND AND ROCKETS_USE_LIBWEBSOCKETS)
   option(BRAYNS_NETWORKING_ENABLED "Activate networking interfaces" ON)
   if(BRAYNS_NETWORKING_ENABLED)
     list(APPEND COMMON_FIND_PACKAGE_DEFINES BRAYNS_USE_NETWORKING)
@@ -81,19 +86,6 @@ else()
   unset(BRAYNS_DEFLECT_ENABLED)
 endif()
 
-# Data access
-common_find_package(Brion)
-common_find_package(Servus)
-common_find_package(HDF5 SYSTEM COMPONENTS C CXX)
-if(TARGET Brion AND TARGET Servus AND HDF5_FOUND)
-  option(BRAYNS_BRION_ENABLED "Activate Brion" ON)
-else()
-  unset(BRAYNS_BRION_ENABLED)
-endif()
-
-# Data access unit tests
-common_find_package(BBPTestData)
-
 if(NOT EXISTS ${PROJECT_SOURCE_DIR}/perceptualdiff/FindFreeImage.cmake)
   message(FATAL_ERROR "FindFreeImage.cmake missing, run: git submodule update --init")
 endif()
@@ -108,12 +100,28 @@ list(APPEND LCOV_EXCLUDE '${PROJECT_SOURCE_DIR}/perceptualdiff/*')
 common_find_package(ospray 1.5 SYSTEM)
 set(_ospray_unsupported_version 1.6)
 if(OSPRAY_FOUND AND OSPRAY_VERSION VERSION_LESS _ospray_unsupported_version)
-  option(BRAYNS_OSPRAY_ENABLED "Activate OSPRay rendering engine" ON)
+  option(BRAYNS_OSPRAY_ENABLED "Activate OSPRay rendering engine" OFF)
 else()
   unset(BRAYNS_OSPRAY_ENABLED)
   if(OSPRAY_FOUND)
     message(WARNING "OSPRay version >= ${_ospray_unsupported_version} not supported")
   endif()
+endif()
+
+# Sol-R rendering engine
+find_package(SolR)
+if(SolR_FOUND)
+  option(BRAYNS_SOLR_ENABLED "Activate Sol-R engine for GPGPU rendering" OFF)
+else()
+  unset(BRAYNS_SOLR_ENABLED)
+endif()
+
+# OptiX rendering engine
+find_package(OptiX)
+if(OptiX_FOUND)
+  option(BRAYNS_OPTIX_ENABLED "Activate OptiX engine for GPU rendering" OFF)
+else()
+  unset(BRAYNS_OPTIX_ENABLED)
 endif()
 
 # Mesh loading
@@ -135,30 +143,17 @@ else()
   unset(BRAYNS_VIEWER_ENABLED)
 endif()
 
-common_find_package_post()
-
 list(APPEND BRAYNS_DEPENDENT_LIBRARIES Async++ vmmlib)
+
+option(BRAYNS_UNITTESTS_ENABLED "Activate unit tests" OFF)
+
 
 # ------------------------------------------------------------------------------
 # BRAYNS applications and libraries
 # ------------------------------------------------------------------------------
 
-if(NOT OSPRAY_FOUND)
-  message(WARNING "OSPRay not found. Brayns cannot work without an engine" )
-endif()
-
-if(BRAYNS_OSPRAY_ENABLED)
-  # ------------------------------------------------------------------------------
-  # OSPRAY specific settings
-  # ------------------------------------------------------------------------------
-  # compiler selection for the non-MIC part
-  if(APPLE)
-    set(OSPRAY_COMPILER "CLANG" CACHE STRING "compiler to use (ICC,GCC, or CLANG)")
-    set_property(CACHE OSPRAY_COMPILER PROPERTY STRINGS ICC GCC CLANG)
-  else(APPLE)
-    set(OSPRAY_COMPILER "GCC" CACHE STRING "compiler to use (ICC or GCC)")
-    set_property(CACHE OSPRAY_COMPILER PROPERTY STRINGS ICC GCC)
-  endif()
+if(NOT BRAYNS_OSPRAY_ENABLED AND NOT BRAYNS_SOLR_ENABLED AND NOT BRAYNS_OPTIX_ENABLED)
+  message(WARNING "No engine was enabled. Brayns cannot work without an engine" )
 endif()
 
 if(BRAYNS_VIEWER_ENABLED)
@@ -181,12 +176,37 @@ if(BRAYNS_BENCHMARK_ENABLED)
 endif()
 
 if(BRAYNS_OSPRAY_ENABLED)
+  # compiler selection for the non-MIC part
+  if(APPLE)
+    set(OSPRAY_COMPILER "CLANG" CACHE STRING "compiler to use (ICC,GCC, or CLANG)")
+    set_property(CACHE OSPRAY_COMPILER PROPERTY STRINGS ICC GCC CLANG)
+  else(APPLE)
+    set(OSPRAY_COMPILER "GCC" CACHE STRING "compiler to use (ICC or GCC)")
+    set_property(CACHE OSPRAY_COMPILER PROPERTY STRINGS ICC GCC)
+  endif()
+  list(APPEND COMMON_FIND_PACKAGE_DEFINES BRAYNS_USE_OSPRAY)
   add_subdirectory(engines/ospray)
   add_subdirectory(ospray_modules)
 endif()
+
+if(BRAYNS_OPTIX_ENABLED)
+  list(APPEND COMMON_FIND_PACKAGE_DEFINES BRAYNS_USE_OPTIX)
+  add_subdirectory(engines/optix)
+endif()
+
+if(BRAYNS_SOLR_ENABLED)
+  list(APPEND COMMON_FIND_PACKAGE_DEFINES BRAYNS_USE_SOLR)
+  add_subdirectory(engines/solr)
+  include_directories(${SolR_INCLUDE_DIRS})
+endif()
+
 add_subdirectory(plugins)
 add_subdirectory(brayns)
-add_subdirectory(tests)
+if(BRAYNS_UNITTESTS_ENABLED)
+  add_subdirectory(tests)
+endif()
+
+common_find_package_post()
 
 include(CommonCPack)
 

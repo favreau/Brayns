@@ -19,11 +19,7 @@ set(BRAYNS_SOURCES
 
 set(BRAYNS_LINK_LIBRARIES
   PUBLIC braynsParameters braynsCommon
-  PRIVATE braynsIO braynsPluginAPI braynsTasks ${OSPRAY_COMMON_LIBRARY})
-
-if(TARGET braynsOSPRayEnginePlugin)
-  list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE braynsOSPRayEnginePlugin)
-endif()
+  PRIVATE braynsIO braynsPluginAPI braynsTasks)
 
 if(TARGET DeflectPlugin)
   list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE DeflectPlugin)
@@ -31,6 +27,18 @@ endif()
 
 if(TARGET RocketsPlugin)
   list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE RocketsPlugin)
+endif()
+
+if(TARGET brayns_ospray_engine)
+  list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE ${OSPRAY_COMMON_LIBRARY} brayns_ospray_engine)
+endif()
+
+if(TARGET brayns_optix_engine)
+  list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE brayns_optix_engine)
+endif()
+
+if(TARGET brayns_solr_engine)
+  list(APPEND BRAYNS_LINK_LIBRARIES PRIVATE brayns_solr_engine)
 endif()
 
 set(BRAYNS_OMIT_EXPORT ON)

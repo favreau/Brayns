@@ -27,6 +27,7 @@
 #include <brayns/common/material/Material.h>
 #include <brayns/common/renderer/FrameBuffer.h>
 #include <brayns/common/renderer/Renderer.h>
+#include <brayns/common/scene/ClipPlane.h>
 #include <brayns/common/scene/Model.h>
 #include <brayns/common/scene/Scene.h>
 #include <brayns/common/transferFunction/TransferFunction.h>
@@ -60,17 +61,17 @@ struct SchemaParam
     std::string endpoint;
 };
 
-struct ModelID
+struct ObjectID
 {
-    size_t modelID;
+    size_t id;
 };
 
 struct ModelProperties
 {
-    size_t modelID;
+    size_t id;
     PropertyMap properties;
 };
-}
+} // namespace brayns
 
 STATICJSON_DECLARE_ENUM(brayns::GeometryQuality,
                         {"low", brayns::GeometryQuality::low},
@@ -105,18 +106,21 @@ STATICJSON_DECLARE_ENUM(brayns::MemoryMode,
 
 STATICJSON_DECLARE_ENUM(brayns::EngineType,
                         {"ospray", brayns::EngineType::ospray},
-                        {"optix", brayns::EngineType::optix});
+                        {"optix", brayns::EngineType::optix},
+                        {"solr", brayns::EngineType::solr},
+                        {"filament", brayns::EngineType::filament},
+                        {"mitsuba", brayns::EngineType::mitsuba});
 
 STATICJSON_DECLARE_ENUM(brayns::TextureType,
-                        {"diffuse", brayns::TextureType::TT_DIFFUSE},
-                        {"normals", brayns::TextureType::TT_NORMALS},
-                        {"bump", brayns::TextureType::TT_BUMP},
-                        {"specular", brayns::TextureType::TT_SPECULAR},
-                        {"emissive", brayns::TextureType::TT_EMISSIVE},
-                        {"opacity", brayns::TextureType::TT_OPACITY},
-                        {"reflection", brayns::TextureType::TT_REFLECTION},
-                        {"refraction", brayns::TextureType::TT_REFRACTION},
-                        {"occlusion", brayns::TextureType::TT_OCCLUSION});
+                        {"diffuse", brayns::TextureType::diffuse},
+                        {"normals", brayns::TextureType::normals},
+                        {"bump", brayns::TextureType::bump},
+                        {"specular", brayns::TextureType::specular},
+                        {"emissive", brayns::TextureType::emissive},
+                        {"opacity", brayns::TextureType::opacity},
+                        {"reflection", brayns::TextureType::reflection},
+                        {"refraction", brayns::TextureType::refraction},
+                        {"occlusion", brayns::TextureType::occlusion});
 
 // c-array to std.array: https://stackoverflow.com/questions/11205186
 #define Vector2uiArray(vec) \
@@ -140,17 +144,20 @@ inline void init(brayns::PropertyMap* /*g*/, ObjectHandler* h)
     // from jsonPropertyMap.h directly.
     h->set_flags(Flags::DisallowUnknownKey);
 }
+
+inline void init(brayns::ObjectID* s, ObjectHandler* h)
+{
+    h->add_property("id", &s->id);
+    h->set_flags(Flags::DisallowUnknownKey);
+}
+
 inline void init(brayns::ModelProperties* s, ObjectHandler* h)
 {
-    h->add_property("id", &s->modelID);
+    h->add_property("id", &s->id);
     h->add_property("properties", &s->properties);
     h->set_flags(Flags::DisallowUnknownKey);
 }
-inline void init(brayns::ModelID* s, ObjectHandler* h)
-{
-    h->add_property("id", &s->modelID);
-    h->set_flags(Flags::DisallowUnknownKey);
-}
+
 inline void init(brayns::GetInstances* g, ObjectHandler* h)
 {
     h->add_property("id", &g->modelID);
@@ -158,16 +165,19 @@ inline void init(brayns::GetInstances* g, ObjectHandler* h)
                     Flags::Optional);
     h->set_flags(Flags::DisallowUnknownKey);
 }
+
 inline void init(brayns::SchemaParam* s, ObjectHandler* h)
 {
     h->add_property("endpoint", &s->endpoint);
     h->set_flags(Flags::DisallowUnknownKey);
 }
+
 inline void init(brayns::Chunk* c, ObjectHandler* h)
 {
     h->add_property("id", &c->id, Flags::Optional);
     h->set_flags(Flags::DisallowUnknownKey);
 }
+
 inline void init(brayns::BinaryParam* s, ObjectHandler* h)
 {
     h->add_property("bounding_box", &s->_boundingBox, Flags::Optional);
@@ -232,13 +242,13 @@ inline void init(brayns::FrameBuffer* f, ObjectHandler* h)
 
     frameSize = f->getSize();
     f->map();
-    diffuse = base64_encode(f->getColorBuffer(),
-                            frameSize.x() * frameSize.y() * f->getColorDepth());
+    diffuse = base64_encode(f->getByteBuffer(),
+                            frameSize.x() * frameSize.y() * f->getDepth());
 
-    if (f->getDepthBuffer())
+    if (f->getFloatBuffer())
     {
         depth =
-            base64_encode(reinterpret_cast<const uint8_t*>(f->getDepthBuffer()),
+            base64_encode(reinterpret_cast<const uint8_t*>(f->getFloatBuffer()),
                           frameSize.x() * frameSize.y() * sizeof(float));
     }
     f->unmap();
@@ -341,9 +351,15 @@ inline void init(brayns::ModelDescriptor* g, ObjectHandler* h)
     h->set_flags(Flags::DisallowUnknownKey);
 }
 
+inline void init(brayns::ClipPlane* g, ObjectHandler* h)
+{
+    h->add_property("id", &g->_id);
+    h->add_property("plane", &g->_plane);
+    h->set_flags(Flags::DisallowUnknownKey);
+}
+
 inline void init(brayns::Scene* s, ObjectHandler* h)
 {
-    h->add_property("clip_planes", &s->_clipPlanes, Flags::Optional);
     h->add_property("bounds", &s->_bounds, Flags::IgnoreRead | Flags::Optional);
     h->add_property("models", &s->_modelDescriptors,
                     Flags::Optional | Flags::IgnoreRead);
@@ -503,7 +519,7 @@ inline void init(brayns::AnimationParameters* a, ObjectHandler* h)
     h->add_property("unit", &a->_unit, Flags::Optional);
     h->set_flags(Flags::DisallowUnknownKey);
 }
-}
+} // namespace staticjson
 
 // for rockets::jsonrpc
 template <class T>

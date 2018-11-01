@@ -131,8 +131,9 @@ public:
     /**
         Removes a model from the scene
         @param id id of the model (descriptor)
+        @return True if model was found and removed, false otherwise
       */
-    BRAYNS_API void removeModel(const size_t id);
+    BRAYNS_API bool removeModel(const size_t id);
 
     BRAYNS_API ModelDescriptorPtr getModel(const size_t id) const;
 
@@ -152,16 +153,23 @@ public:
         return _parametersManager;
     }
 
+    /** Add a clip plane to the scene.
+     * @param plane The coefficients of the clip plane equation.
+     * @return The clip plane ID.
+     */
+    BRAYNS_API size_t addClipPlane(const Plane& plane);
+
+    /** Get a clip plane by its ID.
+        @param id the plane ID.
+        @return A pointer to the clip plane or null if not found.
+     */
+    BRAYNS_API ClipPlanePtr getClipPlane(const size_t id) const;
+
+    /** Remove a clip plane by its ID, or nop if not found. */
+    BRAYNS_API void removeClipPlane(const size_t id);
+
     /**
-      Sets the clip planes
-    */
-    void setClipPlanes(const ClipPlanes& clipPlanes)
-    {
-        _clipPlanes = clipPlanes;
-        markModified();
-    }
-    /**
-      @return the clip planes
+       @return the clip planes
     */
     const ClipPlanes& getClipPlanes() const { return _clipPlanes; }
     /**
@@ -241,26 +249,31 @@ public:
 
     MaterialPtr getBackgroundMaterial() const { return _backgroundMaterial; }
     /**
-     * Load the data from the given blob.
+     * Load the model from the given blob.
      *
      * @param blob the blob containing the data to import
      * @param materialID the default material ot use
+     * @param params Parameters for the model to be loaded
      * @param cb the callback for progress updates from the loader
      * @return the model that has been added to the scene
      */
-    ModelDescriptorPtr load(Blob&& blob, const size_t materialID,
-                            Loader::UpdateCallback cb);
+    ModelDescriptorPtr loadModel(Blob&& blob, const size_t materialID,
+                                 const ModelParams& params,
+                                 Loader::UpdateCallback cb);
 
     /**
-     * Load the data from the given file.
+     * Load the model from the given file.
      *
      * @param path the file or folder containing the data to import
      * @param materialID the default material ot use
+     * @param params Parameters for the model to be loaded
      * @param cb the callback for progress updates from the loader
      * @return the model that has been added to the scene
      */
-    ModelDescriptorPtr load(const std::string& path, const size_t materialID,
-                            Loader::UpdateCallback cb);
+    ModelDescriptorPtr loadModel(const std::string& path,
+                                 const size_t materialID,
+                                 const ModelParams& params,
+                                 Loader::UpdateCallback cb);
 
     /** @return the registry for all supported loaders of this scene. */
     LoaderRegistry& getLoaderRegistry() { return _loaderRegistry; }
@@ -278,7 +291,7 @@ protected:
     void _computeBounds();
 
     ParametersManager& _parametersManager;
-    MaterialPtr _backgroundMaterial;
+    MaterialPtr _backgroundMaterial{nullptr};
 
     // Model
     size_t _modelID{0};
@@ -299,5 +312,5 @@ protected:
 private:
     SERIALIZATION_FRIEND(Scene)
 };
-}
+} // namespace brayns
 #endif // SCENE_H

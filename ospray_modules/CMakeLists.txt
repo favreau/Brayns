@@ -5,21 +5,12 @@
 #
 # This file is part of Brayns <https://github.com/BlueBrain/Brayns>
 
-# Optix module
-option(BRAYNS_OPTIX_ENABLED "Activate OptiX module" OFF)
-if(BRAYNS_OPTIX_ENABLED)
-  add_subdirectory(optix)
-  if(TARGET ospray_module_optix)
-    add_dependencies(braynsOSPRayEnginePlugin ospray_module_optix)
-  endif()
-endif()
-
 # OpenDeck module
 option(BRAYNS_OPENDECK_ENABLED "Activate OpenDeck module" OFF)
 if(BRAYNS_OPENDECK_ENABLED)
   add_subdirectory(opendeck)
   if(TARGET ospray_module_opendeck)
-    add_dependencies(braynsOSPRayEnginePlugin ospray_module_opendeck)
+    add_dependencies(brayns_ospray_engine ospray_module_opendeck)
   endif()
 endif()
 
@@ -28,6 +19,6 @@ option(BRAYNS_STEREOSCOPY_ENABLED "Activate Stereoscopy module" OFF)
 if(BRAYNS_STEREOSCOPY_ENABLED)
   add_subdirectory(stereoscopy)
   if(TARGET ospray_module_stereoscopy)
-    add_dependencies(braynsOSPRayEnginePlugin ospray_module_stereoscopy)
+    add_dependencies(brayns_ospray_engine ospray_module_stereoscopy)
   endif()
 endif()

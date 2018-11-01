@@ -5,22 +5,18 @@
 
 set(BRAYNSUI_SOURCES
   BaseWindow.cpp
-  gl/ScreenSpaceProcessor.cpp
-  gl/shaders.cpp
 )
 
 set(BRAYNSUI_PUBLIC_HEADERS
   BaseWindow.h
-  gl/ScreenSpaceProcessor.h
-  gl/shaders.h
 )
 
-include(StringifyShaders)
-set(SSP_SHADERS gl/shaders/fragQuad.glsl
-                gl/shaders/vertQuad.glsl)
+set(BRAYNSUI_OMIT_EXPORT ON)
 
-stringify_shaders(${SSP_SHADERS})
-list(APPEND BRAYNSUI_SOURCES ${SHADER_SOURCES})
+if(APPLE)
+  target_compile_options(braynsUI PRIVATE -Wno-deprecated-declarations)
+  target_link_libraries(braynsUI PRIVATE "-framework OpenGL")
+endif()
 
 set(BRAYNSUI_LINK_LIBRARIES
     PUBLIC brayns braynsParameters vmmlib
@@ -28,10 +24,4 @@ set(BRAYNSUI_LINK_LIBRARIES
     PRIVATE ${GLUT_LIBRARIES} ${GLEW_LIBRARIES}
 )
 
-set(BRAYNSUI_OMIT_EXPORT ON)
 common_library(braynsUI)
-
-if(APPLE)
-  target_compile_options(braynsUI PRIVATE -Wno-deprecated-declarations)
-  target_link_libraries(braynsUI PRIVATE "-framework OpenGL")
-endif()

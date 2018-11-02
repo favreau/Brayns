@@ -342,6 +342,8 @@ bool OSPRayScene::_commitVolumeData()
 
 void OSPRayScene::_commitSimulationData()
 {
+//    !!!TODO!!!
+#if 0
     if (!_simulationHandler)
         return;
 
@@ -367,6 +369,7 @@ void OSPRayScene::_commitSimulationData()
     ospCommit(_ospSimulationData);
 
     markModified(false); // triggers framebuffer clear
+#endif
 }
 
 ModelPtr OSPRayScene::createModel() const

@@ -1,6 +1,8 @@
-/* Copyright (c) 2018, EPFL/Blue Brain Project
+/* Copyright (c) 2015-2016, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Cyrille Favreau <cyrille.favreau@epfl.ch>
+ *
+ * This file is part of Brayns <https://github.com/BlueBrain/Brayns>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
@@ -16,30 +18,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef SYNAPSELOADER_H
-#define SYNAPSELOADER_H
-
 #pragma once
 
-#include <api/CircuitExplorerParams.h>
+#include "api/CircuitExplorerParams.h"
+#include "types.h"
 
 #include <brayns/common/loader/Loader.h>
 #include <brayns/common/types.h>
-#include <brayns/parameters/GeometryParameters.h>
 
-#include <brain/brain.h>
-
+#include <set>
 #include <vector>
+
+namespace servus
+{
+class URI;
+}
 
 /**
  * Load circuit from BlueConfig or CircuitConfig file, including simulation.
  */
-class SynapseLoader : public brayns::Loader
+class CircuitLoader : public brayns::Loader
 {
 public:
-    SynapseLoader(brayns::Scene& scene,
-                  const SynapseAttributes& synapseAttributes);
-    ~SynapseLoader();
+    CircuitLoader(brayns::Scene& scene,
+                  const brayns::ApplicationParameters& applicationParameters,
+                  const CircuitAttributes& circuitAttributes,
+                  const MorphologyAttributes& morphologyAttributes);
+    ~CircuitLoader();
 
     static std::set<std::string> getSupportedDataTypes();
 
@@ -52,19 +57,21 @@ public:
                                               const size_t materialID) final;
 
     /**
-     * @brief Imports synapses from a circuit for the given target name
+     * @brief Imports morphology from a circuit for the given target name
      * @param circuitConfig URI of the Circuit Config file
-     * @param gid Gid of the neuron
+     * @param targets Targets to be loaded. If empty, the target specified in
+     * the circuit configuration file is used. If such an entry does not exist,
+     * all neurons are loaded.
+     * @param report Compartment report to be loaded
      * @param scene Scene into which the circuit is imported
      * @return True if the circuit is successfully loaded, false if the circuit
      * contains no cells.
      */
-    brayns::ModelDescriptorPtr importSynapsesFromGIDs(
-        const SynapseAttributes& synapseAttributes,
-        const brayns::Vector3fs& colors);
+    brayns::ModelDescriptorPtr importCircuit(const servus::URI& circuitConfig,
+                                             const strings& targets,
+                                             const std::string& report);
 
 private:
-    const SynapseAttributes& _synapseAttributes;
+    class Impl;
+    std::unique_ptr<const Impl> _impl;
 };
-
-#endif // SYNAPSELOADER_H

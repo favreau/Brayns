@@ -439,8 +439,7 @@ ModelDescriptorPtr ProteinLoader::importFromFile(
             const auto center = 0.01f * atom.position;
 
             // Convert radius from angstrom
-            const auto radius = 0.0001f * atom.radius *
-                                _geometryParameters.getRadiusMultiplier();
+            const auto radius = 0.0001f * atom.radius;
 
             const auto materialId = colorScheme == ColorScheme::protein_by_id
                                         ? index

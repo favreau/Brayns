@@ -178,27 +178,6 @@ public:
     */
     const ClipPlanes& getClipPlanes() const { return _clipPlanes; }
     /**
-        Returns the simulutation handler
-    */
-    BRAYNS_API AbstractSimulationHandlerPtr getSimulationHandler() const;
-
-    /**
-        Sets the simulation handler
-    */
-    BRAYNS_API void setSimulationHandler(AbstractSimulationHandlerPtr handler);
-
-    /**
-        Sets the Calcium diffusion simulation handler
-    */
-    void setCADiffusionSimulationHandler(
-        CADiffusionSimulationHandlerPtr handler);
-
-    /**
-        Gets the Calcium diffusion simulation handler
-    */
-    CADiffusionSimulationHandlerPtr getCADiffusionSimulationHandler() const;
-
-    /**
         Build a color map from a file, according to the colormap-file scene
        parameters
     */
@@ -276,9 +255,7 @@ protected:
     ClipPlanes _clipPlanes;
 
     // Simulation
-    AbstractSimulationHandlerPtr _simulationHandler{nullptr};
     TransferFunction _transferFunction;
-    CADiffusionSimulationHandlerPtr _caDiffusionSimulationHandler{nullptr};
 
     LoaderRegistry _loaderRegistry;
     Boxd _bounds;

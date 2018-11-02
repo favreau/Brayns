@@ -16,20 +16,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef CIRCUIT_EXPLORER_LOG_H
+#define CIRCUIT_EXPLORER_LOG_H
 
 #include <iostream>
 
-#define PLUGIN_ERROR std::cerr << "[ERROR] [CIRCUIT_VIEWER] "
-#define PLUGIN_WARN std::cerr << "[WARN ] [CIRCUIT_VIEWER] "
-#define PLUGIN_INFO std::cout << "[INFO ] [CIRCUIT_VIEWER] "
+#define PLUGIN_ERROR std::cerr << "[ERROR] [CIRCUIT_EXPLORER] "
+#define PLUGIN_WARN std::cerr << "[WARN ] [CIRCUIT_EXPLORER] "
+#define PLUGIN_INFO std::cout << "[INFO ] [CIRCUIT_EXPLORER] "
 #ifdef NDEBUG
 #define PLUGIN_DEBUG \
     if (false)       \
     std::cout
 #else
-#define PLUGIN_DEBUG std::cout << "[DEBUG] [CIRCUIT_VIEWER] "
+#define PLUGIN_DEBUG std::cout << "[DEBUG] [CIRCUIT_EXPLORER] "
 #endif
 
 #define PLUGIN_THROW(exc)                        \
@@ -38,4 +38,4 @@
         throw exc;                               \
     }
 
-#endif
+#endif // CIRCUIT_EXPLORER_LOG_H

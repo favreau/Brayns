@@ -29,70 +29,27 @@ namespace
 {
 const std::string PARAM_NEST_CIRCUIT = "nest-circuit";
 const std::string PARAM_NEST_REPORT = "nest-report";
-const std::string PARAM_CIRCUIT_CONFIG = "circuit-config";
-const std::string PARAM_CIRCUIT_DENSITY = "circuit-density";
-const std::string PARAM_CIRCUIT_USES_SIMULATION_MODEL =
-    "circuit-uses-simulation-model";
-const std::string PARAM_CIRCUIT_BOUNDING_BOX = "circuit-bounding-box";
-const std::string PARAM_CIRCUIT_MESH_FOLDER = "circuit-mesh-folder";
-const std::string PARAM_CIRCUIT_MESH_FILENAME_PATTERN =
-    "circuit-mesh-filename-pattern";
-const std::string PARAM_CIRCUIT_MESH_TRANSFORMATION =
-    "circuit-mesh-transformation";
-const std::string PARAM_CIRCUIT_TARGETS = "circuit-targets";
-const std::string PARAM_CIRCUIT_REPORT = "circuit-report";
-const std::string PARAM_CIRCUIT_START_SIMULATION_TIME =
-    "circuit-start-simulation-time";
-const std::string PARAM_CIRCUIT_END_SIMULATION_TIME =
-    "circuit-end-simulation-time";
-const std::string PARAM_CIRCUIT_SIMULATION_STEP = "circuit-simulation-step";
-const std::string PARAM_CIRCUIT_SIMULATION_RANGE =
-    "circuit-simulation-values-range";
-const std::string PARAM_CIRCUIT_SIMULATION_HISTOGRAM_SIZE =
-    "circuit-simulation-histogram-size";
-const std::string PARAM_CIRCUIT_RANDOM_SEED = "circuit-random-seed";
 const std::string PARAM_RADIUS_MULTIPLIER = "radius-multiplier";
 const std::string PARAM_RADIUS_CORRECTION = "radius-correction";
 const std::string PARAM_COLOR_SCHEME = "color-scheme";
 const std::string PARAM_GEOMETRY_QUALITY = "geometry-quality";
 const std::string PARAM_NEST_CACHE_FILENAME = "nest-cache-file";
-const std::string PARAM_MORPHOLOGY_SECTION_TYPES = "morphology-section-types";
-const std::string PARAM_MORPHOLOGY_LAYOUT = "morphology-layout";
 const std::string PARAM_MOLECULAR_SYSTEM_CONFIG = "molecular-system-config";
-const std::string PARAM_METABALLS_GRIDSIZE = "metaballs-grid-size";
-const std::string PARAM_METABALLS_THRESHOLD = "metaballs-threshold";
-const std::string PARAM_METABALLS_SAMPLES_FROM_SOMA =
-    "metaballs-samples-from-soma";
-const std::string PARAM_MORPHOLOGY_DAMPEN_BRANCH_THICKNESS_CHANGERATE =
-    "morphology-dampen-branch-thickness-changerate";
-const std::string PARAM_MORPHOLOGY_USE_SDF_GEOMETRIES =
-    "morphology-use-sdf-geometries";
 const std::string PARAM_MEMORY_MODE = "memory-mode";
 
-const std::array<std::string, 12> COLOR_SCHEMES = {
-    {"none", "neuron-by-id", "neuron-by-type", "neuron-by-segment-type",
-     "neuron-by-layer", "neuron-by-mtype", "neuron-by-etype",
-     "neuron-by-target", "protein-by-id", "protein-atoms", "protein-chains",
-     "protein-residues"}};
-
-const std::string GEOMETRY_QUALITIES[3] = {"low", "medium", "high"};
 const std::string GEOMETRY_MEMORY_MODES[2] = {"shared", "replicated"};
+const std::string GEOMETRY_QUALITIES[3] = {"low", "medium", "high"};
+const std::array<std::string, 12> COLOR_SCHEMES = {
+    {"none", "protein-by-id", "protein-atoms", "protein-chains",
+     "protein-residues"}};
 }
 
 namespace brayns
 {
 GeometryParameters::GeometryParameters()
     : AbstractParameters("Geometry")
-    , _radiusMultiplier(1.f)
-    , _radiusCorrection(0.f)
     , _colorScheme(ColorScheme::none)
     , _geometryQuality(GeometryQuality::high)
-    , _morphologySectionTypes{MorphologySectionType::all}
-    , _metaballsGridSize(0)
-    , _metaballsThreshold(1.f)
-    , _metaballsSamplesFromSoma(3)
-    , _morphologyDampenBranchThicknessChangerate(false)
-    , _morphologyUseSDFGeometries(false)
     , _memoryMode(MemoryMode::shared)
 {
     _parameters.add_options() //
@@ -102,66 +59,8 @@ GeometryParameters::GeometryParameters()
         (PARAM_NEST_REPORT.c_str(), po::value<std::string>(),
          "NEST simulation report file [string]")
         //
-        (PARAM_CIRCUIT_CONFIG.c_str(), po::value<std::string>(),
-         "Circuit configuration filename [string]")
-        //
-        (PARAM_RADIUS_MULTIPLIER.c_str(), po::value<float>(),
-         "Radius multiplier for spheres, cones and cylinders [float]")
-        //
-        (PARAM_RADIUS_CORRECTION.c_str(), po::value<float>(),
-         "Forces radius of spheres and cylinders to the specified value "
-         "[float]")
-        //
-        (PARAM_COLOR_SCHEME.c_str(), po::value<std::string>(),
-         "Color scheme to be applied to the geometry "
-         "[none|neuron-by-id|neuron-by-type|neuron-by-segment-type|"
-         "neuron-by-layer|neuron-by-mtype|neuron-by-etype|neuron-by-"
-         "target|protein-by-id|protein-atoms|protein-chains|protein-"
-         "residues]")
-        //
         (PARAM_GEOMETRY_QUALITY.c_str(), po::value<std::string>(),
          "Geometry rendering quality [low|medium|high]")
-        //
-        (PARAM_CIRCUIT_TARGETS.c_str(), po::value<std::string>(),
-         "Circuit targets [comma separated strings]")
-        //
-        (PARAM_CIRCUIT_DENSITY.c_str(), po::value<float>(),
-         "Density of cells in the circuit in percent [float]")
-        //
-        (PARAM_CIRCUIT_MESH_FOLDER.c_str(), po::value<std::string>(),
-         "Folder containing meshed morphologies [string]")
-        //
-        (PARAM_CIRCUIT_REPORT.c_str(), po::value<std::string>(),
-         "Circuit report [string]")
-        //
-        (PARAM_MORPHOLOGY_SECTION_TYPES.c_str(), po::value<size_t>(),
-         "Morphology section types (1: soma, 2: axon, 4: dendrite, "
-         "8: apical dendrite). Values can be added to select more than "
-         "one type of section")
-        //
-        (PARAM_MORPHOLOGY_LAYOUT.c_str(), po::value<size_ts>()->multitoken(),
-         "Morphology layout defined by number of "
-         "columns, vertical spacing, horizontal spacing "
-         "[int int int]")
-        //
-        (PARAM_CIRCUIT_START_SIMULATION_TIME.c_str(), po::value<double>(),
-         "Start simulation timestamp [double]")
-        //
-        (PARAM_CIRCUIT_END_SIMULATION_TIME.c_str(), po::value<double>(),
-         "End simulation timestamp [double]")
-        //
-        (PARAM_CIRCUIT_SIMULATION_STEP.c_str(), po::value<double>(),
-         "Step between simulation frames [double]")
-        //
-        (PARAM_CIRCUIT_SIMULATION_RANGE.c_str(),
-         po::value<floats>()->multitoken(),
-         "Minimum and maximum values for the simulation [float float]")
-        //
-        (PARAM_CIRCUIT_SIMULATION_HISTOGRAM_SIZE.c_str(), po::value<size_t>(),
-         "Number of values defining the simulation histogram [int]")
-        //
-        (PARAM_CIRCUIT_RANDOM_SEED.c_str(), po::value<size_t>(),
-         "Random seed for circuit [int]")
         //
         (PARAM_NEST_CACHE_FILENAME.c_str(), po::value<std::string>(),
          "Cache file containing nest data [string]")
@@ -169,49 +68,10 @@ GeometryParameters::GeometryParameters()
         (PARAM_MOLECULAR_SYSTEM_CONFIG.c_str(), po::value<std::string>(),
          "Molecular system configuration [string]")
         //
-        (PARAM_METABALLS_GRIDSIZE.c_str(), po::value<size_t>(),
-         "Metaballs grid size [int]. Activates automated meshing of somas "
-         "if different from 0")
-        //
-        (PARAM_METABALLS_THRESHOLD.c_str(), po::value<float>(),
-         "Metaballs threshold [float]")
-        //
-        (PARAM_METABALLS_SAMPLES_FROM_SOMA.c_str(), po::value<size_t>(),
-         "Number of morphology samples (or segments) from soma used by "
-         "automated meshing [int]")
-        //
-        (PARAM_MORPHOLOGY_DAMPEN_BRANCH_THICKNESS_CHANGERATE.c_str(),
-         po::bool_switch()->default_value(false),
-         "Dampen the thickness rate of change for branches in the morphology.")
-        //
-        (PARAM_MORPHOLOGY_USE_SDF_GEOMETRIES.c_str(),
-         po::bool_switch()->default_value(false),
-         "Use SDF geometries for drawing the morphologies.")
-        //
-        (PARAM_CIRCUIT_USES_SIMULATION_MODEL.c_str(),
-         po::bool_switch()->default_value(false),
-         "Defines if a different model is used to handle the simulation "
-         "geometry.")
-        //
-        (PARAM_CIRCUIT_BOUNDING_BOX.c_str(), po::value<floats>()->multitoken(),
-         "Does not load circuit geometry outside of the specified "
-         "bounding "
-         "box"
-         "[float float float float float float]")
-        //
         (PARAM_MEMORY_MODE.c_str(), po::value<std::string>(),
          "Defines what memory mode should be used between Brayns and "
          "the "
-         "underlying renderer [shared|replicated]")
-        //
-        (PARAM_CIRCUIT_MESH_FILENAME_PATTERN.c_str(), po::value<std::string>(),
-         "Pattern used to determine the name of the file containing a "
-         "meshed "
-         "morphology [string]")
-        //
-        (PARAM_CIRCUIT_MESH_TRANSFORMATION.c_str(),
-         po::bool_switch()->default_value(false),
-         "Enable mesh transformation according to circuit information.");
+         "underlying renderer [shared|replicated]");
 }
 
 void GeometryParameters::parse(const po::variables_map& vm)
@@ -220,131 +80,13 @@ void GeometryParameters::parse(const po::variables_map& vm)
         _NESTCircuit = vm[PARAM_NEST_CIRCUIT].as<std::string>();
     if (vm.count(PARAM_NEST_REPORT))
         _NESTReport = vm[PARAM_NEST_REPORT].as<std::string>();
-    if (vm.count(PARAM_CIRCUIT_CONFIG))
-        _circuitConfiguration.circuitConfigFile =
-            vm[PARAM_CIRCUIT_CONFIG].as<std::string>();
-    if (vm.count(PARAM_COLOR_SCHEME))
-    {
-        _colorScheme = ColorScheme::none;
-        const auto& colorScheme = vm[PARAM_COLOR_SCHEME].as<std::string>();
-        if (!colorScheme.empty())
-        {
-            auto it = std::find(COLOR_SCHEMES.begin(), COLOR_SCHEMES.end(),
-                                colorScheme);
-            if (it == COLOR_SCHEMES.end())
-                throw po::error("No match for color scheme '" + colorScheme);
 
-            const auto index = std::distance(COLOR_SCHEMES.begin(), it);
-            _colorScheme = static_cast<ColorScheme>(index);
-        }
-    }
-    if (vm.count(PARAM_RADIUS_MULTIPLIER))
-        _radiusMultiplier = vm[PARAM_RADIUS_MULTIPLIER].as<float>();
-    if (vm.count(PARAM_RADIUS_CORRECTION))
-        _radiusCorrection = vm[PARAM_RADIUS_CORRECTION].as<float>();
-    if (vm.count(PARAM_GEOMETRY_QUALITY))
-    {
-        _geometryQuality = GeometryQuality::low;
-        const auto& geometryQuality =
-            vm[PARAM_GEOMETRY_QUALITY].as<std::string>();
-        for (size_t i = 0;
-             i < sizeof(GEOMETRY_QUALITIES) / sizeof(GEOMETRY_QUALITIES[0]);
-             ++i)
-            if (geometryQuality == GEOMETRY_QUALITIES[i])
-                _geometryQuality = static_cast<GeometryQuality>(i);
-    }
-    if (vm.count(PARAM_CIRCUIT_TARGETS))
-        _circuitConfiguration.targets =
-            vm[PARAM_CIRCUIT_TARGETS].as<std::string>();
-    if (vm.count(PARAM_CIRCUIT_REPORT))
-        _circuitConfiguration.report =
-            vm[PARAM_CIRCUIT_REPORT].as<std::string>();
-    if (vm.count(PARAM_CIRCUIT_DENSITY))
-        _circuitConfiguration.density = vm[PARAM_CIRCUIT_DENSITY].as<float>();
-    if (vm.count(PARAM_CIRCUIT_MESH_FOLDER))
-        _circuitConfiguration.meshFolder =
-            vm[PARAM_CIRCUIT_MESH_FOLDER].as<std::string>();
-    if (vm.count(PARAM_MORPHOLOGY_SECTION_TYPES))
-    {
-        _morphologySectionTypes.clear();
-        const auto bits = vm[PARAM_MORPHOLOGY_SECTION_TYPES].as<size_t>();
-        if (bits & size_t(MorphologySectionType::soma))
-            _morphologySectionTypes.push_back(MorphologySectionType::soma);
-        if (bits & size_t(MorphologySectionType::axon))
-            _morphologySectionTypes.push_back(MorphologySectionType::axon);
-        if (bits & size_t(MorphologySectionType::dendrite))
-            _morphologySectionTypes.push_back(MorphologySectionType::dendrite);
-        if (bits & size_t(MorphologySectionType::apical_dendrite))
-            _morphologySectionTypes.push_back(
-                MorphologySectionType::apical_dendrite);
-    }
-
-    if (vm.count(PARAM_MORPHOLOGY_LAYOUT))
-    {
-        size_ts values = vm[PARAM_MORPHOLOGY_LAYOUT].as<size_ts>();
-        if (values.size() == 3)
-        {
-            _morphologyLayout.nbColumns = values[0];
-            _morphologyLayout.verticalSpacing = values[1];
-            _morphologyLayout.horizontalSpacing = values[2];
-        }
-    }
-    if (vm.count(PARAM_CIRCUIT_START_SIMULATION_TIME))
-        _circuitConfiguration.startSimulationTime =
-            vm[PARAM_CIRCUIT_START_SIMULATION_TIME].as<double>();
-    if (vm.count(PARAM_CIRCUIT_END_SIMULATION_TIME))
-        _circuitConfiguration.endSimulationTime =
-            vm[PARAM_CIRCUIT_END_SIMULATION_TIME].as<double>();
-    if (vm.count(PARAM_CIRCUIT_SIMULATION_STEP))
-        _circuitConfiguration.simulationStep =
-            vm[PARAM_CIRCUIT_SIMULATION_STEP].as<double>();
-    if (vm.count(PARAM_CIRCUIT_SIMULATION_RANGE))
-    {
-        floats values = vm[PARAM_CIRCUIT_SIMULATION_RANGE].as<floats>();
-        if (values.size() == 2)
-            _circuitConfiguration.simulationValuesRange =
-                Vector2f(values[0], values[1]);
-    }
-    if (vm.count(PARAM_CIRCUIT_SIMULATION_HISTOGRAM_SIZE))
-        _circuitConfiguration.simulationHistogramSize =
-            vm[PARAM_CIRCUIT_SIMULATION_HISTOGRAM_SIZE].as<size_t>();
-    if (vm.count(PARAM_CIRCUIT_RANDOM_SEED))
-        _circuitConfiguration.randomSeed =
-            vm[PARAM_CIRCUIT_RANDOM_SEED].as<size_t>();
     if (vm.count(PARAM_NEST_CACHE_FILENAME))
         _NESTCacheFile = vm[PARAM_NEST_CACHE_FILENAME].as<std::string>();
     if (vm.count(PARAM_MOLECULAR_SYSTEM_CONFIG))
         _molecularSystemConfig =
             vm[PARAM_MOLECULAR_SYSTEM_CONFIG].as<std::string>();
 
-    if (vm.count(PARAM_METABALLS_GRIDSIZE))
-        _metaballsGridSize = vm[PARAM_METABALLS_GRIDSIZE].as<size_t>();
-    if (vm.count(PARAM_METABALLS_THRESHOLD))
-        _metaballsThreshold = vm[PARAM_METABALLS_THRESHOLD].as<float>();
-    if (vm.count(PARAM_METABALLS_SAMPLES_FROM_SOMA))
-        _metaballsSamplesFromSoma =
-            vm[PARAM_METABALLS_SAMPLES_FROM_SOMA].as<size_t>();
-    _morphologyDampenBranchThicknessChangerate =
-        vm[PARAM_MORPHOLOGY_DAMPEN_BRANCH_THICKNESS_CHANGERATE].as<bool>();
-    _morphologyUseSDFGeometries =
-        vm[PARAM_MORPHOLOGY_USE_SDF_GEOMETRIES].as<bool>();
-    _circuitConfiguration.useSimulationModel =
-        vm[PARAM_CIRCUIT_USES_SIMULATION_MODEL].as<bool>();
-    if (vm.count(PARAM_CIRCUIT_BOUNDING_BOX))
-    {
-        const floats values = vm[PARAM_CIRCUIT_BOUNDING_BOX].as<floats>();
-        if (values.size() == 6)
-        {
-            _circuitConfiguration.boundingBox.reset();
-            _circuitConfiguration.boundingBox.merge(
-                Vector3f(values[0], values[1], values[2]));
-            _circuitConfiguration.boundingBox.merge(
-                Vector3f(values[3], values[4], values[5]));
-        }
-        else
-            BRAYNS_ERROR << "Invalid number of values for "
-                         << PARAM_CIRCUIT_BOUNDING_BOX << std::endl;
-    }
     if (vm.count(PARAM_MEMORY_MODE))
     {
         const auto& memoryMode = vm[PARAM_MEMORY_MODE].as<std::string>();
@@ -354,11 +96,6 @@ void GeometryParameters::parse(const po::variables_map& vm)
             if (memoryMode == GEOMETRY_MEMORY_MODES[i])
                 _memoryMode = static_cast<MemoryMode>(i);
     }
-    if (vm.count(PARAM_CIRCUIT_MESH_FILENAME_PATTERN))
-        _circuitConfiguration.meshFilenamePattern =
-            vm[PARAM_CIRCUIT_MESH_FILENAME_PATTERN].as<std::string>();
-    _circuitConfiguration.meshTransformation =
-        vm[PARAM_CIRCUIT_MESH_TRANSFORMATION].as<bool>();
 
     markModified();
 }
@@ -372,64 +109,13 @@ void GeometryParameters::print()
                 << std::endl;
     BRAYNS_INFO << "Color scheme               : "
                 << getColorSchemeAsString(_colorScheme) << std::endl;
-    BRAYNS_INFO << "Radius multiplier          : " << _radiusMultiplier
-                << std::endl;
-    BRAYNS_INFO << "Radius correction          : " << _radiusCorrection
-                << std::endl;
     BRAYNS_INFO << "Geometry quality           : "
                 << getGeometryQualityAsString(_geometryQuality) << std::endl;
-    BRAYNS_INFO << "Circuit configuration      : " << std::endl;
-    BRAYNS_INFO << "- Config file              : "
-                << _circuitConfiguration.circuitConfigFile << std::endl;
-    BRAYNS_INFO << " - Targets                 : "
-                << _circuitConfiguration.targets << std::endl;
-    BRAYNS_INFO << " - Report                  : "
-                << _circuitConfiguration.report << std::endl;
-    BRAYNS_INFO << " - Mesh folder             : "
-                << _circuitConfiguration.meshFolder << std::endl;
-    BRAYNS_INFO << " - Density                 : "
-                << _circuitConfiguration.density << std::endl;
-    BRAYNS_INFO << " - Start simulation time   : "
-                << _circuitConfiguration.startSimulationTime << std::endl;
-    BRAYNS_INFO << " - End simulation time     : "
-                << _circuitConfiguration.endSimulationTime << std::endl;
-    BRAYNS_INFO << " - Simulation step         : "
-                << _circuitConfiguration.simulationStep << std::endl;
-    BRAYNS_INFO << " - Simulation values range : "
-                << _circuitConfiguration.simulationValuesRange << std::endl;
-    BRAYNS_INFO << " - Histogram size          : "
-                << _circuitConfiguration.simulationHistogramSize << std::endl;
-    BRAYNS_INFO << " - Bounding box            : "
-                << _circuitConfiguration.boundingBox << std::endl;
-    BRAYNS_INFO << " - Mesh transformation     : "
-                << (_circuitConfiguration.meshTransformation ? "Yes" : "No")
-                << std::endl;
-    BRAYNS_INFO << "Morphology section types   : "
-                << enumsToBitmask(_morphologySectionTypes) << std::endl;
-    BRAYNS_INFO << "Morphology Layout          : " << std::endl;
-    BRAYNS_INFO << " - Columns                 : "
-                << _morphologyLayout.nbColumns << std::endl;
-    BRAYNS_INFO << " - Vertical spacing        : "
-                << _morphologyLayout.verticalSpacing << std::endl;
-    BRAYNS_INFO << " - Horizontal spacing      : "
-                << _morphologyLayout.horizontalSpacing << std::endl;
     BRAYNS_INFO << "Molecular system config    : " << _molecularSystemConfig
-                << std::endl;
-    BRAYNS_INFO << "Metaballs                  : " << std::endl;
-    BRAYNS_INFO << " - Grid size               : " << _metaballsGridSize
-                << std::endl;
-    BRAYNS_INFO << " - Threshold               : " << _metaballsThreshold
-                << std::endl;
-    BRAYNS_INFO << " - Samples from soma       : " << _metaballsSamplesFromSoma
-                << std::endl;
-    BRAYNS_INFO << "Use simulation model       : "
-                << (_circuitConfiguration.useSimulationModel ? "Yes" : "No")
                 << std::endl;
     BRAYNS_INFO << "Memory mode                : "
                 << (_memoryMode == MemoryMode::shared ? "Shared" : "Replicated")
                 << std::endl;
-    BRAYNS_INFO << "Mesh filename pattern      : "
-                << _circuitConfiguration.meshFilenamePattern << std::endl;
 }
 
 const std::string& GeometryParameters::getColorSchemeAsString(
@@ -437,25 +123,10 @@ const std::string& GeometryParameters::getColorSchemeAsString(
 {
     return COLOR_SCHEMES[static_cast<size_t>(value)];
 }
+
 const std::string& GeometryParameters::getGeometryQualityAsString(
     const GeometryQuality value) const
 {
     return GEOMETRY_QUALITIES[static_cast<size_t>(value)];
-}
-
-float GeometryParameters::getCircuitDensity() const
-{
-    return std::max(0.f, std::min(100.f, _circuitConfiguration.density));
-}
-
-strings GeometryParameters::getCircuitTargetsAsStrings() const
-{
-    strings targets;
-    boost::char_separator<char> separator(",");
-    boost::tokenizer<boost::char_separator<char>> tokens(
-        _circuitConfiguration.targets, separator);
-    for_each(tokens.begin(), tokens.end(),
-             [&targets](const std::string& s) { targets.push_back(s); });
-    return targets;
 }
 }

@@ -89,21 +89,8 @@ Scene& Scene::operator=(const Scene& rhs)
     _lights = rhs._lights;
     _clipPlanes = rhs._clipPlanes;
 
-    if (rhs._simulationHandler)
-    {
-        _simulationHandler = std::make_shared<AbstractSimulationHandler>(
-            _parametersManager.getGeometryParameters());
-        *_simulationHandler = *rhs._simulationHandler;
-    }
     _transferFunction = rhs._transferFunction;
     _transferFunction.markModified();
-
-    if (rhs._caDiffusionSimulationHandler)
-    {
-        _caDiffusionSimulationHandler =
-            std::make_shared<CADiffusionSimulationHandler>();
-        *_caDiffusionSimulationHandler = *rhs._caDiffusionSimulationHandler;
-    }
 
     markModified();
     return *this;
@@ -186,41 +173,6 @@ ModelDescriptorPtr Scene::getModel(const size_t id) const
 {
     auto lock = acquireReadAccess();
     return _find(_modelDescriptors, id, &ModelDescriptor::getModelID);
-}
-
-void Scene::setSimulationHandler(AbstractSimulationHandlerPtr handler)
-{
-    auto& ap = _parametersManager.getAnimationParameters();
-    _simulationHandler = handler;
-    if (_simulationHandler)
-    {
-        ap.setDt(_simulationHandler->getDt());
-        ap.setUnit(_simulationHandler->getUnit());
-        ap.setEnd(_simulationHandler->getNbFrames());
-    }
-    else
-        ap.reset();
-}
-
-AbstractSimulationHandlerPtr Scene::getSimulationHandler() const
-{
-    return _simulationHandler;
-}
-
-void Scene::setCADiffusionSimulationHandler(
-    CADiffusionSimulationHandlerPtr handler)
-{
-    _caDiffusionSimulationHandler = handler;
-    if (_caDiffusionSimulationHandler)
-        _parametersManager.getAnimationParameters().setEnd(
-            _caDiffusionSimulationHandler->getNbFrames());
-    else
-        _parametersManager.getAnimationParameters().reset();
-}
-
-CADiffusionSimulationHandlerPtr Scene::getCADiffusionSimulationHandler() const
-{
-    return _caDiffusionSimulationHandler;
 }
 
 bool Scene::empty() const

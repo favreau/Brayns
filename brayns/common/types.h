@@ -159,18 +159,8 @@ using DirectionalLightPtr = std::shared_ptr<DirectionalLight>;
 
 class PointLight;
 
-class AbstractSimulationHandler;
-using AbstractSimulationHandlerPtr = std::shared_ptr<AbstractSimulationHandler>;
-
-class CircuitSimulationHandler;
-using CircuitSimulationHandlerPtr = std::shared_ptr<CircuitSimulationHandler>;
-
 class SpikeSimulationHandler;
 using SpikeSimulationHandlerPtr = std::shared_ptr<SpikeSimulationHandler>;
-
-class CADiffusionSimulationHandler;
-using CADiffusionSimulationHandlerPtr =
-    std::shared_ptr<CADiffusionSimulationHandler>;
 
 class AbstractParameters;
 class AnimationParameters;
@@ -251,17 +241,6 @@ enum class GeometryQuality
     medium,
     high
 };
-
-/** Morphology element types */
-enum class MorphologySectionType
-{
-    soma = 0x01,
-    axon = 0x02,
-    dendrite = 0x04,
-    apical_dendrite = 0x08,
-    all = 0xff
-};
-using MorphologySectionTypes = std::vector<MorphologySectionType>;
 
 /**Define light types*/
 enum class LightType

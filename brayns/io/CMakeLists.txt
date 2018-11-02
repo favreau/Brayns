@@ -6,9 +6,7 @@
 set(BRAYNSIO_SOURCES
   algorithms/MetaballsGenerator.cpp
   MeshLoader.cpp
-  MolecularSystemReader.cpp
   ProteinLoader.cpp
-  simulation/CADiffusionSimulationHandler.cpp
   TransferFunctionLoader.cpp
   VolumeLoader.cpp
   XYZBLoader.cpp
@@ -17,9 +15,7 @@ set(BRAYNSIO_SOURCES
 set(BRAYNSIO_PUBLIC_HEADERS
   algorithms/MetaballsGenerator.h
   MeshLoader.h
-  MolecularSystemReader.h
   ProteinLoader.h
-  simulation/CADiffusionSimulationHandler.h
   TransferFunctionLoader.h
   VolumeLoader.h
   XYZBLoader.h

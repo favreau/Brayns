@@ -165,8 +165,12 @@ void ModelDescriptor::save(const std::string& filename)
     file.write((char*)&nbElements, sizeof(size_t));
     for (const auto& data : _metadata)
     {
-        file.write((char*)data.first.c_str(), data.first.length());
-        file.write((char*)data.second.c_str(), data.second.length());
+        size_t size = data.first.length();
+        file.write((char*)&size, sizeof(size_t));
+        file.write((char*)data.first.c_str(), size);
+        size = data.second.length();
+        file.write((char*)&size, sizeof(size_t));
+        file.write((char*)data.second.c_str(), size);
     }
 
     const auto& materials = _model->getMaterials();
@@ -179,9 +183,9 @@ void ModelDescriptor::save(const std::string& filename)
         file.write((char*)&material.first, sizeof(size_t));
 
         auto name = material.second->getName();
-        nbElements = name.length();
-        file.write((char*)&nbElements, sizeof(size_t));
-        file.write((char*)name.c_str(), nbElements * sizeof(char));
+        size_t size = name.length();
+        file.write((char*)&size, sizeof(size_t));
+        file.write((char*)name.c_str(), size);
 
         Vector3f value3f;
         value3f = material.second->getDiffuseColor();
@@ -317,11 +321,13 @@ void ModelDescriptor::save(const std::string& filename)
     }
 
     // SDF geometry
-    const auto& sdfData = _model->getSDFGeometryData();
+    const SDFGeometryData& sdfData = _model->getSDFGeometryData(false);
     nbElements = sdfData.geometries.size();
-    file.write((char*)&nbElements, sizeof(SDFGeometry));
+    file.write((char*)&nbElements, sizeof(size_t));
+
     if (nbElements > 0)
     {
+        // Geometries
         bufferSize = nbElements * sizeof(SDFGeometry);
         file.write((char*)sdfData.geometries.data(), bufferSize);
 
@@ -330,8 +336,11 @@ void ModelDescriptor::save(const std::string& filename)
         file.write((char*)&nbElements, sizeof(size_t));
         for (const auto& geometryIndex : sdfData.geometryIndices)
         {
-            file.write((char*)&geometryIndex.first, sizeof(size_t));
-            bufferSize = geometryIndex.second.size() * sizeof(uint64_t);
+            size_t id = geometryIndex.first;
+            file.write((char*)&id, sizeof(size_t));
+            nbElements = geometryIndex.second.size();
+            file.write((char*)&nbElements, sizeof(size_t));
+            bufferSize = nbElements * sizeof(uint64_t);
             file.write((char*)geometryIndex.second.data(), bufferSize);
         }
 
@@ -354,6 +363,18 @@ void ModelDescriptor::save(const std::string& filename)
     }
 
     file.close();
+}
+
+std::string readString(std::ifstream& f)
+{
+    size_t size;
+    f.read((char*)&size, sizeof(size_t));
+    char* str = new char[size + 1];
+    f.read(str, size);
+    str[size] = 0;
+    std::string s{str};
+    delete[] str;
+    return s;
 }
 
 void ModelDescriptor::load(const std::string& filename)
@@ -383,18 +404,10 @@ void ModelDescriptor::load(const std::string& filename)
     size_t nbTexCoords = 0;
 
     // Metadata
-    size_t size;
-    file.read((char*)&size, sizeof(size_t));
-    for (size_t i = 0; i < size; ++i)
-    {
-        std::string key;
-        file.read((char*)&size, sizeof(size_t));
-        file.read((char*)&key, size);
-        std::string value;
-        file.read((char*)&size, sizeof(size_t));
-        file.read((char*)&value, size);
-        _metadata[key] = value;
-    }
+    size_t nbElements;
+    file.read((char*)&nbElements, sizeof(size_t));
+    for (size_t i = 0; i < nbElements; ++i)
+        _metadata[readString(file)] = readString(file);
 
     size_t nbMaterials;
     file.read((char*)&nbMaterials, sizeof(size_t));
@@ -405,13 +418,7 @@ void ModelDescriptor::load(const std::string& filename)
     {
         file.read((char*)&materialId, sizeof(size_t));
 
-        char materialName[255];
-        file.read((char*)&size, sizeof(size_t));
-        file.read((char*)&materialName, size);
-        materialName[size] = 0;
-
-        auto material =
-            _model->createMaterial(materialId, std::string(materialName));
+        auto material = _model->createMaterial(materialId, readString(file));
 
         Vector3f value3f;
         file.read((char*)&value3f, sizeof(Vector3f));
@@ -440,7 +447,6 @@ void ModelDescriptor::load(const std::string& filename)
     }
 
     uint64_t bufferSize{0};
-    size_t nbElements;
 
     // Spheres
     file.read((char*)&nbSpheres, sizeof(size_t));
@@ -506,8 +512,6 @@ void ModelDescriptor::load(const std::string& filename)
         file.read((char*)&nbNormals, sizeof(size_t));
         if (nbNormals != 0)
         {
-            BRAYNS_DEBUG << "[" << materialId << "] " << nbNormals << " normals"
-                         << std::endl;
             meshes.normals.resize(nbNormals);
             bufferSize = nbNormals * sizeof(Vector3f);
             file.read((char*)meshes.normals.data(), bufferSize);
@@ -555,49 +559,47 @@ void ModelDescriptor::load(const std::string& filename)
         streamlines[id] = streamlineData;
     }
 
-    // SDF
-    size_t nbSDFs;
-    file.read((char*)&nbSDFs, sizeof(size_t));
-    for (size_t i = 0; i < nbSDFs; ++i)
+    // SDF geometry
+    auto& sdfData = _model->getSDFGeometryData(true);
+    file.read((char*)&nbElements, sizeof(size_t));
+
+    if (nbElements > 0)
     {
-        file.read((char*)&size, sizeof(size_t));
-        bufferSize = size * sizeof(SDFGeometry);
-        BRAYNS_DEBUG << "[" << materialId << "] " << size << " cones"
-                     << std::endl;
-
-        auto& sdfData = _model->getSDFGeometryData();
-
         // Geometries
-        file.read((char*)&size, sizeof(size_t));
-        sdfData.geometries.resize(size);
-        file.read((char*)sdfData.geometries.data(), size * sizeof(SDFGeometry));
+        sdfData.geometries.resize(nbElements);
+        bufferSize = nbElements * sizeof(SDFGeometry);
+        file.read((char*)sdfData.geometries.data(), bufferSize);
 
-        // Geometry Indices
+        // SDF Indices
         file.read((char*)&nbElements, sizeof(size_t));
         for (size_t j = 0; j < nbElements; ++j)
         {
             size_t id;
             file.read((char*)&id, sizeof(size_t));
+            size_t size;
             file.read((char*)&size, sizeof(size_t));
             sdfData.geometryIndices[id].resize(size);
-            file.read((char*)sdfData.geometryIndices[id].data(),
-                      size * sizeof(uint64_t));
+            bufferSize = size * sizeof(uint64_t);
+            file.read((char*)sdfData.geometryIndices[id].data(), bufferSize);
         }
 
         // Neighbours
         file.read((char*)&nbElements, sizeof(size_t));
+        sdfData.neighbours.resize(nbElements);
         for (size_t j = 0; j < nbElements; ++j)
         {
+            size_t size;
             file.read((char*)&size, sizeof(size_t));
-            sdfData.neighbours.resize(size);
-            file.read((char*)sdfData.neighbours.data(), size * sizeof(size_t));
+            sdfData.neighbours[j].resize(size);
+            bufferSize = size * sizeof(uint64_t);
+            file.read((char*)sdfData.neighbours[j].data(), bufferSize);
         }
 
         // Neighbours flat
-        file.read((char*)&size, sizeof(size_t));
-        sdfData.neighboursFlat.resize(size);
-        file.read((char*)sdfData.neighboursFlat.data(),
-                  size * sizeof(uint64_t));
+        file.read((char*)&nbElements, sizeof(size_t));
+        sdfData.neighboursFlat.resize(nbElements);
+        bufferSize = nbElements * sizeof(uint64_t);
+        file.read((char*)sdfData.neighboursFlat.data(), bufferSize);
     }
 
     file.close();
@@ -985,4 +987,4 @@ void Model::createMissingMaterials(const bool castSimulationData)
         }
     }
 }
-}
+} // namespace brayns

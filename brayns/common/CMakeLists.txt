@@ -6,7 +6,6 @@
 set(BRAYNSCOMMON_SOURCES
   ImageManager.cpp
   engine/Engine.cpp
-  simulation/AbstractSimulationHandler.cpp
   input/KeyboardHandler.cpp
   transferFunction/TransferFunction.cpp
   camera/AbstractManipulator.cpp
@@ -68,7 +67,6 @@ set(BRAYNSCOMMON_PUBLIC_HEADERS
   scene/ClipPlane.h
   scene/Model.h
   scene/Scene.h
-  simulation/AbstractSimulationHandler.h
   tasks/Task.h
   tasks/TaskFunctor.h
   tasks/TaskRuntimeError.h

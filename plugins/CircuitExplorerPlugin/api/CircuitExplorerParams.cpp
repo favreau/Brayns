@@ -22,7 +22,7 @@
 #define FROM_JSON(PARAM, JSON, NAME) \
     PARAM.NAME = JSON[#NAME].get<decltype(PARAM.NAME)>()
 
-bool from_json(LoadModelFromCache &param, const std::string &payload)
+bool from_json(LoadModelFromCache& param, const std::string& payload)
 {
     try
     {
@@ -37,7 +37,7 @@ bool from_json(LoadModelFromCache &param, const std::string &payload)
     return true;
 }
 
-bool from_json(SaveModelToCache &param, const std::string &payload)
+bool from_json(SaveModelToCache& param, const std::string& payload)
 {
     try
     {
@@ -52,7 +52,7 @@ bool from_json(SaveModelToCache &param, const std::string &payload)
     return true;
 }
 
-bool from_json(MaterialDescriptor &param, const std::string &payload)
+bool from_json(MaterialDescriptor& param, const std::string& payload)
 {
     try
     {
@@ -77,7 +77,7 @@ bool from_json(MaterialDescriptor &param, const std::string &payload)
     return true;
 }
 
-bool from_json(SynapsesDescriptor &param, const std::string &payload)
+bool from_json(SynapseAttributes& param, const std::string& payload)
 {
     try
     {
@@ -86,6 +86,60 @@ bool from_json(SynapsesDescriptor &param, const std::string &payload)
         FROM_JSON(param, js, gid);
         FROM_JSON(param, js, htmlColors);
         FROM_JSON(param, js, lightEmission);
+        FROM_JSON(param, js, radius);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool from_json(MorphologyAttributes& param, const std::string& payload)
+{
+    try
+    {
+        auto js = nlohmann::json::parse(payload);
+        FROM_JSON(param, js, radiusMultiplier);
+        FROM_JSON(param, js, radiusCorrection);
+        FROM_JSON(param, js, sectionTypes);
+        FROM_JSON(param, js, realisticSoma);
+        FROM_JSON(param, js, metaballsSamplesFromSoma);
+        FROM_JSON(param, js, metaballsGridSize);
+        FROM_JSON(param, js, metaballsThreshold);
+        FROM_JSON(param, js, dampenBranchThicknessChangerate);
+        FROM_JSON(param, js, useSDFGeometries);
+        FROM_JSON(param, js, geometryQuality);
+        FROM_JSON(param, js, colorScheme);
+        FROM_JSON(param, js, useSimulationModel);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool from_json(CircuitAttributes& param, const std::string& payload)
+{
+    try
+    {
+        auto js = nlohmann::json::parse(payload);
+        FROM_JSON(param, js, aabb);
+        FROM_JSON(param, js, density);
+        FROM_JSON(param, js, meshFilenamePattern);
+        FROM_JSON(param, js, meshFolder);
+        FROM_JSON(param, js, meshTransformation);
+        FROM_JSON(param, js, targets);
+        FROM_JSON(param, js, report);
+        FROM_JSON(param, js, startSimulationTime);
+        FROM_JSON(param, js, endSimulationTime);
+        FROM_JSON(param, js, simulationStep);
+        FROM_JSON(param, js, simulationValueRange);
+        FROM_JSON(param, js, simulationHistogramSize);
+        FROM_JSON(param, js, randomSeed);
+        FROM_JSON(param, js, colorScheme);
+        FROM_JSON(param, js, useSimulationModel);
     }
     catch (...)
     {

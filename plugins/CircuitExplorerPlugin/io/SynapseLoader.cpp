@@ -27,9 +27,9 @@
 #include <brayns/parameters/ParametersManager.h>
 
 SynapseLoader::SynapseLoader(brayns::Scene& scene,
-                             brayns::ParametersManager& parametersManager)
+                             const SynapseAttributes& synapseAttributes)
     : Loader(scene)
-    , _parametersManager(parametersManager)
+    , _synapseAttributes(synapseAttributes)
 {
 }
 
@@ -57,12 +57,11 @@ brayns::ModelDescriptorPtr SynapseLoader::importFromFile(
 }
 
 brayns::ModelDescriptorPtr SynapseLoader::importSynapsesFromGIDs(
-    const std::string& circuitConfig, const uint32_t& gid,
-    const brayns::Vector3fs& colors, const float lightEmission)
+    const SynapseAttributes& synapseAttributes, const brayns::Vector3fs& colors)
 {
-    const brion::BlueConfig bc(circuitConfig);
+    const brion::BlueConfig bc(synapseAttributes.circuitConfiguration);
     const brain::Circuit circuit(bc);
-    const brain::GIDSet gids = {gid};
+    const brain::GIDSet gids = {synapseAttributes.gid};
 
     const brain::Synapses& synapses =
         circuit.getAfferentSynapses(gids, brain::SynapsePrefetch::all);
@@ -86,11 +85,10 @@ brayns::ModelDescriptorPtr SynapseLoader::importSynapsesFromGIDs(
         auto material = model->createMaterial(i, std::to_string(i));
         material->setDiffuseColor(colors[i]);
         material->setShadingMode(brayns::MaterialShadingMode::none);
-        material->setEmission(lightEmission);
+        material->setEmission(synapseAttributes.lightEmission);
 
         const auto pre = synapse.getPresynapticCenterPosition();
-        const auto radius =
-            _parametersManager.getGeometryParameters().getRadiusMultiplier();
+        const auto radius = _synapseAttributes.radius;
         model->addSphere(i, {pre, radius});
         ++i;
     }
@@ -98,13 +96,13 @@ brayns::ModelDescriptorPtr SynapseLoader::importSynapsesFromGIDs(
     // Construct model
     brayns::Transformation transformation;
     transformation.setRotationCenter(model->getBounds().getCenter());
-    brayns::ModelMetadata metaData = {{"Circuit", circuitConfig},
+    brayns::ModelMetadata metaData = {{"Circuit",
+                                       synapseAttributes.circuitConfiguration},
                                       {"Number of synapses",
                                        std::to_string(synapses.size())}};
-    auto modelDescriptor =
-        std::make_shared<brayns::ModelDescriptor>(std::move(model),
-                                                  std::to_string(gid),
-                                                  metaData);
+
+    auto modelDescriptor = std::make_shared<brayns::ModelDescriptor>(
+        std::move(model), std::to_string(synapseAttributes.gid), metaData);
     modelDescriptor->setTransformation(transformation);
     return modelDescriptor;
 }

@@ -39,7 +39,6 @@
 #include <brayns/parameters/ParametersManager.h>
 
 #include <brayns/io/MeshLoader.h>
-#include <brayns/io/MolecularSystemReader.h>
 #include <brayns/io/ProteinLoader.h>
 #include <brayns/io/TransferFunctionLoader.h>
 #include <brayns/io/VolumeLoader.h>
@@ -301,7 +300,7 @@ struct Brayns::Impl : public PluginAPI
                         ([& scene = _engine->getScene(),
                           &params =
                               _parametersManager.getGeometryParameters()] {
-                            return std::make_unique<MeshLoader>(scene, params);
+                            return std::make_unique<MeshLoader>(scene, params.getGeometryQuality());
                         }));
         REGISTER_LOADER(ProteinLoader,
                         ([& scene = _engine->getScene(),
@@ -397,10 +396,8 @@ struct Brayns::Impl : public PluginAPI
 private:
     void _updateAnimation()
     {
-        auto simHandler = _engine->getScene().getSimulationHandler();
         auto& animParams = _parametersManager.getAnimationParameters();
-        if ((animParams.isModified() || animParams.getDelta() != 0) &&
-            simHandler && simHandler->isReady())
+        if ((animParams.isModified() || animParams.getDelta() != 0))
         {
             animParams.setFrame(animParams.getFrame() + animParams.getDelta());
         }
@@ -408,27 +405,6 @@ private:
 
     void _loadData()
     {
-        boost::progress_display loadingProgress(
-            LOADING_PROGRESS_DATA, std::cout,
-            "[INFO ] Loading scene ...\n[INFO ] ", "[INFO ] ", "[INFO ] ");
-
-        size_t nextTic = 0;
-        const size_t tic = LOADING_PROGRESS_DATA;
-        auto updateProgress = [&nextTic,
-                               &loadingProgress](const std::string&,
-                                                 const float progress) {
-#pragma omp critical
-            {
-                const size_t newProgress = progress * tic;
-                if (newProgress % tic > nextTic)
-                {
-                    loadingProgress += newProgress - nextTic;
-                    nextTic = newProgress;
-                }
-            }
-        };
-
-        auto& geometryParameters = _parametersManager.getGeometryParameters();
         auto& sceneParameters = _parametersManager.getSceneParameters();
         auto& scene = _engine->getScene();
 
@@ -441,25 +417,7 @@ private:
                                          scene.getTransferFunction());
         }
 
-        if (!geometryParameters.getMolecularSystemConfig().empty())
-            _loadMolecularSystem(updateProgress);
-
         scene.buildEnvironmentMap();
-        scene.markModified();
-    }
-
-    /**
-        Loads molecular system from configuration (command line parameter
-       --molecular-system-config )
-    */
-    void _loadMolecularSystem(const Loader::UpdateCallback& progressUpdate)
-    {
-        auto& geometryParameters = _parametersManager.getGeometryParameters();
-        auto& scene = _engine->getScene();
-        MolecularSystemReader molecularSystemReader(scene, geometryParameters);
-        molecularSystemReader.setProgressCallback(progressUpdate);
-        const auto fileName = geometryParameters.getMolecularSystemConfig();
-        scene.addModel(molecularSystemReader.importFromFile(fileName));
         scene.markModified();
     }
 
@@ -514,12 +472,6 @@ private:
         _keyboardHandler.registerKeyboardShortcut(
             '9', "Proximity renderer",
             std::bind(&Brayns::Impl::_proximityRenderer, this));
-        _keyboardHandler.registerKeyboardShortcut(
-            '[', "Decrease animation frame by 1",
-            std::bind(&Brayns::Impl::_decreaseAnimationFrame, this));
-        _keyboardHandler.registerKeyboardShortcut(
-            ']', "Increase animation frame by 1",
-            std::bind(&Brayns::Impl::_increaseAnimationFrame, this));
         _keyboardHandler.registerKeyboardShortcut(
             'e', "Enable eletron shading",
             std::bind(&Brayns::Impl::_electronShading, this));
@@ -651,33 +603,6 @@ private:
         RenderingParameters& renderParams =
             _parametersManager.getRenderingParameters();
         renderParams.setCurrentRenderer("advanced_simulation");
-    }
-
-    void _increaseAnimationFrame()
-    {
-        if (_engine->getScene().getSimulationHandler() &&
-            !_engine->getScene().getSimulationHandler()->isReady())
-        {
-            return;
-        }
-
-        auto& animParams = _parametersManager.getAnimationParameters();
-        const auto animationFrame = animParams.getFrame();
-        animParams.setFrame(animationFrame + 1);
-    }
-
-    void _decreaseAnimationFrame()
-    {
-        if (_engine->getScene().getSimulationHandler() &&
-            !_engine->getScene().getSimulationHandler()->isReady())
-        {
-            return;
-        }
-
-        auto& animParams = _parametersManager.getAnimationParameters();
-        const auto animationFrame = animParams.getFrame();
-        if (animationFrame > 0)
-            animParams.setFrame(animationFrame - 1);
     }
 
     void _diffuseShading()

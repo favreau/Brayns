@@ -45,13 +45,19 @@ public:
     void preRender() final;
 
 private:
-    void _updateMaterialFromJson(const MaterialDescriptor&);
-    void _updateSynapsesFromJson(const SynapsesDescriptor&);
+    void _setMaterial(const MaterialDescriptor&);
+    void _setSynapseAttributes(const SynapseAttributes&);
+    void _setCircuitAttributes(const CircuitAttributes&);
+    void _setMorphologyAttributes(const MorphologyAttributes&);
     void _loadModelFromCache(const LoadModelFromCache&);
     void _saveModelToCache(const SaveModelToCache&);
 
     brayns::Scene& _scene;
     brayns::ParametersManager& _parametersManager;
+
+    SynapseAttributes _synapseAttributes;
+    MorphologyAttributes _morphologyAttributes;
+    CircuitAttributes _circuitAttributes;
 
     bool _dirty{false};
 };

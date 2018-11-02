@@ -77,6 +77,7 @@ public:
     size_t getModelID() const { return _modelID; }
     void setInstanceID(const size_t id) { _updateValue(_instanceID, id); }
     size_t getInstanceID() const { return _instanceID; }
+
 protected:
     size_t _modelID{0};
     size_t _instanceID{0};
@@ -105,6 +106,7 @@ public:
     const std::string& getName() const { return _name; }
     void setPath(const std::string& path) { _updateValue(_path, path); }
     const std::string& getPath() const { return _path; }
+
 protected:
     std::string _name;
     std::string _path;
@@ -294,9 +296,9 @@ public:
     uint64_t addSDFGeometry(const size_t materialId, const SDFGeometry& geom,
                             const std::vector<size_t>& neighbourIndices);
 
-    SDFGeometryData& getSDFGeometryData()
+    SDFGeometryData& getSDFGeometryData(const bool makeDirty)
     {
-        _sdfGeometriesDirty = true;
+        _sdfGeometriesDirty = makeDirty;
         return _sdf;
     }
 
@@ -428,5 +430,5 @@ protected:
 
     SERIALIZATION_FRIEND(Model)
 };
-}
+} // namespace brayns
 #endif // Model_H

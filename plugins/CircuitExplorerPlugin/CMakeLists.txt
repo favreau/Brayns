@@ -16,14 +16,24 @@ common_find_package(Brion REQUIRED)
 common_find_package_post()
 
 set(${PLUGIN_NAME}_SOURCES
-  api/CircuitExplorerParams.cpp
+  io/AbstractSimulationHandler.cpp
+  io/CircuitSimulationHandler.cpp
+  io/CircuitLoader.cpp
+  io/MorphologyLoader.cpp
   io/SynapseLoader.cpp
+  api/CircuitExplorerParams.cpp
   CircuitExplorerPlugin.cpp
 )
 
 set(${PLUGIN_NAME}_PUBLIC_HEADERS
-  api/CircuitExplorerParams.h
+  io/AbstractSimulationHandler.h
+  io/CircuitSimulationHandler.h
+  io/CircuitLoader.h
+  io/CircuitLoaderCommon.h
+  io/MorphologyLoader.h
   io/SynapseLoader.h
+  api/CircuitExplorerParams.h
+  types.h
   CircuitExplorerPlugin.h
 )
 

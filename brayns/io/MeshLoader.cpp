@@ -64,10 +64,9 @@ private:
 };
 #endif
 
-MeshLoader::MeshLoader(Scene& scene,
-                       const GeometryParameters& geometryParameters)
+MeshLoader::MeshLoader(Scene& scene, const GeometryQuality& geometryQuality)
     : Loader(scene)
-    , _geometryParameters(geometryParameters)
+    , _geometryQuality(geometryQuality)
 {
 }
 
@@ -92,11 +91,11 @@ std::set<std::string> MeshLoader::getSupportedDataTypes()
 
 #ifdef BRAYNS_USE_ASSIMP
 ModelDescriptorPtr MeshLoader::importFromFile(const std::string& fileName,
-                                              const size_t index,
+                                              const size_t /*index*/,
                                               const size_t defaultMaterialId)
 {
     auto model = _scene.createModel();
-    importMesh(fileName, *model, index, {}, defaultMaterialId);
+    importMesh(fileName, *model, {}, defaultMaterialId);
 
     Transformation transformation;
     transformation.setRotationCenter(model->getBounds().getCenter());
@@ -107,7 +106,8 @@ ModelDescriptorPtr MeshLoader::importFromFile(const std::string& fileName,
     return modelDescriptor;
 }
 
-ModelDescriptorPtr MeshLoader::importFromBlob(Blob&& blob, const size_t index,
+ModelDescriptorPtr MeshLoader::importFromBlob(Blob&& blob,
+                                              const size_t /*index*/,
                                               const size_t defaultMaterialId)
 {
     Assimp::Importer importer;
@@ -124,7 +124,7 @@ ModelDescriptorPtr MeshLoader::importFromBlob(Blob&& blob, const size_t index,
         throw std::runtime_error("No meshes found");
 
     auto model = _scene.createModel();
-    _postLoad(aiScene, *model, index, {}, defaultMaterialId);
+    _postLoad(aiScene, *model, {}, defaultMaterialId);
 
     Transformation transformation;
     transformation.setRotationCenter(model->getBounds().getCenter());
@@ -225,15 +225,9 @@ void MeshLoader::_createMaterials(Model& model, const aiScene* aiScene,
 }
 
 void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
-                           const size_t index, const Matrix4f& transformation,
-                           const size_t defaultMaterialId,
-                           const std::string& folder)
+                           const Matrix4f& transformation,
+                           const size_t materialId, const std::string& folder)
 {
-    const size_t materialId =
-        _geometryParameters.getColorScheme() == ColorScheme::neuron_by_id
-            ? index
-            : defaultMaterialId;
-
     if (materialId == NO_MATERIAL)
         _createMaterials(model, aiScene, folder);
 
@@ -320,7 +314,7 @@ void MeshLoader::_postLoad(const aiScene* aiScene, Model& model,
 
 size_t MeshLoader::_getQuality() const
 {
-    switch (_geometryParameters.getGeometryQuality())
+    switch (_geometryQuality)
     {
     case GeometryQuality::low:
     case GeometryQuality::medium:
@@ -331,24 +325,7 @@ size_t MeshLoader::_getQuality() const
     }
 }
 
-std::string MeshLoader::getMeshFilenameFromGID(const uint64_t gid)
-{
-    const auto meshedMorphologiesFolder =
-        _geometryParameters.getCircuitMeshFolder();
-    auto meshFilenamePattern =
-        _geometryParameters.getCircuitMeshFilenamePattern();
-    const std::string gidAsString = std::to_string(gid);
-    const std::string GID = "{gid}";
-    if (!meshFilenamePattern.empty())
-        meshFilenamePattern.replace(meshFilenamePattern.find(GID), GID.length(),
-                                    gidAsString);
-    else
-        meshFilenamePattern = gidAsString;
-    return meshedMorphologiesFolder + "/" + meshFilenamePattern;
-}
-
 void MeshLoader::importMesh(const std::string& fileName, Model& model,
-                            const size_t index,
                             const vmml::Matrix4f& transformation,
                             const size_t defaultMaterialId)
 {
@@ -382,7 +359,7 @@ void MeshLoader::importMesh(const std::string& fileName, Model& model,
 
     boost::filesystem::path filepath = fileName;
 
-    _postLoad(aiScene, model, index, transformation, defaultMaterialId,
+    _postLoad(aiScene, model, transformation, defaultMaterialId,
               filepath.parent_path().string());
 }
 #else

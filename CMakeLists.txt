@@ -66,6 +66,12 @@ add_subdirectory(async++)
 list(APPEND LCOV_EXCLUDE '${PROJECT_SOURCE_DIR}/async++/include/async++/*'
                          '${PROJECT_SOURCE_DIR}/async++/src/*')
 
+#Sanitizer
+option(BRAYNS_SANITIZER_ENABLED "Activate sanitizer" OFF)
+if(BRAYNS_SANITIZER_ENABLED)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -lasan")
+endif()
+
 # HTTP messaging
 common_find_package(LibJpegTurbo)
 common_find_package(Rockets)

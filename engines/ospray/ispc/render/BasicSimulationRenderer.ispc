@@ -44,6 +44,8 @@ inline vec3f BasicSimulationRenderer_shadeRay(
     vec4f intersectionColor = make_vec4f(0.f);
     vec4f colorContribution = make_vec4f(0.f);
 
+    const uniform Material* previousMaterial = 0;
+
     while (pathOpacity < 1.f)
     {
         traceRay(self->super.super.super.model, ray);
@@ -69,46 +71,52 @@ inline vec3f BasicSimulationRenderer_shadeRay(
 
         // Material attributes
         const uniform Material* material = dg.material;
-        const uniform ExtendedOBJMaterial* objMaterial =
-            (const uniform ExtendedOBJMaterial*)material;
-        vec3f Kd;
-        if (!objMaterial)
+
+        if (previousMaterial != material)
         {
-            Kd = make_vec3f(dg.color);
-            opacity = dg.color.w;
-        }
-        else
-            foreach_unique(mat in objMaterial)
+            const uniform ExtendedOBJMaterial* objMaterial =
+                (const uniform ExtendedOBJMaterial*)material;
+            vec3f Kd;
+            if (!objMaterial)
             {
-                Kd = make_vec3f(dg.color) * mat->Kd;
-                opacity = dg.color.w * mat->d;
+                Kd = make_vec3f(dg.color);
+                opacity = dg.color.w;
+            }
+            else
+                foreach_unique(mat in objMaterial)
+                {
+                    Kd = make_vec3f(dg.color) * mat->Kd;
+                    opacity = dg.color.w * mat->d;
+                }
+
+            if (depth == 0)
+            {
+                pathOpacity = opacity;
+                sample.z = ray.t;
+            }
+            pathOpacity *= 1.f + opacity;
+            colorContribution = make_vec4f(Kd, pathOpacity);
+
+            if (objMaterial->castSimulationData == 1)
+            {
+                // Get simulation value from geometry
+                const vec4f simulationColor =
+                    getSimulationValue(&self->super, &dg);
+                colorContribution = make_vec4f(
+                    make_vec3f(colorContribution) * (1.f - simulationColor.w) +
+                        make_vec3f(simulationColor) * simulationColor.w,
+                    colorContribution.w);
             }
 
-        if (depth == 0)
-        {
-            pathOpacity = opacity;
-            sample.z = ray.t;
+            // Head-light shading
+            const float cosNL = max(0.f, dot(neg(ray.dir), dg.Ns));
+            colorContribution = colorContribution * cosNL;
+
+            // Compositing according to alpha correction
+            composite(colorContribution, intersectionColor,
+                      self->alphaCorrection);
         }
-        pathOpacity *= 1.f + opacity;
-        colorContribution = make_vec4f(Kd, pathOpacity);
-
-        if (objMaterial->castSimulationData == 1)
-        {
-            // Get simulation value from geometry
-            const vec4f simulationColor = getSimulationValue(&self->super, &dg);
-            colorContribution =
-                make_vec4f(make_vec3f(colorContribution) *
-                                   (1.f - simulationColor.w) +
-                               make_vec3f(simulationColor) * simulationColor.w,
-                           colorContribution.w);
-        }
-
-        // Head-light shading
-        const float cosNL = max(0.f, dot(neg(ray.dir), dg.Ns));
-        colorContribution = colorContribution * cosNL;
-
-        // Compositing according to alpha correction
-        composite(colorContribution, intersectionColor, self->alphaCorrection);
+        previousMaterial = material;
 
         // Next ray
         ray.t0 = ray.t + dg.epsilon;
@@ -130,7 +138,7 @@ void BasicSimulationRenderer_renderSample(uniform Renderer* uniform _self,
                                           varying ScreenSample& sample)
 {
     uniform BasicSimulationRenderer* uniform self =
-        (uniform BasicSimulationRenderer * uniform)_self;
+        (uniform BasicSimulationRenderer * uniform) _self;
     sample.rgb = BasicSimulationRenderer_shadeRay(self, sample);
 }
 
@@ -153,16 +161,16 @@ export void BasicSimulationRenderer_set(
     const uniform float& colorMapRange, const uniform float& alphaCorrection)
 {
     uniform BasicSimulationRenderer* uniform self =
-        (uniform BasicSimulationRenderer * uniform)_self;
+        (uniform BasicSimulationRenderer * uniform) _self;
 
     self->super.super.bgMaterial =
-        (uniform ExtendedOBJMaterial * uniform)bgMaterial;
+        (uniform ExtendedOBJMaterial * uniform) bgMaterial;
 
     self->super.super.super.spp = spp;
 
-    self->super.colorMap = (uniform vec4f * uniform)colormap;
+    self->super.colorMap = (uniform vec4f * uniform) colormap;
     self->super.emissionIntensitiesMap =
-        (uniform vec3f * uniform)emissionIntensitiesMap;
+        (uniform vec3f * uniform) emissionIntensitiesMap;
     self->super.colorMapSize = colorMapSize;
     self->super.colorMapMinValue = colorMapMinValue;
     self->super.colorMapRange = colorMapRange;

@@ -17,6 +17,8 @@
  */
 
 #include "CircuitExplorerPlugin.h"
+#include "io/CircuitLoader.h"
+#include "io/MorphologyLoader.h"
 #include "io/SynapseLoader.h"
 #include "log.h"
 
@@ -42,20 +44,34 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
 {
     auto& registry = _scene.getLoaderRegistry();
     REGISTER_LOADER(SynapseLoader,
-                    ([& scene = _scene, &params = _parametersManager ] {
+                    ([& scene = _scene, &params = _synapseAttributes] {
                         return std::make_unique<SynapseLoader>(scene, params);
+                    }));
+
+    REGISTER_LOADER(MorphologyLoader,
+                    ([& scene = _scene, &params = _morphologyAttributes] {
+                        return std::make_unique<MorphologyLoader>(scene,
+                                                                  params);
+                    }));
+
+    REGISTER_LOADER(CircuitLoader,
+                    ([& scene = _scene, &params = _parametersManager,
+                      &circuitAttributes = _circuitAttributes,
+                      &morphologyAttributes = _morphologyAttributes] {
+                        return std::make_unique<CircuitLoader>(
+                            scene, params.getApplicationParameters(),
+                            circuitAttributes, morphologyAttributes);
                     }));
 
     if (actionInterface)
     {
         actionInterface->registerNotification<MaterialDescriptor>(
-            "material", [&](const MaterialDescriptor& param) {
-                _updateMaterialFromJson(param);
-            });
+            "setMaterial",
+            [&](const MaterialDescriptor& param) { _setMaterial(param); });
 
-        actionInterface->registerNotification<SynapsesDescriptor>(
-            "synapses", [&](const SynapsesDescriptor& param) {
-                _updateSynapsesFromJson(param);
+        actionInterface->registerNotification<SynapseAttributes>(
+            "setSynapsesAttributes", [&](const SynapseAttributes& param) {
+                _setSynapseAttributes(param);
             });
 
         actionInterface->registerNotification<LoadModelFromCache>(
@@ -66,6 +82,16 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
         actionInterface->registerNotification<SaveModelToCache>(
             "saveModelToCache",
             [&](const SaveModelToCache& param) { _saveModelToCache(param); });
+
+        actionInterface->registerNotification<MorphologyAttributes>(
+            "setMorphologyAttributes", [&](const MorphologyAttributes& param) {
+                _setMorphologyAttributes(param);
+            });
+
+        actionInterface->registerNotification<CircuitAttributes>(
+            "setCircuitAttributes", [&](const CircuitAttributes& param) {
+                _setCircuitAttributes(param);
+            });
     }
 }
 
@@ -76,8 +102,7 @@ void CircuitExplorerPlugin::preRender()
     _dirty = false;
 }
 
-void CircuitExplorerPlugin::_updateMaterialFromJson(
-    const MaterialDescriptor& md)
+void CircuitExplorerPlugin::_setMaterial(const MaterialDescriptor& md)
 {
     try
     {
@@ -131,14 +156,15 @@ void CircuitExplorerPlugin::_updateMaterialFromJson(
     }
 }
 
-void CircuitExplorerPlugin::_updateSynapsesFromJson(
-    const SynapsesDescriptor& sd)
+void CircuitExplorerPlugin::_setSynapseAttributes(
+    const SynapseAttributes& param)
 {
     try
     {
-        SynapseLoader loader(_scene, _parametersManager);
+        _synapseAttributes = param;
+        SynapseLoader loader(_scene, _synapseAttributes);
         brayns::Vector3fs colors;
-        for (const auto& htmlColor : sd.htmlColors)
+        for (const auto& htmlColor : _synapseAttributes.htmlColors)
         {
             auto hexCode = htmlColor;
             if (hexCode.at(0) == '#')
@@ -154,13 +180,12 @@ void CircuitExplorerPlugin::_updateSynapsesFromJson(
             colors.push_back(color);
         }
         const auto modelDescriptor =
-            loader.importSynapsesFromGIDs(sd.circuitConfiguration, sd.gid,
-                                          colors, sd.lightEmission);
+            loader.importSynapsesFromGIDs(_synapseAttributes, colors);
 
         _scene.addModel(modelDescriptor);
 
-        PLUGIN_INFO << "Synapses successfully added for GID " << sd.gid
-                    << std::endl;
+        PLUGIN_INFO << "Synapses successfully added for GID "
+                    << _synapseAttributes.gid << std::endl;
         _dirty = true;
     }
     catch (const std::runtime_error& e)
@@ -173,6 +198,22 @@ void CircuitExplorerPlugin::_updateSynapsesFromJson(
             << "Unexpected exception occured in _updateMaterialFromJson"
             << std::endl;
     }
+}
+
+void CircuitExplorerPlugin::_setMorphologyAttributes(
+    const MorphologyAttributes& morphologyAttributes)
+{
+    _morphologyAttributes = morphologyAttributes;
+    PLUGIN_INFO << "Morphology attributes successfully set" << std::endl;
+    _dirty = true;
+}
+
+void CircuitExplorerPlugin::_setCircuitAttributes(
+    const CircuitAttributes& circuitAttributes)
+{
+    _circuitAttributes = circuitAttributes;
+    PLUGIN_INFO << "Circuit attributes successfully set" << std::endl;
+    _dirty = true;
 }
 
 void CircuitExplorerPlugin::_loadModelFromCache(
@@ -190,8 +231,11 @@ void CircuitExplorerPlugin::_loadModelFromCache(
 void CircuitExplorerPlugin::_saveModelToCache(const SaveModelToCache& saveModel)
 {
     auto modelDescriptor = _scene.getModel(saveModel.modelId);
-    modelDescriptor->save(saveModel.filename);
-    _dirty = true;
+    if (modelDescriptor)
+        modelDescriptor->save(saveModel.filename);
+    else
+        PLUGIN_ERROR << "Model " << saveModel.modelId << " is not registered"
+                     << std::endl;
 }
 
 extern "C" brayns::ExtensionPlugin* brayns_plugin_create(brayns::PluginAPI* api,

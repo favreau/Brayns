@@ -375,7 +375,6 @@ public:
         }
 
         ~ScopedCurrentClient() { _currentClientID = NO_CURRENT_CLIENT; }
-
     private:
         uintptr_t& _currentClientID;
     };
@@ -530,15 +529,14 @@ public:
                     POST postUpdateFunc)
     {
         using namespace rockets::http;
-        _rocketsServer->handle(Method::PUT, endpoint,
-                               [&obj, preUpdateFunc,
-                                postUpdateFunc](const Request& req) {
-                                   return make_ready_response(
-                                       from_json(obj, req.body, preUpdateFunc,
-                                                 postUpdateFunc)
-                                           ? Code::OK
-                                           : Code::BAD_REQUEST);
-                               });
+        _rocketsServer->handle(Method::PUT, endpoint, [&obj, preUpdateFunc,
+                                                       postUpdateFunc](
+                                                          const Request& req) {
+            return make_ready_response(
+                from_json(obj, req.body, preUpdateFunc, postUpdateFunc)
+                    ? Code::OK
+                    : Code::BAD_REQUEST);
+        });
 
         _handleObjectSchema(endpoint, obj);
 
@@ -667,8 +665,9 @@ public:
                     auto progressUpdate =
                         uvw::Loop::getDefault()->resource<uvw::TimerHandle>();
 
-                    auto sendProgress = [progressCb,
-                                         &progress = task->progress] {
+                    auto sendProgress =
+                        [ progressCb, &progress = task->progress ]
+                    {
                         progress.consume(progressCb);
                     };
                     progressUpdate->on<uvw::TimerEvent>(
@@ -805,8 +804,6 @@ public:
                    SLOW_THROTTLE);
 
         _handleFrameBuffer();
-        _handleSimulationHistogram();
-
         _handleSchemaRPC();
 
         _handleInspect();
@@ -894,23 +891,6 @@ public:
                                             image.size);
     }
 
-    void _handleSimulationHistogram()
-    {
-        _handleObjectSchema<Histogram>(ENDPOINT_SIMULATION_HISTOGRAM);
-
-        using namespace rockets::http;
-
-        auto func = [this](const Request&) {
-            auto simulationHandler = _engine->getScene().getSimulationHandler();
-            if (!simulationHandler)
-                return make_ready_response(Code::NOT_SUPPORTED);
-            const auto& histo = simulationHandler->getHistogram();
-            return make_ready_response(Code::OK, to_json(histo), JSON_TYPE);
-        };
-        _rocketsServer->handle(Method::GET, ENDPOINT_SIMULATION_HISTOGRAM,
-                               func);
-    }
-
     void _handleStreaming()
     {
 #if BRAYNS_USE_DEFLECT
@@ -950,7 +930,8 @@ public:
     void _handleCamera()
     {
         auto& camera = _engine->getCamera();
-        auto preUpdate = [types = camera.getTypes()](const Camera& obj) {
+        auto preUpdate = [types = camera.getTypes()](const Camera& obj)
+        {
             if (obj.getCurrentType().empty())
                 return true;
             return std::find(types.begin(), types.end(),
@@ -969,7 +950,8 @@ public:
                              rp.getCurrentRenderer()) !=
                    rp.getRenderers().end();
         };
-        auto postUpdate = [& renderer = _engine->getRenderer()](auto& rp) {
+        auto postUpdate = [& renderer = _engine->getRenderer()](auto& rp)
+        {
             renderer.setCurrentType(rp.getCurrentRenderer());
         };
         _handleGET(ENDPOINT_RENDERER, params);
@@ -1018,10 +1000,11 @@ public:
 
     void _handleQuit()
     {
-        _handleRPC({METHOD_QUIT, "Quit the application"}, [engine = _engine] {
-            engine->setKeepRunning(false);
-            engine->triggerRender();
-        });
+        _handleRPC({METHOD_QUIT, "Quit the application"},
+                   [engine = _engine] {
+                       engine->setKeepRunning(false);
+                       engine->triggerRender();
+                   });
     }
 
     void _handleResetCamera()
@@ -1039,9 +1022,10 @@ public:
         const RpcParameterDescription desc{
             METHOD_SNAPSHOT, "Make a snapshot of the current view", "settings",
             "Snapshot settings for quality and size"};
-        auto func = [engine = _engine,
-                     &imageGenerator = _imageGenerator](auto&& params,
-                                                        const auto) {
+        auto func =
+            [ engine = _engine,
+              &imageGenerator = _imageGenerator ](auto&& params, const auto)
+        {
             using SnapshotTask = DeferredTask<ImageGenerator::ImageBase64>;
             return std::make_shared<SnapshotTask>(
                 SnapshotFunctor{*engine, std::move(params), imageGenerator});
@@ -1166,7 +1150,8 @@ public:
             "model_param",
             "Model parameters including name, path, transformation, etc."};
 
-        auto func = [engine = _engine](const auto& modelParam, const auto) {
+        auto func = [engine = _engine](const auto& modelParam, const auto)
+        {
             return std::make_shared<AddModelTask>(modelParam, engine);
         };
         _handleTask<ModelParams, ModelDescriptorPtr>(desc, func);
@@ -1316,7 +1301,7 @@ public:
                                            "Model id and result range"};
         _handleRPC<GetInstances, ModelInstances>(
             desc,
-            [engine = _engine](const GetInstances& param) -> ModelInstances {
+            [engine = _engine](const GetInstances& param)->ModelInstances {
                 auto id = param.modelID;
                 auto& scene = engine->getScene();
                 auto model = scene.getModel(id);
@@ -1470,10 +1455,9 @@ void RocketsPlugin::registerNotification(
     const RpcParameterDescription& desc, const PropertyMap& input,
     const std::function<void(PropertyMap)>& action)
 {
-    _impl->_jsonrpcServer->connect(desc.methodName, [name = desc.methodName,
-                                                     input, action,
-                                                     engine = _impl->_engine](
-                                                        const auto& request) {
+    _impl->_jsonrpcServer->connect(desc.methodName, [
+        name = desc.methodName, input, action, engine = _impl->_engine
+    ](const auto& request) {
         PropertyMap params = input;
         if (::from_json(params, request.message))
         {
@@ -1492,7 +1476,7 @@ void RocketsPlugin::registerNotification(const RpcDescription& desc,
                                          const std::function<void()>& action)
 {
     _impl->_jsonrpcServer->connect(desc.methodName,
-                                   [action, engine = _impl->_engine] {
+                                   [ action, engine = _impl->_engine ] {
                                        action();
                                        engine->triggerRender();
                                    });
@@ -1505,9 +1489,9 @@ void RocketsPlugin::registerRequest(
     const PropertyMap& output,
     const std::function<PropertyMap(PropertyMap)>& action)
 {
-    _impl->_bindEndpoint(desc.methodName, [name = desc.methodName, input,
-                                           action, engine = _impl->_engine](
-                                              const auto& request) {
+    _impl->_bindEndpoint(desc.methodName, [
+        name = desc.methodName, input, action, engine = _impl->_engine
+    ](const auto& request) {
         PropertyMap params = input;
         if (::from_json(params, request.message))
         {
@@ -1528,7 +1512,8 @@ void RocketsPlugin::registerRequest(const RpcDescription& desc,
                                     const std::function<PropertyMap()>& action)
 {
     _impl->_jsonrpcServer->bind(desc.methodName,
-                                [action, engine = _impl->_engine](const auto&) {
+                                [ action,
+                                  engine = _impl->_engine ](const auto&) {
                                     engine->triggerRender();
                                     return Response{to_json(action())};
                                 });
@@ -1540,7 +1525,7 @@ void RocketsPlugin::registerRequest(const RpcDescription& desc,
 void RocketsPlugin::_registerRequest(const std::string& name,
                                      const RetParamFunc& action)
 {
-    _impl->_jsonrpcServer->bind(name, [action, engine = _impl->_engine](
+    _impl->_jsonrpcServer->bind(name, [ action, engine = _impl->_engine ](
                                           const auto& request) {
         engine->triggerRender();
         return Response{action(request.message)};
@@ -1550,17 +1535,17 @@ void RocketsPlugin::_registerRequest(const std::string& name,
 void RocketsPlugin::_registerRequest(const std::string& name,
                                      const RetFunc& action)
 {
-    _impl->_jsonrpcServer->bind(name,
-                                [action, engine = _impl->_engine](const auto&) {
-                                    engine->triggerRender();
-                                    return Response{action()};
-                                });
+    _impl->_jsonrpcServer->bind(name, [ action,
+                                        engine = _impl->_engine ](const auto&) {
+        engine->triggerRender();
+        return Response{action()};
+    });
 }
 
 void RocketsPlugin::_registerNotification(const std::string& name,
                                           const ParamFunc& action)
 {
-    _impl->_jsonrpcServer->connect(name, [action, engine = _impl->_engine](
+    _impl->_jsonrpcServer->connect(name, [ action, engine = _impl->_engine ](
                                              const auto& request) {
         action(request.message);
         engine->triggerRender();
@@ -1570,7 +1555,7 @@ void RocketsPlugin::_registerNotification(const std::string& name,
 void RocketsPlugin::_registerNotification(const std::string& name,
                                           const VoidFunc& action)
 {
-    _impl->_jsonrpcServer->connect(name, [action, engine = _impl->_engine] {
+    _impl->_jsonrpcServer->connect(name, [ action, engine = _impl->_engine ] {
         action();
         engine->triggerRender();
     });

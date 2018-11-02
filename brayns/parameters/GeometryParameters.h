@@ -87,10 +87,6 @@ public:
     {
         return _circuitConfiguration.circuitConfigFile;
     }
-    /** Binary representation of a scene to load */
-    const std::string& getLoadCacheFile() const { return _loadCacheFile; }
-    /** Binary representation of a scene to save */
-    const std::string& getSaveCacheFile() const { return _saveCacheFile; }
     /** Circuit targets */
     const std::string& getCircuitTargets() const
     {
@@ -271,10 +267,6 @@ protected:
 
     // Circuit
     CircuitConfiguration _circuitConfiguration;
-
-    // Scene
-    std::string _loadCacheFile;
-    std::string _saveCacheFile;
 
     // Morphology
     float _radiusMultiplier;

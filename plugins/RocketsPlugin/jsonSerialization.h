@@ -429,8 +429,6 @@ inline void init(brayns::GeometryParameters* g, ObjectHandler* h)
     h->add_property("nest_circuit", &g->_NESTCircuit, Flags::Optional);
     h->add_property("nest_report", &g->_NESTReport, Flags::Optional);
     h->add_property("nest_cache_file", &g->_NESTCacheFile, Flags::Optional);
-    h->add_property("load_cache_file", &g->_loadCacheFile, Flags::Optional);
-    h->add_property("save_cache_file", &g->_saveCacheFile, Flags::Optional);
     h->add_property("radius_multiplier", &g->_radiusMultiplier,
                     Flags::Optional);
     h->add_property("radius_correction", &g->_radiusCorrection,

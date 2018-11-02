@@ -164,7 +164,7 @@ struct Brayns::Impl : public PluginAPI
                     argv[i] = &tmpArgs[i].front();
 
                 ExtensionPlugin* (*createFunc)(PluginAPI*, int, char**) =
-                    (ExtensionPlugin * (*)(PluginAPI*, int, char**)) createSym;
+                    (ExtensionPlugin * (*)(PluginAPI*, int, char**))createSym;
                 auto plugin = createFunc(this, argc, argv.data());
 
                 _extensionPluginFactory.add(ExtensionPluginPtr{plugin});
@@ -394,7 +394,6 @@ struct Brayns::Impl : public PluginAPI
         return _actionInterface.get();
     }
     Scene& getScene() final { return _engine->getScene(); }
-
 private:
     void _updateAnimation()
     {
@@ -442,16 +441,9 @@ private:
                                          scene.getTransferFunction());
         }
 
-        if (!geometryParameters.getLoadCacheFile().empty())
-        {
-            scene.loadFromCacheFile();
-            loadingProgress += tic;
-        }
-
         if (!geometryParameters.getMolecularSystemConfig().empty())
             _loadMolecularSystem(updateProgress);
 
-        scene.saveToCacheFile();
         scene.buildEnvironmentMap();
         scene.markModified();
     }
@@ -573,13 +565,9 @@ private:
             'g', "Enable/Disable animation playback",
             std::bind(&Brayns::Impl::_toggleAnimationPlayback, this));
         _keyboardHandler.registerKeyboardShortcut(
-            'x',
-            "Set animation frame to " +
-                std::to_string(DEFAULT_TEST_ANIMATION_FRAME),
+            'x', "Set animation frame to " +
+                     std::to_string(DEFAULT_TEST_ANIMATION_FRAME),
             std::bind(&Brayns::Impl::_defaultAnimationFrame, this));
-        _keyboardHandler.registerKeyboardShortcut(
-            '|', "Create cache file ",
-            std::bind(&Brayns::Impl::_saveSceneToCacheFile, this));
         _keyboardHandler.registerKeyboardShortcut(
             '{', "Decrease eye separation",
             std::bind(&Brayns::Impl::_decreaseEyeSeparation, this));
@@ -832,12 +820,6 @@ private:
     {
         auto& animParams = _parametersManager.getAnimationParameters();
         animParams.setFrame(DEFAULT_TEST_ANIMATION_FRAME);
-    }
-
-    void _saveSceneToCacheFile()
-    {
-        auto& scene = _engine->getScene();
-        scene.saveToCacheFile();
     }
 
     void _resetCamera()

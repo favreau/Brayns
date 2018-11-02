@@ -51,8 +51,6 @@ const std::string PARAM_CIRCUIT_SIMULATION_RANGE =
 const std::string PARAM_CIRCUIT_SIMULATION_HISTOGRAM_SIZE =
     "circuit-simulation-histogram-size";
 const std::string PARAM_CIRCUIT_RANDOM_SEED = "circuit-random-seed";
-const std::string PARAM_LOAD_CACHE_FILE = "load-cache-file";
-const std::string PARAM_SAVE_CACHE_FILE = "save-cache-file";
 const std::string PARAM_RADIUS_MULTIPLIER = "radius-multiplier";
 const std::string PARAM_RADIUS_CORRECTION = "radius-correction";
 const std::string PARAM_COLOR_SCHEME = "color-scheme";
@@ -106,12 +104,6 @@ GeometryParameters::GeometryParameters()
         //
         (PARAM_CIRCUIT_CONFIG.c_str(), po::value<std::string>(),
          "Circuit configuration filename [string]")
-        //
-        (PARAM_LOAD_CACHE_FILE.c_str(), po::value<std::string>(),
-         "Load binary container of a scene [string]")
-        //
-        (PARAM_SAVE_CACHE_FILE.c_str(), po::value<std::string>(),
-         "Save binary container of a scene [string]")
         //
         (PARAM_RADIUS_MULTIPLIER.c_str(), po::value<float>(),
          "Radius multiplier for spheres, cones and cylinders [float]")
@@ -231,10 +223,6 @@ void GeometryParameters::parse(const po::variables_map& vm)
     if (vm.count(PARAM_CIRCUIT_CONFIG))
         _circuitConfiguration.circuitConfigFile =
             vm[PARAM_CIRCUIT_CONFIG].as<std::string>();
-    if (vm.count(PARAM_LOAD_CACHE_FILE))
-        _loadCacheFile = vm[PARAM_LOAD_CACHE_FILE].as<std::string>();
-    if (vm.count(PARAM_SAVE_CACHE_FILE))
-        _saveCacheFile = vm[PARAM_SAVE_CACHE_FILE].as<std::string>();
     if (vm.count(PARAM_COLOR_SCHEME))
     {
         _colorScheme = ColorScheme::none;
@@ -381,10 +369,6 @@ void GeometryParameters::print()
     BRAYNS_INFO << "NEST circuit file          : " << _NESTCircuit << std::endl;
     BRAYNS_INFO << "NEST simulation report file: " << _NESTReport << std::endl;
     BRAYNS_INFO << "NEST cache file            : " << _NESTCacheFile
-                << std::endl;
-    BRAYNS_INFO << "Cache file to load         : " << _loadCacheFile
-                << std::endl;
-    BRAYNS_INFO << "Cache file to save         : " << _saveCacheFile
                 << std::endl;
     BRAYNS_INFO << "Color scheme               : "
                 << getColorSchemeAsString(_colorScheme) << std::endl;

@@ -26,7 +26,6 @@
 #include <brayns/common/scene/ClipPlane.h>
 #include <brayns/common/scene/Model.h>
 #include <brayns/common/utils/Utils.h>
-#include <brayns/io/simulation/CADiffusionSimulationHandler.h>
 #include <brayns/parameters/ParametersManager.h>
 
 #include <boost/filesystem.hpp>

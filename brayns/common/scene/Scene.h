@@ -24,7 +24,6 @@
 #include <brayns/api.h>
 #include <brayns/common/BaseObject.h>
 #include <brayns/common/loader/LoaderRegistry.h>
-#include <brayns/common/simulation/AbstractSimulationHandler.h>
 #include <brayns/common/transferFunction/TransferFunction.h>
 #include <brayns/common/types.h>
 

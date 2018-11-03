@@ -11,7 +11,7 @@ endif()
 
 include(Common)
 
-common_find_package(Brayns REQUIRED)
+#common_find_package(Brayns REQUIRED)
 common_find_package(Brion REQUIRED)
 common_find_package_post()
 

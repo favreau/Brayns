@@ -30,7 +30,6 @@
 #include <brayns/common/light/PointLight.h>
 #include <brayns/common/log.h>
 #include <brayns/common/scene/Model.h>
-#include <brayns/common/simulation/AbstractSimulationHandler.h>
 
 #include <brayns/parameters/GeometryParameters.h>
 #include <brayns/parameters/ParametersManager.h>
@@ -394,4 +393,4 @@ BrickedVolumePtr OSPRayScene::createBrickedVolume(const Vector3ui& dimensions,
         dimensions, spacing, type, _parametersManager.getVolumeParameters(),
         _ospTransferFunction);
 }
-}
+} // namespace brayns

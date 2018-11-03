@@ -65,5 +65,6 @@ enum MaterialShadingMode
 {
     none = 0,
     diffuse = 1,
-    electron = 2
+    electron = 2,
+    cartoon = 3
 };

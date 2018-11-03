@@ -64,6 +64,7 @@ inline vec3f BasicRenderer_shadeRay(const uniform BasicRenderer* uniform self,
         (uniform ExtendedOBJMaterial*)material;
 
     vec3f Kd = make_vec3f(0.f);
+    MaterialShadingMode shadingMode = diffuse;
     if (!objMaterial)
         Kd = make_vec3f(dg.color);
     else
@@ -75,10 +76,19 @@ inline vec3f BasicRenderer_shadeRay(const uniform BasicRenderer* uniform self,
                 const vec4f diffuseColorFromMap = get4f(mat->map_Kd, dg.st);
                 Kd = make_vec3f(dg.color * diffuseColorFromMap);
             }
+            shadingMode = mat->shadingMode;
         }
 
     // Head-light shading
-    color = Kd * max(0.f, dot(neg(ray.dir), dg.Ns));
+    float cosNL = max(0.f, dot(neg(ray.dir), dg.Ns));
+    if (shadingMode == electron)
+        cosNL = (1.f - cosNL);
+    else if (shadingMode == cartoon)
+    {
+        const unsigned int angleAsInt = cosNL * DEFAULT_CARTOON_GRADIENT;
+        cosNL = (float)(angleAsInt) / (float)(DEFAULT_CARTOON_GRADIENT);
+    }
+    color = Kd * cosNL;
     sample.alpha = 1.f;
 
     // Z-Depth
@@ -93,7 +103,7 @@ void BasicRenderer_renderSample(uniform Renderer* uniform _self,
                                 varying ScreenSample& sample)
 {
     uniform BasicRenderer* uniform self =
-        (uniform BasicRenderer * uniform)_self;
+        (uniform BasicRenderer * uniform) _self;
     sample.ray.time = self->abstract.timestamp;
     sample.rgb = BasicRenderer_shadeRay(self, sample);
 }
@@ -113,10 +123,10 @@ export void BasicRenderer_set(void* uniform _self, void* uniform bgMaterial,
                               uniform int32 numLights)
 {
     uniform BasicRenderer* uniform self =
-        (uniform BasicRenderer * uniform)_self;
+        (uniform BasicRenderer * uniform) _self;
 
     self->abstract.bgMaterial =
-        (uniform ExtendedOBJMaterial * uniform)bgMaterial;
+        (uniform ExtendedOBJMaterial * uniform) bgMaterial;
     self->abstract.timestamp = timestamp;
     self->abstract.super.spp = spp;
 

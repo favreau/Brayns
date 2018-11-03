@@ -163,7 +163,7 @@ struct Brayns::Impl : public PluginAPI
                     argv[i] = &tmpArgs[i].front();
 
                 ExtensionPlugin* (*createFunc)(PluginAPI*, int, char**) =
-                    (ExtensionPlugin * (*)(PluginAPI*, int, char**))createSym;
+                    (ExtensionPlugin * (*)(PluginAPI*, int, char**)) createSym;
                 auto plugin = createFunc(this, argc, argv.data());
 
                 _extensionPluginFactory.add(ExtensionPluginPtr{plugin});
@@ -300,7 +300,8 @@ struct Brayns::Impl : public PluginAPI
                         ([& scene = _engine->getScene(),
                           &params =
                               _parametersManager.getGeometryParameters()] {
-                            return std::make_unique<MeshLoader>(scene, params.getGeometryQuality());
+                            return std::make_unique<MeshLoader>(
+                                scene, params.getGeometryQuality());
                         }));
         REGISTER_LOADER(ProteinLoader,
                         ([& scene = _engine->getScene(),
@@ -393,6 +394,7 @@ struct Brayns::Impl : public PluginAPI
         return _actionInterface.get();
     }
     Scene& getScene() final { return _engine->getScene(); }
+
 private:
     void _updateAnimation()
     {
@@ -473,9 +475,6 @@ private:
             '9', "Proximity renderer",
             std::bind(&Brayns::Impl::_proximityRenderer, this));
         _keyboardHandler.registerKeyboardShortcut(
-            'e', "Enable eletron shading",
-            std::bind(&Brayns::Impl::_electronShading, this));
-        _keyboardHandler.registerKeyboardShortcut(
             'f', "Enable fly mode", [this]() {
                 Brayns::Impl::_setupCameraManipulator(CameraMode::flying);
             });
@@ -489,12 +488,6 @@ private:
         _keyboardHandler.registerKeyboardShortcut(
             'O', "Increase ambient occlusion strength",
             std::bind(&Brayns::Impl::_increaseAmbientOcclusionStrength, this));
-        _keyboardHandler.registerKeyboardShortcut(
-            'p', "Enable diffuse shading",
-            std::bind(&Brayns::Impl::_diffuseShading, this));
-        _keyboardHandler.registerKeyboardShortcut(
-            'P', "Disable shading",
-            std::bind(&Brayns::Impl::_disableShading, this));
         _keyboardHandler.registerKeyboardShortcut(
             'r', "Set animation frame to 0",
             std::bind(&Brayns::Impl::_resetAnimationFrame, this));
@@ -517,8 +510,9 @@ private:
             'g', "Enable/Disable animation playback",
             std::bind(&Brayns::Impl::_toggleAnimationPlayback, this));
         _keyboardHandler.registerKeyboardShortcut(
-            'x', "Set animation frame to " +
-                     std::to_string(DEFAULT_TEST_ANIMATION_FRAME),
+            'x',
+            "Set animation frame to " +
+                std::to_string(DEFAULT_TEST_ANIMATION_FRAME),
             std::bind(&Brayns::Impl::_defaultAnimationFrame, this));
         _keyboardHandler.registerKeyboardShortcut(
             '{', "Decrease eye separation",
@@ -603,24 +597,6 @@ private:
         RenderingParameters& renderParams =
             _parametersManager.getRenderingParameters();
         renderParams.setCurrentRenderer("advanced_simulation");
-    }
-
-    void _diffuseShading()
-    {
-        _engine->getRenderer().updateProperty("shadingEnabled", true);
-        _engine->getRenderer().updateProperty("electronShading", false);
-    }
-
-    void _electronShading()
-    {
-        _engine->getRenderer().updateProperty("shadingEnabled", false);
-        _engine->getRenderer().updateProperty("electronShading", true);
-    }
-
-    void _disableShading()
-    {
-        _engine->getRenderer().updateProperty("shadingEnabled", false);
-        _engine->getRenderer().updateProperty("electronShading", false);
     }
 
     void _increaseAmbientOcclusionStrength()

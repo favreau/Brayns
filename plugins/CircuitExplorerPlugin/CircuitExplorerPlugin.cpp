@@ -135,6 +135,9 @@ void CircuitExplorerPlugin::_setMaterial(const MaterialDescriptor& md)
                 else if (md.shadingMode == "electron")
                     material->setShadingMode(
                         brayns::MaterialShadingMode::electron);
+                else if (md.shadingMode == "cartoon")
+                    material->setShadingMode(
+                        brayns::MaterialShadingMode::cartoon);
 
                 material->commit();
             }

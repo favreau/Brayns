@@ -813,6 +813,19 @@ inline void processElectronShading(varying ScreenSample& sample,
     attributes.specularColor = make_vec3f(0.f);
 }
 
+inline void processCartoonShading(varying ScreenSample& sample,
+                                  ShadingAttributes& attributes)
+{
+    const vec3f viewer = normalize(sample.ray.org - attributes.origin);
+    float cosNL = max(0.f, dot(viewer, attributes.normal));
+    const unsigned int angleAsInt = cosNL * DEFAULT_CARTOON_GRADIENT;
+    cosNL = (float)(angleAsInt) / (float)(DEFAULT_CARTOON_GRADIENT);
+
+    attributes.shadingContribution = cosNL * attributes.diffuseColor;
+    attributes.simulationColor = cosNL * attributes.simulationColor;
+    attributes.specularColor = make_vec3f(0.f);
+}
+
 inline void processVolumeContribution(varying ScreenSample& sample,
                                       const varying Ray& ray,
                                       ShadingAttributes& attributes)
@@ -939,6 +952,8 @@ inline vec3f AdvancedSimulationRenderer_shadeRay(
                 // Compute surface shading
                 if (attributes.shadingMode == electron)
                     processElectronShading(sample, attributes);
+                else if (attributes.shadingMode == cartoon)
+                    processCartoonShading(sample, attributes);
                 else
                     processLightShading(dg, sample, ray, attributes);
 

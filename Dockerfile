@@ -1,12 +1,12 @@
-# Docker container for running Brayns as a service
+# Docker container for running Phaneron as a service
 # Check https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/#user for best practices.
 
 # This Dockerfile leverages multi-stage builds, available since Docker 17.05
 # See: https://docs.docker.com/engine/userguide/eng-image/multistage-build/#use-multi-stage-builds
 
-# Image where Brayns is built
+# Image where Phaneron is built
 FROM debian:buster-slim as builder
-LABEL maintainer="bbp-svc-viz@groupes.epfl.ch"
+LABEL maintainer="cyrille.favreau@epfl.ch"
 ARG DIST_PATH=/app/dist
 
 # Install packages
@@ -102,16 +102,16 @@ RUN mkdir -p ${LWS_SRC} \
  && rm -rf ${DIST_PATH}/lib/cmake/libwebsockets
 
 
-# Set working dir and copy Brayns assets
-ARG BRAYNS_SRC=/app/brayns
+# Set working dir and copy Phaneron assets
+ARG PHANERON_SRC=/app/phaneron
 WORKDIR /app
-ADD . ${BRAYNS_SRC}
+ADD . ${PHANERON_SRC}
 
 
-# Install Brayns
-# https://github.com/BlueBrain/Brayns
-RUN cksum ${BRAYNS_SRC}/.gitsubprojects \
- && cd ${BRAYNS_SRC} \
+# Install Phaneron
+# https://github.com/favreau/Brayns/tree/phaneron
+RUN cksum ${PHANERON_SRC}/.gitsubprojects \
+ && cd ${PHANERON_SRC} \
  && git submodule update --init --recursive \
  && mkdir -p build \
  && cd build \
@@ -165,10 +165,10 @@ ENV PATH ${DIST_PATH}/bin:$PATH
 # see https://docs.docker.com/engine/reference/run/#expose-incoming-ports for docs.
 EXPOSE 8200
 
-# When running `docker run -ti --rm -p 8200:8200 brayns`,
+# When running `docker run -ti --rm -p 8200:8200 phaneron`,
 # this will be the cmd that will be executed (+ the CLI options from CMD).
 # To ssh into the container (or override the default entry) use:
-# `docker run -ti --rm --entrypoint bash -p 8200:8200 brayns`
+# `docker run -ti --rm --entrypoint bash -p 8200:8200 phaneron`
 # See https://docs.docker.com/engine/reference/run/#entrypoint-default-command-to-execute-at-runtime
 # for more docs
 ENTRYPOINT ["braynsService"]

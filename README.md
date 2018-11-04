@@ -184,3 +184,7 @@ find new issues which have not already been reported in
 [Bug Report](https://github.com/BlueBrain/Brayns/issues) page. If you find an
 already reported problem, please update the corresponding issue with your inputs
 and outputs.
+
+## Misc
+
+Works with commit c4700623d0757ae3e3adc94eeebdfd5f70bfddfc of Sauron

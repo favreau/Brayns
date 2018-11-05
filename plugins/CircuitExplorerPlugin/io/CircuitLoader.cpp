@@ -73,11 +73,12 @@ public:
     {
     }
 
-    brayns::ModelDescriptorPtr importCircuit(const std::string& source,
-                                             const strings& targets,
-                                             const std::string& report) const
+    brayns::ModelDescriptorPtr importCircuit(const std::string& source) const
     {
         bool returnValue = true;
+
+        std::vector<std::string> targets =
+            getTargetsAsStrings(_circuitAttributes.targets);
         brayns::ModelDescriptorPtr modelDesc;
         try
         {
@@ -145,13 +146,13 @@ public:
             // Load simulation information from compartment report
             CompartmentReportPtr compartmentReport{nullptr};
             CircuitSimulationHandlerPtr simulationHandler{nullptr};
-            if (!report.empty())
+            if (!_circuitAttributes.report.empty())
             {
                 try
                 {
                     auto handler = std::make_shared<CircuitSimulationHandler>(
-                        _circuitAttributes, bc.getReportSource(report),
-                        allGids);
+                        _circuitAttributes,
+                        bc.getReportSource(_circuitAttributes.report), allGids);
                     compartmentReport = handler->getCompartmentReport();
                     // Only keep simulated GIDs
                     if (compartmentReport)
@@ -509,7 +510,9 @@ CircuitLoader::CircuitLoader(
 {
 }
 
-CircuitLoader::~CircuitLoader() {}
+CircuitLoader::~CircuitLoader()
+{
+}
 
 std::set<std::string> CircuitLoader::getSupportedDataTypes()
 {
@@ -527,13 +530,10 @@ brayns::ModelDescriptorPtr CircuitLoader::importFromFile(
     const std::string& filename, const size_t /*index*/,
     const size_t /*materialID*/)
 {
-    const auto& attr = _impl->getCircuitAttributes();
-    return _impl->importCircuit(filename, getTargetsAsStrings(attr.targets),
-                                attr.report);
+    return _impl->importCircuit(filename);
 }
 
-brayns::ModelDescriptorPtr CircuitLoader::importCircuit(
-    const servus::URI& uri, const strings& targets, const std::string& report)
+brayns::ModelDescriptorPtr CircuitLoader::importCircuit(const std::string& path)
 {
-    return _impl->importCircuit(uri.getPath(), targets, report);
+    return _impl->importCircuit(path);
 }

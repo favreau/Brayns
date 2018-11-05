@@ -74,6 +74,7 @@ inline vec3f BasicSimulationRenderer_shadeRay(
 
         if (previousMaterial != material)
         {
+            MaterialShadingMode shadingMode = diffuse;
             const uniform ExtendedOBJMaterial* objMaterial =
                 (const uniform ExtendedOBJMaterial*)material;
             vec3f Kd;
@@ -83,18 +84,20 @@ inline vec3f BasicSimulationRenderer_shadeRay(
                 opacity = dg.color.w;
             }
             else
+            {
                 foreach_unique(mat in objMaterial)
                 {
                     Kd = make_vec3f(dg.color) * mat->Kd;
                     opacity = dg.color.w * mat->d;
+                    shadingMode = mat->shadingMode;
                 }
+            }
 
             if (depth == 0)
             {
                 pathOpacity = opacity;
                 sample.z = ray.t;
             }
-            pathOpacity *= 1.f + opacity;
             colorContribution = make_vec4f(Kd, pathOpacity);
 
             if (objMaterial->castSimulationData == 1)
@@ -109,7 +112,24 @@ inline vec3f BasicSimulationRenderer_shadeRay(
             }
 
             // Head-light shading
-            const float cosNL = max(0.f, dot(neg(ray.dir), dg.Ns));
+            float cosNL = max(0.f, dot(neg(ray.dir), dg.Ns));
+
+            switch (shadingMode)
+            {
+            case electron:
+            case electron_transparency:
+                cosNL = (1.f - cosNL);
+                opacity = opacity *
+                          (shadingMode == electron_transparency ? cosNL : 1.f);
+                break;
+            case cartoon:
+                const unsigned int angleAsInt =
+                    cosNL * DEFAULT_CARTOON_GRADIENT;
+                cosNL = (float)(angleAsInt) / (float)(DEFAULT_CARTOON_GRADIENT);
+                break;
+            }
+
+            pathOpacity *= 1.f + opacity;
             colorContribution = colorContribution * cosNL;
 
             // Compositing according to alpha correction
@@ -138,7 +158,7 @@ void BasicSimulationRenderer_renderSample(uniform Renderer* uniform _self,
                                           varying ScreenSample& sample)
 {
     uniform BasicSimulationRenderer* uniform self =
-        (uniform BasicSimulationRenderer * uniform) _self;
+        (uniform BasicSimulationRenderer * uniform)_self;
     sample.rgb = BasicSimulationRenderer_shadeRay(self, sample);
 }
 
@@ -161,16 +181,16 @@ export void BasicSimulationRenderer_set(
     const uniform float& colorMapRange, const uniform float& alphaCorrection)
 {
     uniform BasicSimulationRenderer* uniform self =
-        (uniform BasicSimulationRenderer * uniform) _self;
+        (uniform BasicSimulationRenderer * uniform)_self;
 
     self->super.super.bgMaterial =
-        (uniform ExtendedOBJMaterial * uniform) bgMaterial;
+        (uniform ExtendedOBJMaterial * uniform)bgMaterial;
 
     self->super.super.super.spp = spp;
 
-    self->super.colorMap = (uniform vec4f * uniform) colormap;
+    self->super.colorMap = (uniform vec4f * uniform)colormap;
     self->super.emissionIntensitiesMap =
-        (uniform vec3f * uniform) emissionIntensitiesMap;
+        (uniform vec3f * uniform)emissionIntensitiesMap;
     self->super.colorMapSize = colorMapSize;
     self->super.colorMapMinValue = colorMapMinValue;
     self->super.colorMapRange = colorMapRange;

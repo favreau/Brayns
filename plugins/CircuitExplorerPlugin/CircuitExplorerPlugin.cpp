@@ -44,12 +44,12 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
 {
     auto& registry = _scene.getLoaderRegistry();
     REGISTER_LOADER(SynapseLoader,
-                    ([& scene = _scene, &params = _synapseAttributes] {
+                    ([& scene = _scene, &params = _synapseAttributes ] {
                         return std::make_unique<SynapseLoader>(scene, params);
                     }));
 
     REGISTER_LOADER(MorphologyLoader,
-                    ([& scene = _scene, &params = _morphologyAttributes] {
+                    ([& scene = _scene, &params = _morphologyAttributes ] {
                         return std::make_unique<MorphologyLoader>(scene,
                                                                   params);
                     }));
@@ -138,6 +138,9 @@ void CircuitExplorerPlugin::_setMaterial(const MaterialDescriptor& md)
                 else if (md.shadingMode == "cartoon")
                     material->setShadingMode(
                         brayns::MaterialShadingMode::cartoon);
+                else if (md.shadingMode == "electron-transparency")
+                    material->setShadingMode(
+                        brayns::MaterialShadingMode::electron_transparency);
 
                 material->commit();
             }
@@ -226,7 +229,7 @@ void CircuitExplorerPlugin::_loadModelFromCache(
     auto modelDescriptor =
         std::make_shared<brayns::ModelDescriptor>(std::move(model),
                                                   loadModel.name);
-    modelDescriptor->load(loadModel.filename);
+    modelDescriptor->load(loadModel.path);
     _scene.addModel(modelDescriptor);
     _dirty = true;
 }
@@ -235,7 +238,7 @@ void CircuitExplorerPlugin::_saveModelToCache(const SaveModelToCache& saveModel)
 {
     auto modelDescriptor = _scene.getModel(saveModel.modelId);
     if (modelDescriptor)
-        modelDescriptor->save(saveModel.filename);
+        modelDescriptor->save(saveModel.path);
     else
         PLUGIN_ERROR << "Model " << saveModel.modelId << " is not registered"
                      << std::endl;

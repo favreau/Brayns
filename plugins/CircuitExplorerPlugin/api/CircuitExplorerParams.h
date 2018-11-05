@@ -22,18 +22,28 @@
 #include "../types.h"
 #include <brayns/common/types.h>
 
+struct Result
+{
+    bool success = false;
+    std::string error;
+};
+
+std::string to_json(const Result& param);
+
+/** Load model from cache */
 struct LoadModelFromCache
 {
     std::string name;
-    std::string filename;
+    std::string path;
 };
 
 bool from_json(LoadModelFromCache& modelLoad, const std::string& payload);
 
+/** Save model to cache */
 struct SaveModelToCache
 {
     size_t modelId;
-    std::string filename;
+    std::string path;
 };
 
 bool from_json(SaveModelToCache& modelSave, const std::string& payload);

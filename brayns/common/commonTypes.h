@@ -11,7 +11,8 @@ enum MaterialShadingMode
     none = 0,
     diffuse = 1,
     electron = 2,
-    cartoon = 3
+    cartoon = 3,
+    electron_transparency = 4
 };
 
 #if __cplusplus

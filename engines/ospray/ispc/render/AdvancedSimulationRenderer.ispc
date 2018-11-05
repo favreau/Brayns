@@ -342,9 +342,10 @@ inline vec4f getVolumeContribution(
                      gradient.z == 0.f)
                         ? 1.f
                         : abs(dot(safe_normalize(light.dir), gradient));
-                shadedColor = clamp(shadedColor + volumeSampleColor * cosNL *
-                                                      light.weight,
-                                    make_vec3f(0.f), make_vec3f(1.f));
+                shadedColor =
+                    clamp(shadedColor +
+                              volumeSampleColor * cosNL * light.weight,
+                          make_vec3f(0.f), make_vec3f(1.f));
 
                 // Specular
                 const vec3f reflectedNormal = normalize(
@@ -364,9 +365,9 @@ inline vec4f getVolumeContribution(
             float indirectIntensity;
             indirectShading(self, sample, point, gradient, dg, indirectColor,
                             indirectIntensity);
-            volumeSampleColor = volumeSampleColor + sampleOpacity *
-                                                        indirectColor *
-                                                        indirectIntensity;
+            volumeSampleColor =
+                volumeSampleColor +
+                sampleOpacity * indirectColor * indirectIntensity;
         }
 
         if (shadowsEnabled)
@@ -813,6 +814,18 @@ inline void processElectronShading(varying ScreenSample& sample,
     attributes.specularColor = make_vec3f(0.f);
 }
 
+inline void processElectronTransparencyShading(varying ScreenSample& sample,
+                                               ShadingAttributes& attributes)
+{
+    const vec3f viewer = normalize(sample.ray.org - attributes.origin);
+    const float el = max(0.f, dot(viewer, attributes.normal));
+    const float cosNL = 1.f - el;
+    attributes.shadingContribution = cosNL * attributes.diffuseColor;
+    attributes.simulationColor = cosNL * attributes.simulationColor;
+    attributes.specularColor = make_vec3f(0.f);
+    attributes.opacity *= cosNL;
+}
+
 inline void processCartoonShading(varying ScreenSample& sample,
                                   ShadingAttributes& attributes)
 {
@@ -954,6 +967,8 @@ inline vec3f AdvancedSimulationRenderer_shadeRay(
                     processElectronShading(sample, attributes);
                 else if (attributes.shadingMode == cartoon)
                     processCartoonShading(sample, attributes);
+                else if (attributes.shadingMode == electron_transparency)
+                    processElectronTransparencyShading(sample, attributes);
                 else
                     processLightShading(dg, sample, ray, attributes);
 
@@ -1029,7 +1044,7 @@ void AdvancedSimulationRenderer_renderSample(uniform Renderer* uniform _self,
                                              varying ScreenSample& sample)
 {
     uniform AdvancedSimulationRenderer* uniform self =
-        (uniform AdvancedSimulationRenderer * uniform) _self;
+        (uniform AdvancedSimulationRenderer * uniform)_self;
     sample.ray.time = infinity;
     sample.rgb = AdvancedSimulationRenderer_shadeRay(self, sample);
 }
@@ -1064,11 +1079,11 @@ export void AdvancedSimulationRenderer_set(
     const uniform float& volumeAlphaCorrection)
 {
     uniform AdvancedSimulationRenderer* uniform self =
-        (uniform AdvancedSimulationRenderer * uniform) _self;
+        (uniform AdvancedSimulationRenderer * uniform)_self;
 
     self->super.super.super.spp = spp;
     self->super.super.bgMaterial =
-        (uniform ExtendedOBJMaterial * uniform) bgMaterial;
+        (uniform ExtendedOBJMaterial * uniform)bgMaterial;
     self->super.super.lights = (const uniform Light* uniform* uniform)lights;
     self->super.super.numLights = numLights;
     self->super.super.timestamp = timestamp;
@@ -1081,9 +1096,9 @@ export void AdvancedSimulationRenderer_set(
 
     self->volumeSamplesPerRay = volumeSamplesPerRay;
 
-    self->super.colorMap = (uniform vec4f * uniform) colormap;
+    self->super.colorMap = (uniform vec4f * uniform)colormap;
     self->super.emissionIntensitiesMap =
-        (uniform vec3f * uniform) emissionIntensitiesMap;
+        (uniform vec3f * uniform)emissionIntensitiesMap;
     self->super.colorMapSize = colorMapSize;
     self->super.colorMapMinValue = colorMapMinValue;
     self->super.colorMapRange = colorMapRange;
@@ -1091,7 +1106,7 @@ export void AdvancedSimulationRenderer_set(
     self->super.simulationData = (uniform float* uniform)simulationData;
     self->super.simulationDataSize = simulationDataSize;
 
-    self->simulationModel = (uniform Model * uniform) simulationModel;
+    self->simulationModel = (uniform Model * uniform)simulationModel;
     self->detectionDistance = detectionDistance;
 
     self->samplingThreshold = samplingThreshold;

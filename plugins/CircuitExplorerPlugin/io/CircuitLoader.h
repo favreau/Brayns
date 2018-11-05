@@ -59,17 +59,10 @@ public:
     /**
      * @brief Imports morphology from a circuit for the given target name
      * @param circuitConfig URI of the Circuit Config file
-     * @param targets Targets to be loaded. If empty, the target specified in
-     * the circuit configuration file is used. If such an entry does not exist,
-     * all neurons are loaded.
-     * @param report Compartment report to be loaded
-     * @param scene Scene into which the circuit is imported
-     * @return True if the circuit is successfully loaded, false if the circuit
-     * contains no cells.
+     * @return ModelDescriptor if the circuit is successfully loaded, nullptr if
+     * the circuit contains no cells.
      */
-    brayns::ModelDescriptorPtr importCircuit(const servus::URI& circuitConfig,
-                                             const strings& targets,
-                                             const std::string& report);
+    brayns::ModelDescriptorPtr importCircuit(const std::string& circuitConfig);
 
 private:
     class Impl;

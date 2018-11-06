@@ -112,7 +112,9 @@ inline vec3f BasicSimulationRenderer_shadeRay(
             }
 
             // Head-light shading
-            float cosNL = max(0.f, dot(neg(ray.dir), dg.Ns));
+            float cosNL =
+                (shadingMode == none ? 1.f
+                                     : max(0.f, dot(neg(ray.dir), dg.Ns)));
 
             switch (shadingMode)
             {
@@ -130,7 +132,8 @@ inline vec3f BasicSimulationRenderer_shadeRay(
             }
 
             pathOpacity *= 1.f + opacity;
-            colorContribution = colorContribution * cosNL;
+            colorContribution =
+                make_vec4f(make_vec3f(colorContribution * cosNL), pathOpacity);
 
             // Compositing according to alpha correction
             composite(colorContribution, intersectionColor,
@@ -158,7 +161,7 @@ void BasicSimulationRenderer_renderSample(uniform Renderer* uniform _self,
                                           varying ScreenSample& sample)
 {
     uniform BasicSimulationRenderer* uniform self =
-        (uniform BasicSimulationRenderer * uniform)_self;
+        (uniform BasicSimulationRenderer * uniform) _self;
     sample.rgb = BasicSimulationRenderer_shadeRay(self, sample);
 }
 
@@ -181,16 +184,16 @@ export void BasicSimulationRenderer_set(
     const uniform float& colorMapRange, const uniform float& alphaCorrection)
 {
     uniform BasicSimulationRenderer* uniform self =
-        (uniform BasicSimulationRenderer * uniform)_self;
+        (uniform BasicSimulationRenderer * uniform) _self;
 
     self->super.super.bgMaterial =
-        (uniform ExtendedOBJMaterial * uniform)bgMaterial;
+        (uniform ExtendedOBJMaterial * uniform) bgMaterial;
 
     self->super.super.super.spp = spp;
 
-    self->super.colorMap = (uniform vec4f * uniform)colormap;
+    self->super.colorMap = (uniform vec4f * uniform) colormap;
     self->super.emissionIntensitiesMap =
-        (uniform vec3f * uniform)emissionIntensitiesMap;
+        (uniform vec3f * uniform) emissionIntensitiesMap;
     self->super.colorMapSize = colorMapSize;
     self->super.colorMapMinValue = colorMapMinValue;
     self->super.colorMapRange = colorMapRange;

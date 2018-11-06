@@ -510,9 +510,7 @@ CircuitLoader::CircuitLoader(
 {
 }
 
-CircuitLoader::~CircuitLoader()
-{
-}
+CircuitLoader::~CircuitLoader() {}
 
 std::set<std::string> CircuitLoader::getSupportedDataTypes()
 {

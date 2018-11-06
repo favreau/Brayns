@@ -44,12 +44,12 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
 {
     auto& registry = _scene.getLoaderRegistry();
     REGISTER_LOADER(SynapseLoader,
-                    ([& scene = _scene, &params = _synapseAttributes ] {
+                    ([& scene = _scene, &params = _synapseAttributes] {
                         return std::make_unique<SynapseLoader>(scene, params);
                     }));
 
     REGISTER_LOADER(MorphologyLoader,
-                    ([& scene = _scene, &params = _morphologyAttributes ] {
+                    ([& scene = _scene, &params = _morphologyAttributes] {
                         return std::make_unique<MorphologyLoader>(scene,
                                                                   params);
                     }));
@@ -148,7 +148,7 @@ void CircuitExplorerPlugin::_setMaterial(const MaterialDescriptor& md)
         else
             PLUGIN_ERROR << "Model " << md.modelId << " is not registered"
                          << std::endl;
-        _dirty = true;
+        //        _dirty = true;
     }
     catch (const std::runtime_error& e)
     {

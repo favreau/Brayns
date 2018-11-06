@@ -46,7 +46,11 @@ public:
         return std::unique_lock<std::mutex>(_mapMutex);
     }
     uint8_t* getByteBuffer() final { return _byteBuffer; }
+    size_t getByteDepth() const final;
+
     float* getFloatBuffer() final { return _floatBuffer; }
+    size_t getFloatDepth() const final;
+
     OSPFrameBuffer impl() { return _frameBuffer; }
     void enableDeflectPixelOp();
     void setStreamingParams(const StreamParameters& params, bool stereo);

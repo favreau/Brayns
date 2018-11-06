@@ -235,7 +235,7 @@ inline void init(brayns::FrameBuffer* f, ObjectHandler* h)
     frameSize = f->getSize();
     f->map();
     diffuse = base64_encode(f->getByteBuffer(),
-                            frameSize.x() * frameSize.y() * f->getDepth());
+                            frameSize.x() * frameSize.y() * f->getByteDepth());
 
     if (f->getFloatBuffer())
     {

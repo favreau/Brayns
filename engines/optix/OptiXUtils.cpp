@@ -26,16 +26,17 @@ namespace brayns
 {
 void setOptiXProperties(::optix::Context context, const PropertyMap& properties)
 {
-    try
+    for (const auto& property : properties.getProperties())
     {
-        for (const auto& property : properties.getProperties())
+        try
         {
             switch (property->type)
             {
             case PropertyMap::Property::Type::Float:
             {
-                context[property->name]->setFloat(
-                    properties.getProperty<float>(property->name, 0.f));
+                const auto value = static_cast<float>(
+                    properties.getProperty<double>(property->name, 0.f));
+                context[property->name]->setFloat(value);
                 break;
             }
             case PropertyMap::Property::Type::Int:
@@ -92,11 +93,11 @@ void setOptiXProperties(::optix::Context context, const PropertyMap& properties)
             }
             }
         }
-    }
-    catch (const std::exception& e)
-    {
-        BRAYNS_ERROR << "Failed to apply properties for OptiX " << e.what()
-                     << std::endl;
+        catch (const std::exception& e)
+        {
+            BRAYNS_ERROR << "Failed to apply property " << property->name
+                         << " for OptiX " << e.what() << std::endl;
+        }
     }
 }
 } // namespace brayns

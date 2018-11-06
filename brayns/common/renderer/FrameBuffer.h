@@ -40,7 +40,8 @@ public:
 
     virtual uint8_t* getByteBuffer() = 0;
     virtual float* getFloatBuffer() = 0;
-    virtual size_t getDepth();
+    virtual size_t getByteDepth() const = 0;
+    virtual size_t getFloatDepth() const = 0;
 
     virtual void resize(const Vector2ui& frameSize) = 0;
 

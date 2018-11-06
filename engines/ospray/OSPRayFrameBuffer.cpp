@@ -47,6 +47,27 @@ OSPRayFrameBuffer::~OSPRayFrameBuffer()
     ospFreeFrameBuffer(_frameBuffer);
 }
 
+size_t OSPRayFrameBuffer::getByteDepth() const
+{
+    switch (_frameBufferFormat)
+    {
+    case FrameBufferFormat::rgba_i8:
+    case FrameBufferFormat::bgra_i8:
+    case FrameBufferFormat::rgba_f32:
+        return 4;
+    case FrameBufferFormat::rgb_f32:
+    case FrameBufferFormat::rgb_i8:
+        return 3;
+    default:
+        return 0;
+    }
+}
+
+size_t OSPRayFrameBuffer::getFloatDepth() const
+{
+    return 1;
+}
+
 void OSPRayFrameBuffer::enableDeflectPixelOp()
 {
     _pixelOp = ospNewPixelOp("DeflectPixelOp");

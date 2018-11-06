@@ -322,7 +322,8 @@ private:
     void _copyToLastImage(FrameBuffer& frameBuffer)
     {
         const auto& size = frameBuffer.getSize();
-        const size_t bufferSize = size.x() * size.y() * frameBuffer.getDepth();
+        const size_t bufferSize =
+            size.x() * size.y() * frameBuffer.getByteDepth();
         void* data = frameBuffer.getByteBuffer();
 
         _lastImage.data.resize(bufferSize);

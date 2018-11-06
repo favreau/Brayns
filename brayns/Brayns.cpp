@@ -359,17 +359,23 @@ struct Brayns::Impl : public PluginAPI
         frameBuffer.map();
         const auto& frameSize = frameBuffer.getSize();
 
-        const auto size =
-            frameSize.x() * frameSize.y() * frameBuffer.getDepth();
-
         auto byteBuffer = frameBuffer.getByteBuffer();
         renderOutput.frameBufferFormat = frameBuffer.getFrameBufferFormat();
         if (byteBuffer)
+        {
+            const auto size =
+                frameSize.x() * frameSize.y() * frameBuffer.getByteDepth();
+
             renderOutput.byteBuffer.assign(byteBuffer, byteBuffer + size);
+        }
 
         auto floatBuffer = frameBuffer.getFloatBuffer();
         if (floatBuffer)
+        {
+            const auto size =
+                frameSize.x() * frameSize.y() * frameBuffer.getFloatDepth();
             renderOutput.floatBuffer.assign(floatBuffer, floatBuffer + size);
+        }
 
         renderOutput.frameSize = frameSize;
 

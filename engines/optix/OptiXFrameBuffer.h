@@ -51,7 +51,10 @@ public:
         return std::unique_lock<std::mutex>(_mapMutex);
     }
     uint8_t* getByteBuffer() final { return (uint8_t*)_imageData; }
+    size_t getByteDepth() const final;
+
     float* getFloatBuffer() final { return (float*)_imageData; }
+    size_t getFloatDepth() const final;
 
 private:
     const RenderingParameters& _renderParams;

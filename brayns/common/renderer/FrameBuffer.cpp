@@ -31,19 +31,4 @@ FrameBuffer::FrameBuffer(const Vector2ui& frameSize,
 {
 }
 
-size_t FrameBuffer::getDepth()
-{
-    switch (_frameBufferFormat)
-    {
-    case FrameBufferFormat::rgba_i8:
-    case FrameBufferFormat::bgra_i8:
-    case FrameBufferFormat::rgba_f32:
-        return 4;
-    case FrameBufferFormat::rgb_f32:
-    case FrameBufferFormat::rgb_i8:
-        return 3;
-    default:
-        return 0;
-    }
-}
 } // namespace brayns

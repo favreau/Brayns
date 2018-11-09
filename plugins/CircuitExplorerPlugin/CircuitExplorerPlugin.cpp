@@ -17,6 +17,7 @@
  */
 
 #include "CircuitExplorerPlugin.h"
+#include "io/BrickLoader.h"
 #include "io/CircuitLoader.h"
 #include "io/MorphologyLoader.h"
 #include "io/SynapseLoader.h"
@@ -44,12 +45,12 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
 {
     auto& registry = _scene.getLoaderRegistry();
     REGISTER_LOADER(SynapseLoader,
-                    ([& scene = _scene, &params = _synapseAttributes] {
+                    ([& scene = _scene, &params = _synapseAttributes ] {
                         return std::make_unique<SynapseLoader>(scene, params);
                     }));
 
     REGISTER_LOADER(MorphologyLoader,
-                    ([& scene = _scene, &params = _morphologyAttributes] {
+                    ([& scene = _scene, &params = _morphologyAttributes ] {
                         return std::make_unique<MorphologyLoader>(scene,
                                                                   params);
                     }));
@@ -225,20 +226,32 @@ void CircuitExplorerPlugin::_setCircuitAttributes(
 void CircuitExplorerPlugin::_loadModelFromCache(
     const LoadModelFromCache& loadModel)
 {
-    auto model = _scene.createModel();
-    auto modelDescriptor =
-        std::make_shared<brayns::ModelDescriptor>(std::move(model),
-                                                  loadModel.name);
-    modelDescriptor->load(loadModel.path);
-    _scene.addModel(modelDescriptor);
-    _dirty = true;
+    try
+    {
+        BrickLoader brickLoader(_scene);
+        auto modelDescriptor =
+            brickLoader.importFromFile(loadModel.path, 0, brayns::NO_MATERIAL);
+        if (modelDescriptor)
+        {
+            modelDescriptor->setName(loadModel.name);
+            _scene.addModel(modelDescriptor);
+        }
+        _dirty = true;
+    }
+    catch (const std::runtime_error& e)
+    {
+        PLUGIN_ERROR << e.what() << std::endl;
+    }
 }
 
 void CircuitExplorerPlugin::_saveModelToCache(const SaveModelToCache& saveModel)
 {
     auto modelDescriptor = _scene.getModel(saveModel.modelId);
     if (modelDescriptor)
-        modelDescriptor->save(saveModel.path);
+    {
+        BrickLoader brickLoader(_scene);
+        brickLoader.exportToFile(modelDescriptor, saveModel.path);
+    }
     else
         PLUGIN_ERROR << "Model " << saveModel.modelId << " is not registered"
                      << std::endl;

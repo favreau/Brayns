@@ -19,36 +19,48 @@
  */
 
 #include "CircuitSimulationHandler.h"
+#include "log.h"
 
-#include <brayns/common/log.h>
+#include <brayns/parameters/AnimationParameters.h>
 
 #include <servus/types.h>
 
+#include <chrono>
+#include <thread>
+
 CircuitSimulationHandler::CircuitSimulationHandler(
+    brayns::AnimationParameters& animationParameters,
     const brion::URI& reportSource, const brion::GIDSet& gids,
     const bool synchronousMode)
-    : brayns::AbstractSimulationHandler()
+    : brayns::AbstractUserDataHandler()
     , _synchronousMode(synchronousMode)
     , _compartmentReport(
           new brion::CompartmentReport(reportSource, brion::MODE_READ, gids))
+    , _animationParameters(animationParameters)
 {
     // Load simulation information from compartment reports
-    _startTime = _compartmentReport->getStartTime();
-    _endTime = _compartmentReport->getEndTime();
-    _dt = _compartmentReport->getTimestep();
-    _unit = _compartmentReport->getTimeUnit();
-    _frameSize = _compartmentReport->getFrameSize();
-    _nbFrames = (_endTime - _startTime) / _dt;
+    _animationParameters.setStart(_compartmentReport->getStartTime());
+    _animationParameters.setEnd(_compartmentReport->getEndTime());
+    _animationParameters.setDt(_compartmentReport->getTimestep());
+    _animationParameters.setUnit(_compartmentReport->getTimeUnit());
 
-    BRAYNS_INFO << "-----------------------------------------------------------"
+    _frameSize = _compartmentReport->getFrameSize();
+    _nbFrames =
+        (_animationParameters.getEnd() - _animationParameters.getStart()) /
+        _animationParameters.getDt();
+
+    PLUGIN_INFO << "-----------------------------------------------------------"
                 << std::endl;
-    BRAYNS_INFO << "Simulation information" << std::endl;
-    BRAYNS_INFO << "----------------------" << std::endl;
-    BRAYNS_INFO << "Start frame          : " << _startTime << std::endl;
-    BRAYNS_INFO << "End frame            : " << _endTime << std::endl;
-    BRAYNS_INFO << "Steps between frames : " << _dt << std::endl;
-    BRAYNS_INFO << "Number of frames     : " << _nbFrames << std::endl;
-    BRAYNS_INFO << "-----------------------------------------------------------"
+    PLUGIN_INFO << "Simulation information" << std::endl;
+    PLUGIN_INFO << "----------------------" << std::endl;
+    PLUGIN_INFO << "Start frame          : " << _animationParameters.getStart()
+                << std::endl;
+    PLUGIN_INFO << "End frame            : " << _animationParameters.getEnd()
+                << std::endl;
+    PLUGIN_INFO << "Steps between frames : " << _animationParameters.getDt()
+                << std::endl;
+    PLUGIN_INFO << "Number of frames     : " << _nbFrames << std::endl;
+    PLUGIN_INFO << "-----------------------------------------------------------"
                 << std::endl;
 }
 
@@ -61,14 +73,14 @@ bool CircuitSimulationHandler::isReady() const
     return _ready;
 }
 
-void* CircuitSimulationHandler::getFrameData(uint32_t frame)
+void* CircuitSimulationHandler::getFrameData(const uint32_t frame)
 {
-    frame = _getBoundedFrame(frame);
+    const auto boundedFrame = _getBoundedFrame(frame);
 
-    if (!_currentFrameFuture.valid() && _currentFrame != frame)
-        _triggerLoading(frame);
+    if (!_currentFrameFuture.valid() && _currentFrame != boundedFrame)
+        _triggerLoading(boundedFrame);
 
-    if (!_makeFrameReady(frame))
+    if (!_makeFrameReady(boundedFrame))
         return nullptr;
 
     return _frameData.data();
@@ -76,9 +88,10 @@ void* CircuitSimulationHandler::getFrameData(uint32_t frame)
 
 void CircuitSimulationHandler::_triggerLoading(const uint32_t frame)
 {
-    auto timestamp = _startTime + frame * _dt;
-    timestamp = std::max(_startTime, timestamp);
-    timestamp = std::min(_endTime, timestamp);
+    uint32_t timestamp =
+        _animationParameters.getStart() + frame * _animationParameters.getDt();
+    timestamp = std::max(_animationParameters.getStart(), timestamp);
+    timestamp = std::min(_animationParameters.getEnd(), timestamp);
 
     if (_currentFrameFuture.valid())
         _currentFrameFuture.wait();
@@ -112,7 +125,7 @@ bool CircuitSimulationHandler::_makeFrameReady(const uint32_t frame)
         }
         catch (const std::exception& e)
         {
-            BRAYNS_ERROR << "Error loading simulation frame " << frame << ": "
+            PLUGIN_ERROR << "Error loading simulation frame " << frame << ": "
                          << e.what() << std::endl;
             return false;
         }

@@ -25,7 +25,7 @@
 
 #include <brayns/api.h>
 #include <brayns/common/scene/Scene.h>
-#include <brayns/common/simulation/AbstractSimulationHandler.h>
+#include <brayns/common/simulation/AbstractUserDataHandler.h>
 #include <brayns/common/types.h>
 #include <brion/brion.h>
 
@@ -37,7 +37,7 @@ typedef std::shared_ptr<brion::CompartmentReport> CompartmentReportPtr;
  * according to a specified timestamp. The CircuitSimulationHandler class is in
  * charge of keeping the handle to the memory mapped file.
  */
-class CircuitSimulationHandler : public brayns::AbstractSimulationHandler
+class CircuitSimulationHandler : public brayns::AbstractUserDataHandler
 {
 public:
     /**
@@ -46,27 +46,28 @@ public:
      * @param reportSource path to report source
      * @param gids GIDS to load
      */
-    CircuitSimulationHandler(const brion::URI& reportSource,
+    CircuitSimulationHandler(brayns::AnimationParameters& animationParameters,
+                             const brion::URI& reportSource,
                              const brion::GIDSet& gids,
                              const bool synchronousMode = false);
     ~CircuitSimulationHandler();
 
-    void* getFrameData(uint32_t frame) final;
+    void* getFrameData(const uint32_t frame) final;
 
     CompartmentReportPtr getCompartmentReport() { return _compartmentReport; }
     bool isReady() const final;
 
 private:
-    void _triggerLoading(uint32_t frame);
+    void _triggerLoading(const uint32_t frame);
     bool _isFrameLoaded() const;
-    bool _makeFrameReady(uint32_t frame);
+    bool _makeFrameReady(const uint32_t frame);
     bool _synchronousMode{false};
 
     CompartmentReportPtr _compartmentReport;
-    double _startTime;
-    double _endTime;
     std::future<brion::floatsPtr> _currentFrameFuture;
     bool _ready{false};
+
+    brayns::AnimationParameters& _animationParameters;
 };
 
 #endif // CIRCUITSIMULATIONHANDLER

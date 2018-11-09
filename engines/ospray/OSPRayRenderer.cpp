@@ -76,8 +76,8 @@ void OSPRayRenderer::commit()
     {
         ospSetData(_renderer, "lights", scene->lightData());
 
-        if (scene->simulationData())
-            ospSetData(_renderer, "simulationData", scene->simulationData());
+        if (scene->userData())
+            ospSetData(_renderer, "simulationData", scene->userData());
 
         // Transfer function Diffuse colors
         ospSetData(_renderer, "transferFunctionDiffuseData",

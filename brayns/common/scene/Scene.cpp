@@ -25,6 +25,7 @@
 #include <brayns/common/material/Material.h>
 #include <brayns/common/scene/ClipPlane.h>
 #include <brayns/common/scene/Model.h>
+#include <brayns/common/simulation/AbstractUserDataHandler.h>
 #include <brayns/common/utils/Utils.h>
 #include <brayns/parameters/ParametersManager.h>
 
@@ -87,6 +88,12 @@ Scene& Scene::operator=(const Scene& rhs)
 
     _lights = rhs._lights;
     _clipPlanes = rhs._clipPlanes;
+
+    if (rhs._userDataHandler)
+    {
+        _userDataHandler = std::make_shared<AbstractUserDataHandler>();
+        *_userDataHandler = *rhs._userDataHandler;
+    }
 
     _transferFunction = rhs._transferFunction;
     _transferFunction.markModified();

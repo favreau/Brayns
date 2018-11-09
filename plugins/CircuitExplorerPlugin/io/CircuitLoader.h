@@ -42,6 +42,7 @@ class CircuitLoader : public brayns::Loader
 public:
     CircuitLoader(brayns::Scene& scene,
                   const brayns::ApplicationParameters& applicationParameters,
+                  brayns::AnimationParameters& animationParameters,
                   const CircuitAttributes& circuitAttributes,
                   const MorphologyAttributes& morphologyAttributes);
     ~CircuitLoader();

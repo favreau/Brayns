@@ -30,7 +30,7 @@
 #include <brayns/common/light/PointLight.h>
 #include <brayns/common/log.h>
 #include <brayns/common/scene/Model.h>
-#include <brayns/common/simulation/AbstractSimulationHandler.h>
+#include <brayns/common/simulation/AbstractUserDataHandler.h>
 
 #include <brayns/parameters/GeometryParameters.h>
 #include <brayns/parameters/ParametersManager.h>
@@ -55,8 +55,8 @@ OSPRayScene::~OSPRayScene()
 {
     ospRelease(_ospTransferFunction);
 
-    if (_ospSimulationData)
-        ospRelease(_ospSimulationData);
+    if (_ospUserData)
+        ospRelease(_ospUserData);
 
     if (_ospTransferFunctionDiffuseData)
         ospRelease(_ospTransferFunctionDiffuseData);
@@ -82,7 +82,7 @@ void OSPRayScene::commit()
     const bool rebuildScene = isModified();
     const bool addRemoveVolumes = _commitVolumeData();
 
-    _commitSimulationData();
+    _commitUserData();
     commitTransferFunctionData();
 
     // copy the list to avoid locking the mutex
@@ -340,31 +340,29 @@ bool OSPRayScene::_commitVolumeData()
     return rebuildScene;
 }
 
-void OSPRayScene::_commitSimulationData()
+void OSPRayScene::_commitUserData()
 {
-    if (!_simulationHandler)
+    if (!_userDataHandler)
         return;
 
     const auto animationFrame =
         _parametersManager.getAnimationParameters().getFrame();
 
-    if (_ospSimulationData &&
-        _simulationHandler->getCurrentFrame() == animationFrame)
+    if (_ospUserData && _userDataHandler->getCurrentFrame() == animationFrame)
     {
         return;
     }
 
-    auto frameData = _simulationHandler->getFrameData(animationFrame);
+    auto frameData = _userDataHandler->getFrameData(animationFrame);
 
     if (!frameData)
         return;
 
-    if (_ospSimulationData)
-        ospRelease(_ospSimulationData);
-    _ospSimulationData =
-        ospNewData(_simulationHandler->getFrameSize(), OSP_FLOAT, frameData,
-                   _memoryManagementFlags);
-    ospCommit(_ospSimulationData);
+    if (_ospUserData)
+        ospRelease(_ospUserData);
+    _ospUserData = ospNewData(_userDataHandler->getFrameSize(), OSP_FLOAT,
+                              frameData, _memoryManagementFlags);
+    ospCommit(_ospUserData);
 
     markModified(false); // triggers framebuffer clear
 }

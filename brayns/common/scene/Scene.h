@@ -240,17 +240,12 @@ public:
     void buildEnvironmentMap();
 
     /** Simulation handlers */
-    void setSimulationHandler(
-        const AbstractSimulationHandlerPtr simulationHandler)
+    void setSimulationHandler(const AbstractUserDataHandlerPtr userDataHandler)
     {
-        _simulationHandler = simulationHandler;
+        _userDataHandler = userDataHandler;
     }
 
-    AbstractSimulationHandlerPtr getSimulationHandler()
-    {
-        return _simulationHandler;
-    }
-
+    AbstractUserDataHandlerPtr getUserDataHandler() { return _userDataHandler; }
 protected:
     void _computeBounds();
 
@@ -271,7 +266,7 @@ protected:
     LoaderRegistry _loaderRegistry;
     Boxd _bounds;
 
-    AbstractSimulationHandlerPtr _simulationHandler{nullptr};
+    AbstractUserDataHandlerPtr _userDataHandler{nullptr};
 
 private:
     SERIALIZATION_FRIEND(Scene)

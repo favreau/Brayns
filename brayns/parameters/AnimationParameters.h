@@ -62,6 +62,12 @@ public:
     void setDt(const double dt) { _updateValue(_dt, dt); }
     double getDt() const { return _dt; }
     uint32_t getStart() const { return _start; }
+    void setStart(const uint32_t start)
+    {
+        _updateValue(_start, start);
+        _updateValue(_current, std::max(_current, _start));
+    }
+
 private:
     void parse(const po::variables_map& vm) final;
 

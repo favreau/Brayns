@@ -26,7 +26,6 @@
 
 #include <brayns/common/scene/Model.h>
 #include <brayns/common/scene/Scene.h>
-#include <brayns/parameters/GeometryParameters.h>
 
 #include <brain/brain.h>
 #include <brion/brion.h>
@@ -63,11 +62,13 @@ class CircuitLoader::Impl
 {
 public:
     Impl(const brayns::ApplicationParameters& applicationParameters,
+         brayns::AnimationParameters& animationParameters,
          const CircuitAttributes& circuitAttributes,
          const MorphologyAttributes& morphologyAttributes,
          CircuitLoader& parent)
         : _parent(parent)
         , _applicationParameters(applicationParameters)
+        , _animationParameters(animationParameters)
         , _circuitAttributes(circuitAttributes)
         , _morphologyAttributes(morphologyAttributes)
     {
@@ -151,6 +152,7 @@ public:
                 try
                 {
                     auto handler = std::make_shared<CircuitSimulationHandler>(
+                        _animationParameters,
                         bc.getReportSource(_circuitAttributes.report), allGids);
                     _parent._scene.setSimulationHandler(handler);
 
@@ -496,6 +498,7 @@ private:
 
     CircuitLoader& _parent;
     const brayns::ApplicationParameters& _applicationParameters;
+    brayns::AnimationParameters& _animationParameters;
     const CircuitAttributes& _circuitAttributes;
     const MorphologyAttributes& _morphologyAttributes;
 };
@@ -503,11 +506,13 @@ private:
 CircuitLoader::CircuitLoader(
     brayns::Scene& scene,
     const brayns::ApplicationParameters& applicationParameters,
+    brayns::AnimationParameters& animationParameters,
     const CircuitAttributes& circuitAttributes,
     const MorphologyAttributes& morphologyAttributes)
     : Loader(scene)
-    , _impl(new CircuitLoader::Impl(applicationParameters, circuitAttributes,
-                                    morphologyAttributes, *this))
+    , _impl(new CircuitLoader::Impl(applicationParameters, animationParameters,
+                                    circuitAttributes, morphologyAttributes,
+                                    *this))
 {
 }
 

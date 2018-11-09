@@ -18,7 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "AbstractSimulationHandler.h"
+#include "AbstractUserDataHandler.h"
 
 #include <brayns/common/log.h>
 
@@ -30,11 +30,11 @@
 
 namespace brayns
 {
-AbstractSimulationHandler::AbstractSimulationHandler()
+AbstractUserDataHandler::AbstractUserDataHandler()
 {
 }
 
-AbstractSimulationHandler::~AbstractSimulationHandler()
+AbstractUserDataHandler::~AbstractUserDataHandler()
 {
     if (_memoryMapPtr)
     {
@@ -46,8 +46,8 @@ AbstractSimulationHandler::~AbstractSimulationHandler()
         ::close(_cacheFileDescriptor);
 }
 
-AbstractSimulationHandler& AbstractSimulationHandler::operator=(
-    const AbstractSimulationHandler& rhs)
+AbstractUserDataHandler& AbstractUserDataHandler::operator=(
+    const AbstractUserDataHandler& rhs)
 {
     if (this == &rhs)
         return *this;
@@ -62,7 +62,7 @@ AbstractSimulationHandler& AbstractSimulationHandler::operator=(
     return *this;
 }
 
-bool AbstractSimulationHandler::attachSimulationToCacheFile(
+bool AbstractUserDataHandler::attachUserDataToCacheFile(
     const std::string& cacheFile)
 {
     if (_cacheFileDescriptor > -1)
@@ -111,19 +111,19 @@ bool AbstractSimulationHandler::attachSimulationToCacheFile(
     return true;
 }
 
-void AbstractSimulationHandler::writeHeader(std::ofstream& stream)
+void AbstractUserDataHandler::writeHeader(std::ofstream& stream)
 {
     stream.write((char*)&_nbFrames, sizeof(_nbFrames));
     stream.write((char*)&_frameSize, sizeof(_frameSize));
 }
 
-void AbstractSimulationHandler::writeFrame(std::ofstream& stream,
-                                           const floats& values)
+void AbstractUserDataHandler::writeFrame(std::ofstream& stream,
+                                         const floats& values)
 {
     stream.write((char*)values.data(), values.size() * sizeof(float));
 }
 
-uint32_t AbstractSimulationHandler::_getBoundedFrame(const uint32_t frame) const
+uint32_t AbstractUserDataHandler::_getBoundedFrame(const uint32_t frame) const
 {
     return _nbFrames == 0 ? frame : frame % _nbFrames;
 }

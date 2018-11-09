@@ -19,7 +19,6 @@
  */
 
 #include "BrickLoader.h"
-#include "CircuitSimulationHandler.h"
 #include "MorphologyLoader.h"
 #include "types.h"
 

@@ -19,6 +19,7 @@
 #include "CircuitExplorerPlugin.h"
 #include "io/BrickLoader.h"
 #include "io/CircuitLoader.h"
+#include "io/CircuitSimulationHandler.h"
 #include "io/MorphologyLoader.h"
 #include "io/SynapseLoader.h"
 #include "log.h"
@@ -61,6 +62,7 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
                       &morphologyAttributes = _morphologyAttributes] {
                         return std::make_unique<CircuitLoader>(
                             scene, params.getApplicationParameters(),
+                            params.getAnimationParameters(),
                             circuitAttributes, morphologyAttributes);
                     }));
 

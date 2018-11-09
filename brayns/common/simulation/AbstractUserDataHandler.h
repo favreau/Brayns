@@ -18,8 +18,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef ABSTRACTSIMULATIONHANDLER_H
-#define ABSTRACTSIMULATIONHANDLER_H
+#ifndef ABSTRACTUSERDATAHANDLER_H
+#define ABSTRACTUSERDATAHANDLER_H
 
 #include <brayns/api.h>
 #include <brayns/common/types.h>
@@ -30,21 +30,21 @@ namespace brayns
  * @brief The AbstractSimulationHandler class handles simulation frames for the
  * current circuit
  */
-class AbstractSimulationHandler
+class AbstractUserDataHandler
 {
 public:
     /**
      * @brief Default constructor
      * @param geometryParameters Geometry parameters
      */
-    AbstractSimulationHandler();
+    AbstractUserDataHandler();
 
     /**
      * @brief Default desctuctor
      */
-    virtual ~AbstractSimulationHandler();
+    virtual ~AbstractUserDataHandler();
 
-    AbstractSimulationHandler& operator=(const AbstractSimulationHandler& rhs);
+    AbstractUserDataHandler& operator=(const AbstractUserDataHandler& rhs);
 
     /**
     * @brief Attaches a memory mapped file to the scene so that renderers can
@@ -55,7 +55,7 @@ public:
     * @param cacheFile File containing the simulation values
     * @return True if the file was successfully attached, false otherwise
     */
-    BRAYNS_API bool attachSimulationToCacheFile(const std::string& cacheFile);
+    BRAYNS_API bool attachUserDataToCacheFile(const std::string& cacheFile);
 
     /**
     * @brief Writes the header to a stream. The header contains the number of
@@ -124,4 +124,4 @@ protected:
     floats _frameData;
 };
 }
-#endif // ABSTRACTSIMULATIONHANDLER_H
+#endif // ABSTRACTUSERDATAHANDLER_H

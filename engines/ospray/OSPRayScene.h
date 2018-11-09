@@ -62,7 +62,7 @@ public:
     OSPModel getModel() { return _rootModel; }
     OSPModel simulationModelImpl() { return _rootSimulationModel; }
     OSPData lightData() { return _ospLightData; }
-    OSPData simulationData() { return _ospSimulationData; }
+    OSPData userData() { return _ospUserData; }
     OSPData transferFunctionDiffuseData()
     {
         return _ospTransferFunctionDiffuseData;
@@ -73,7 +73,7 @@ public:
     }
 
 private:
-    void _commitSimulationData();
+    void _commitUserData();
     bool _commitVolumeData();
 
     OSPModel _rootModel{nullptr};
@@ -82,7 +82,7 @@ private:
     std::vector<OSPLight> _ospLights;
     OSPData _ospLightData{nullptr};
 
-    OSPData _ospSimulationData{nullptr};
+    OSPData _ospUserData{nullptr};
 
     OSPTransferFunction _ospTransferFunction{nullptr};
 

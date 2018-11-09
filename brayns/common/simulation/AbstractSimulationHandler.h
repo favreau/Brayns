@@ -21,7 +21,8 @@
 #ifndef ABSTRACTSIMULATIONHANDLER_H
 #define ABSTRACTSIMULATIONHANDLER_H
 
-#include "../api/CircuitExplorerParams.h"
+#include <brayns/api.h>
+#include <brayns/common/types.h>
 
 namespace brayns
 {
@@ -36,7 +37,7 @@ public:
      * @brief Default constructor
      * @param geometryParameters Geometry parameters
      */
-    AbstractSimulationHandler(const CircuitAttributes& circuitAttributes);
+    AbstractSimulationHandler();
 
     /**
      * @brief Default desctuctor
@@ -54,7 +55,7 @@ public:
     * @param cacheFile File containing the simulation values
     * @return True if the file was successfully attached, false otherwise
     */
-    bool attachSimulationToCacheFile(const std::string& cacheFile);
+    BRAYNS_API bool attachSimulationToCacheFile(const std::string& cacheFile);
 
     /**
     * @brief Writes the header to a stream. The header contains the number of
@@ -62,14 +63,14 @@ public:
     *        size.
     * @param stream Stream where the header should be written
     */
-    void writeHeader(std::ofstream& stream);
+    BRAYNS_API void writeHeader(std::ofstream& stream);
 
     /**
     * @brief Writes a frame to a stream. A frame is a set of float values.
     * @param stream Stream where the header should be written
     * @param values Frame values
     */
-    void writeFrame(std::ofstream& stream, const std::vector<float>& values);
+    BRAYNS_API void writeFrame(std::ofstream& stream, const floats& values);
 
     /** @return the current loaded frame for the simulation. */
     uint32_t getCurrentFrame() const { return _currentFrame; }
@@ -77,7 +78,11 @@ public:
      * @brief returns a void pointer to the simulation data for the given frame
      * or nullptr if the frame is not loaded yet.
      */
-    virtual void* getFrameData(uint32_t) { return _frameData.data(); }
+    virtual void* getFrameData(uint32_t frame BRAYNS_UNUSED)
+    {
+        return _frameData.data();
+    }
+
     /**
      * @brief getFrameSize return the size of the current simulation frame
      */
@@ -107,7 +112,6 @@ public:
 protected:
     uint32_t _getBoundedFrame(const uint32_t frame) const;
 
-    const CircuitAttributes& _circuitAttributes;
     uint32_t _currentFrame{std::numeric_limits<uint32_t>::max()};
     uint32_t _nbFrames{0};
     uint64_t _frameSize{0};
@@ -117,7 +121,7 @@ protected:
     uint64_t _headerSize{0};
     void* _memoryMapPtr{nullptr};
     int _cacheFileDescriptor{-1};
-    std::vector<float> _frameData;
+    floats _frameData;
 };
 }
 #endif // ABSTRACTSIMULATIONHANDLER_H

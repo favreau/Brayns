@@ -26,9 +26,6 @@
 #include <vector>
 
 /** Simulation handlers */
-class AbstractSimulationHandler;
-using AbstractSimulationHandlerPtr = std::shared_ptr<AbstractSimulationHandler>;
-
 class CircuitSimulationHandler;
 using CircuitSimulationHandlerPtr = std::shared_ptr<CircuitSimulationHandler>;
 

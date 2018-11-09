@@ -102,6 +102,9 @@ class Model;
 using ModelPtr = std::unique_ptr<Model>;
 using ModelMetadata = std::map<std::string, std::string>;
 
+class AbstractSimulationHandler;
+using AbstractSimulationHandlerPtr = std::shared_ptr<AbstractSimulationHandler>;
+
 class Transformation;
 using Transformations = std::vector<Transformation>;
 

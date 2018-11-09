@@ -109,9 +109,6 @@ struct CircuitAttributes
     bool meshTransformation{false};
     std::string targets;
     std::string report;
-    double startSimulationTime{0};
-    double endSimulationTime{std::numeric_limits<float>::max()};
-    double simulationStep{0};
     std::vector<double> simulationValueRange{
         std::numeric_limits<double>::max(), std::numeric_limits<double>::min()};
     size_t simulationHistogramSize{128};

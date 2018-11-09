@@ -151,8 +151,9 @@ public:
                 try
                 {
                     auto handler = std::make_shared<CircuitSimulationHandler>(
-                        _circuitAttributes,
                         bc.getReportSource(_circuitAttributes.report), allGids);
+                    _parent._scene.setSimulationHandler(handler);
+
                     compartmentReport = handler->getCompartmentReport();
                     // Only keep simulated GIDs
                     if (compartmentReport)
@@ -510,7 +511,9 @@ CircuitLoader::CircuitLoader(
 {
 }
 
-CircuitLoader::~CircuitLoader() {}
+CircuitLoader::~CircuitLoader()
+{
+}
 
 std::set<std::string> CircuitLoader::getSupportedDataTypes()
 {

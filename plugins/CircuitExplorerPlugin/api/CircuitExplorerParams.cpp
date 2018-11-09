@@ -166,9 +166,6 @@ bool from_json(CircuitAttributes& param, const std::string& payload)
         FROM_JSON(param, js, meshTransformation);
         FROM_JSON(param, js, targets);
         FROM_JSON(param, js, report);
-        FROM_JSON(param, js, startSimulationTime);
-        FROM_JSON(param, js, endSimulationTime);
-        FROM_JSON(param, js, simulationStep);
         FROM_JSON(param, js, simulationValueRange);
         FROM_JSON(param, js, simulationHistogramSize);
         FROM_JSON(param, js, randomSeed);

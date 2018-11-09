@@ -21,10 +21,11 @@
 #ifndef CIRCUITSIMULATIONHANDLER_H
 #define CIRCUITSIMULATIONHANDLER_H
 
-#include "AbstractSimulationHandler.h"
+#include "../api/CircuitExplorerParams.h"
 
 #include <brayns/api.h>
 #include <brayns/common/scene/Scene.h>
+#include <brayns/common/simulation/AbstractSimulationHandler.h>
 #include <brayns/common/types.h>
 #include <brion/brion.h>
 
@@ -45,8 +46,7 @@ public:
      * @param reportSource path to report source
      * @param gids GIDS to load
      */
-    CircuitSimulationHandler(const CircuitAttributes& circuitAttributes,
-                             const brion::URI& reportSource,
+    CircuitSimulationHandler(const brion::URI& reportSource,
                              const brion::GIDSet& gids,
                              const bool synchronousMode = false);
     ~CircuitSimulationHandler();

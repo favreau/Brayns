@@ -7,6 +7,7 @@ set(BRAYNSCOMMON_SOURCES
   ImageManager.cpp
   engine/Engine.cpp
   input/KeyboardHandler.cpp
+  simulation/AbstractSimulationHandler.cpp
   transferFunction/TransferFunction.cpp
   camera/AbstractManipulator.cpp
   camera/Camera.cpp
@@ -40,6 +41,7 @@ set(BRAYNSCOMMON_PUBLIC_HEADERS
   Statistics.h
   Timer.h
   Transformation.h
+  simulation/AbstractSimulationHandler.h
   camera/AbstractManipulator.h
   camera/Camera.h
   camera/FlyingModeManipulator.h

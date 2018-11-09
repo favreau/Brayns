@@ -239,6 +239,18 @@ public:
      */
     void buildEnvironmentMap();
 
+    /** Simulation handlers */
+    void setSimulationHandler(
+        const AbstractSimulationHandlerPtr simulationHandler)
+    {
+        _simulationHandler = simulationHandler;
+    }
+
+    AbstractSimulationHandlerPtr getSimulationHandler()
+    {
+        return _simulationHandler;
+    }
+
 protected:
     void _computeBounds();
 
@@ -258,6 +270,8 @@ protected:
 
     LoaderRegistry _loaderRegistry;
     Boxd _bounds;
+
+    AbstractSimulationHandlerPtr _simulationHandler{nullptr};
 
 private:
     SERIALIZATION_FRIEND(Scene)

@@ -25,22 +25,17 @@
 #include <servus/types.h>
 
 CircuitSimulationHandler::CircuitSimulationHandler(
-    const CircuitAttributes& circuitAttributes, const brion::URI& reportSource,
-    const brion::GIDSet& gids, const bool synchronousMode)
-    : brayns::AbstractSimulationHandler(circuitAttributes)
+    const brion::URI& reportSource, const brion::GIDSet& gids,
+    const bool synchronousMode)
+    : brayns::AbstractSimulationHandler()
     , _synchronousMode(synchronousMode)
     , _compartmentReport(
           new brion::CompartmentReport(reportSource, brion::MODE_READ, gids))
 {
     // Load simulation information from compartment reports
-    const auto reportStartTime = _compartmentReport->getStartTime();
-    const auto reportEndTime = _compartmentReport->getEndTime();
-    const auto reportTimeStep = _compartmentReport->getTimestep();
-
-    _startTime =
-        std::max(reportStartTime, circuitAttributes.startSimulationTime);
-    _endTime = std::min(reportEndTime, circuitAttributes.endSimulationTime);
-    _dt = std::max(reportTimeStep, circuitAttributes.simulationStep);
+    _startTime = _compartmentReport->getStartTime();
+    _endTime = _compartmentReport->getEndTime();
+    _dt = _compartmentReport->getTimestep();
     _unit = _compartmentReport->getTimeUnit();
     _frameSize = _compartmentReport->getFrameSize();
     _nbFrames = (_endTime - _startTime) / _dt;
@@ -49,13 +44,10 @@ CircuitSimulationHandler::CircuitSimulationHandler(
                 << std::endl;
     BRAYNS_INFO << "Simulation information" << std::endl;
     BRAYNS_INFO << "----------------------" << std::endl;
-    BRAYNS_INFO << "Start frame          : " << _startTime << "/"
-                << reportStartTime << std::endl;
-    BRAYNS_INFO << "End frame            : " << _endTime << "/" << reportEndTime
-                << std::endl;
-    BRAYNS_INFO << "Steps between frames : " << _dt << "/" << reportTimeStep
-                << std::endl;
-    BRAYNS_INFO << "Number of frames : " << _nbFrames << std::endl;
+    BRAYNS_INFO << "Start frame          : " << _startTime << std::endl;
+    BRAYNS_INFO << "End frame            : " << _endTime << std::endl;
+    BRAYNS_INFO << "Steps between frames : " << _dt << std::endl;
+    BRAYNS_INFO << "Number of frames     : " << _nbFrames << std::endl;
     BRAYNS_INFO << "-----------------------------------------------------------"
                 << std::endl;
 }

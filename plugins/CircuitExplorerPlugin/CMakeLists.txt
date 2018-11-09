@@ -11,12 +11,10 @@ endif()
 
 include(Common)
 
-#common_find_package(Brayns REQUIRED)
 common_find_package(Brion REQUIRED)
 common_find_package_post()
 
 set(${PLUGIN_NAME}_SOURCES
-  io/AbstractSimulationHandler.cpp
   io/CircuitSimulationHandler.cpp
   io/CircuitLoader.cpp
   io/BrickLoader.cpp
@@ -27,7 +25,6 @@ set(${PLUGIN_NAME}_SOURCES
 )
 
 set(${PLUGIN_NAME}_PUBLIC_HEADERS
-  io/AbstractSimulationHandler.h
   io/CircuitSimulationHandler.h
   io/BrickLoader.h
   io/CircuitLoader.h

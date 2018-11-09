@@ -30,6 +30,7 @@
 #include <brayns/common/light/PointLight.h>
 #include <brayns/common/log.h>
 #include <brayns/common/scene/Model.h>
+#include <brayns/common/simulation/AbstractSimulationHandler.h>
 
 #include <brayns/parameters/GeometryParameters.h>
 #include <brayns/parameters/ParametersManager.h>
@@ -341,8 +342,6 @@ bool OSPRayScene::_commitVolumeData()
 
 void OSPRayScene::_commitSimulationData()
 {
-//    !!!TODO!!!
-#if 0
     if (!_simulationHandler)
         return;
 
@@ -368,7 +367,6 @@ void OSPRayScene::_commitSimulationData()
     ospCommit(_ospSimulationData);
 
     markModified(false); // triggers framebuffer clear
-#endif
 }
 
 ModelPtr OSPRayScene::createModel() const

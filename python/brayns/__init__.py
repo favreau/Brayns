@@ -26,6 +26,9 @@
 
 from .client import Client
 from .rpcclient import RpcClient
+from .circuit_explorer import CircuitExplorer
+from .diffuse_tensor_imaging import DiffuseTensorImaging
+from .graph_explorer import GraphExplorer
 from .version import VERSION as __version__
 
-__all__ = ['Client', 'RpcClient']
+__all__ = ['Client', 'RpcClient', 'CircuitExplorer', 'DiffuseTensorImaging', 'GraphExplorer']

@@ -20,6 +20,7 @@
 
 #include "BrickLoader.h"
 #include "MorphologyLoader.h"
+#include "log.h"
 #include "types.h"
 
 #include <brayns/common/material/Material.h>
@@ -38,9 +39,7 @@ BrickLoader::BrickLoader(brayns::Scene& scene)
 {
 }
 
-BrickLoader::~BrickLoader()
-{
-}
+BrickLoader::~BrickLoader() {}
 
 std::set<std::string> BrickLoader::getSupportedDataTypes()
 {
@@ -70,10 +69,10 @@ brayns::ModelDescriptorPtr BrickLoader::importFromFile(
     const std::string& filename, const size_t /*index*/,
     const size_t /*materialID*/)
 {
-    BRAYNS_INFO << "Loading model from cache file: " << filename << std::endl;
+    PLUGIN_INFO << "Loading model from cache file: " << filename << std::endl;
     std::ifstream file(filename, std::ios::in | std::ios::binary);
     if (!file.good())
-        BRAYNS_THROW(
+        PLUGIN_THROW(
             std::runtime_error("Could not open cache file " + filename));
 
     // File version
@@ -81,7 +80,7 @@ brayns::ModelDescriptorPtr BrickLoader::importFromFile(
     file.read((char*)&version, sizeof(size_t));
 
     if (version != CACHE_VERSION)
-        BRAYNS_THROW(std::runtime_error(
+        PLUGIN_THROW(std::runtime_error(
             "Only version " + std::to_string(CACHE_VERSION) + " is supported"));
 
     auto model = _scene.createModel();
@@ -308,10 +307,10 @@ brayns::ModelDescriptorPtr BrickLoader::importFromFile(
 void BrickLoader::exportToFile(const brayns::ModelDescriptorPtr modelDescriptor,
                                const std::string& filename)
 {
-    BRAYNS_INFO << "Saving model to cache file: " << filename << std::endl;
+    PLUGIN_INFO << "Saving model to cache file: " << filename << std::endl;
     std::ofstream file(filename, std::ios::out | std::ios::binary);
     if (!file.good())
-        BRAYNS_THROW(
+        PLUGIN_THROW(
             std::runtime_error("Could not open cache file " + filename));
 
     const size_t version = CACHE_VERSION;

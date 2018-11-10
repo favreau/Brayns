@@ -22,6 +22,7 @@
 #include "CircuitLoaderCommon.h"
 #include "CircuitSimulationHandler.h"
 #include "MorphologyLoader.h"
+#include "log.h"
 #include "types.h"
 
 #include <brayns/common/scene/Model.h>
@@ -32,7 +33,7 @@
 
 #include <boost/tokenizer.hpp>
 
-#if BRAYNS_USE_ASSIMP
+#if PLUGIN_USE_ASSIMP
 #include <brayns/io/MeshLoader.h>
 #endif
 
@@ -130,12 +131,12 @@ public:
 
                 if (gids.empty())
                 {
-                    BRAYNS_ERROR << "Target " << target
+                    PLUGIN_ERROR << "Target " << target
                                  << " does not contain any cells" << std::endl;
                     continue;
                 }
 
-                BRAYNS_INFO << "Target " << target << ": " << gids.size()
+                PLUGIN_INFO << "Target " << target << ": " << gids.size()
                             << " cells" << std::endl;
                 allGids.insert(gids.begin(), gids.end());
                 targetGIDOffsets.push_back(allGids.size());
@@ -166,7 +167,7 @@ public:
                 }
                 catch (const std::exception& e)
                 {
-                    BRAYNS_ERROR << e.what() << std::endl;
+                    PLUGIN_ERROR << e.what() << std::endl;
                 }
             }
 
@@ -241,7 +242,7 @@ public:
         }
         catch (const std::exception& error)
         {
-            BRAYNS_ERROR << "Failed to open " << source << ": " << error.what()
+            PLUGIN_ERROR << "Failed to open " << source << ": " << error.what()
                          << std::endl;
             return {};
         }
@@ -298,19 +299,19 @@ private:
             if (index < electrophysiologyTypes.size())
                 materialId = electrophysiologyTypes[index];
             else
-                BRAYNS_DEBUG << "Failed to get neuron E-type" << std::endl;
+                PLUGIN_DEBUG << "Failed to get neuron E-type" << std::endl;
             break;
         case CircuitColorScheme::neuron_by_mtype:
             if (index < morphologyTypes.size())
                 materialId = morphologyTypes[index];
             else
-                BRAYNS_DEBUG << "Failed to get neuron M-type" << std::endl;
+                PLUGIN_DEBUG << "Failed to get neuron M-type" << std::endl;
             break;
         case CircuitColorScheme::neuron_by_layer:
             if (index < layerIds.size())
                 materialId = layerIds[index];
             else
-                BRAYNS_DEBUG << "Failed to get neuron layer" << std::endl;
+                PLUGIN_DEBUG << "Failed to get neuron layer" << std::endl;
             break;
         default:
             materialId = brayns::NO_MATERIAL;
@@ -338,7 +339,7 @@ private:
         {
             if (_circuitAttributes.colorScheme ==
                 CircuitColorScheme::neuron_by_layer)
-                BRAYNS_ERROR
+                PLUGIN_ERROR
                     << "Only MVD2 format is currently supported by Brion "
                        "circuits. Color scheme by layer not available for "
                        "this circuit"
@@ -356,7 +357,7 @@ private:
         std::stringstream gidsStr;
         for (const auto& gid : gids)
             gidsStr << gid << " ";
-        BRAYNS_DEBUG << "Loaded GIDs: " << gidsStr.str() << std::endl;
+        PLUGIN_DEBUG << "Loaded GIDs: " << gidsStr.str() << std::endl;
     }
 
     std::string _getMeshFilenameFromGID(const uint64_t gid) const
@@ -382,7 +383,7 @@ private:
                        const size_ts& electrophysiologyTypes
                            BRAYNS_UNUSED) const
     {
-#if BRAYNS_USE_ASSIMP
+#if PLUGIN_USE_ASSIMP
         brayns::MeshLoader meshLoader(
             _parent._scene, static_cast<brayns::GeometryQuality>(
                                 _morphologyAttributes.geometryQuality));
@@ -418,7 +419,7 @@ private:
             ++meshIndex;
         }
         if (loadingFailures != 0)
-            BRAYNS_WARN << "Failed to import " << loadingFailures << " meshes"
+            PLUGIN_WARN << "Failed to import " << loadingFailures << " meshes"
                         << std::endl;
         return true;
 #else
@@ -489,7 +490,7 @@ private:
 
         if (loadingFailures != 0)
         {
-            BRAYNS_ERROR << loadingFailures << " could not be loaded"
+            PLUGIN_ERROR << loadingFailures << " could not be loaded"
                          << std::endl;
             return false;
         }
@@ -516,9 +517,7 @@ CircuitLoader::CircuitLoader(
 {
 }
 
-CircuitLoader::~CircuitLoader()
-{
-}
+CircuitLoader::~CircuitLoader() {}
 
 std::set<std::string> CircuitLoader::getSupportedDataTypes()
 {

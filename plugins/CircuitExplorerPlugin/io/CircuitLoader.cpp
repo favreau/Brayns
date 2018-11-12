@@ -33,7 +33,7 @@
 
 #include <boost/tokenizer.hpp>
 
-#if PLUGIN_USE_ASSIMP
+#if BRAYNS_USE_ASSIMP
 #include <brayns/io/MeshLoader.h>
 #endif
 
@@ -383,15 +383,15 @@ private:
                        const size_ts& electrophysiologyTypes
                            BRAYNS_UNUSED) const
     {
-#if PLUGIN_USE_ASSIMP
+        const auto meshedMorphologiesFolder = _circuitAttributes.meshFolder;
+        if (meshedMorphologiesFolder.empty())
+            return true;
+#if BRAYNS_USE_ASSIMP
         brayns::MeshLoader meshLoader(
             _parent._scene, static_cast<brayns::GeometryQuality>(
                                 _morphologyAttributes.geometryQuality));
 
         size_t loadingFailures = 0;
-        const auto meshedMorphologiesFolder = _circuitAttributes.meshFolder;
-        if (meshedMorphologiesFolder.empty())
-            return true;
 
         size_t meshIndex = 0;
         // Loading meshes is currently sequential. TODO: Make it parallel!!!
@@ -517,7 +517,9 @@ CircuitLoader::CircuitLoader(
 {
 }
 
-CircuitLoader::~CircuitLoader() {}
+CircuitLoader::~CircuitLoader()
+{
+}
 
 std::set<std::string> CircuitLoader::getSupportedDataTypes()
 {

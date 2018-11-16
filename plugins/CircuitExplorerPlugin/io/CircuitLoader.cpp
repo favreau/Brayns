@@ -457,13 +457,15 @@ private:
                     ParallelModelContainer modelContainer;
                     const auto& uri = uris[morphologyIndex];
 
+                    const auto materialId = _getMaterialFromCircuitAttributes(
+                        morphologyIndex, brayns::NO_MATERIAL, targetGIDOffsets,
+                        layerIds, morphologyTypes, electrophysiologyTypes,
+                        false);
+
+                    morphLoader.setDefaultMaterialId(materialId);
+
                     if (!morphLoader._importMorphology(
                             uri, morphologyIndex,
-                            std::bind(&Impl::_getMaterialFromCircuitAttributes,
-                                      this, morphologyIndex,
-                                      brayns::NO_MATERIAL, targetGIDOffsets,
-                                      layerIds, morphologyTypes,
-                                      electrophysiologyTypes, false),
                             transformations[morphologyIndex], compartmentReport,
                             modelContainer))
 #pragma omp atomic

@@ -91,10 +91,10 @@ bool from_json(MaterialDescriptor& param, const std::string& payload)
     try
     {
         auto js = nlohmann::json::parse(payload);
-        FROM_JSON(param, js, modelId);
-        FROM_JSON(param, js, materialId);
-        FROM_JSON(param, js, diffuseColor);
-        FROM_JSON(param, js, specularColor);
+        FROM_JSON(param, js, modelIds);
+        FROM_JSON(param, js, materialIds);
+        FROM_JSON(param, js, diffuseColors);
+        FROM_JSON(param, js, specularColors);
         FROM_JSON(param, js, specularExponent);
         FROM_JSON(param, js, reflectionIndex);
         FROM_JSON(param, js, opacity);

@@ -76,49 +76,12 @@ public:
     brayns::Vector3f importMorphology(
         const servus::URI& source, brayns::Model& model, const uint64_t index,
         const brayns::Matrix4f& transformation,
-        const size_t defaultMaterialId = brayns::NO_MATERIAL,
         CompartmentReportPtr compartmentReport = nullptr) const
     {
         brayns::Vector3f somaPosition;
-        auto materialFunc = [defaultMaterialId,
-                             colorScheme = _morphologyAttributes.colorScheme,
-                             index](auto sectionType) {
-            if (defaultMaterialId != brayns::NO_MATERIAL)
-                return defaultMaterialId;
-
-            size_t materialId = 0;
-            switch (colorScheme)
-            {
-            case MorphologyColorScheme::neuron_by_segment_type:
-                switch (sectionType)
-                {
-                case brain::neuron::SectionType::soma:
-                    materialId = 1;
-                    break;
-                case brain::neuron::SectionType::axon:
-                    materialId = 2;
-                    break;
-                case brain::neuron::SectionType::dendrite:
-                    materialId = 3;
-                    break;
-                case brain::neuron::SectionType::apicalDendrite:
-                    materialId = 4;
-                    break;
-                default:
-                    materialId = 0;
-                    break;
-                }
-                break;
-            default:
-                materialId = 0;
-            }
-            return materialId;
-        };
-
         ParallelModelContainer modelContainer;
-        somaPosition =
-            importMorphology(source, index, materialFunc, transformation,
-                             compartmentReport, modelContainer);
+        somaPosition = importMorphology(source, index, transformation,
+                                        compartmentReport, modelContainer);
 
         modelContainer.addSpheresToModel(model);
         modelContainer.addCylindersToModel(model);
@@ -131,7 +94,6 @@ public:
 
     brayns::Vector3f importMorphology(const servus::URI& source,
                                       const uint64_t index,
-                                      MaterialFunc materialFunc,
                                       const brayns::Matrix4f& transformation,
                                       CompartmentReportPtr compartmentReport,
                                       ParallelModelContainer& model) const
@@ -141,17 +103,20 @@ public:
         brayns::Vector3f somaPosition = transformation.getTranslation();
         if (morphologySectionTypes ==
             static_cast<size_t>(MorphologySectionType::soma))
-            somaPosition =
-                _importMorphologyAsPoint(index, materialFunc, transformation,
-                                         compartmentReport, model);
-        else if (_morphologyAttributes.realisticSoma)
-            somaPosition = _createRealisticSoma(source, materialFunc,
-                                                transformation, model);
-        else
-            somaPosition = _importMorphologyFromURI(source, index, materialFunc,
-                                                    transformation,
+            somaPosition = _importMorphologyAsPoint(index, transformation,
                                                     compartmentReport, model);
+        else if (_morphologyAttributes.realisticSoma)
+            somaPosition = _createRealisticSoma(source, transformation, model);
+        else
+            somaPosition =
+                _importMorphologyFromURI(source, index, transformation,
+                                         compartmentReport, model);
         return somaPosition;
+    }
+
+    void setDefaultMaterialId(const size_t materialId)
+    {
+        _defaultMaterialId = materialId;
     }
 
 private:
@@ -225,8 +190,7 @@ private:
      * @return Position of the soma
      */
     brayns::Vector3f _importMorphologyAsPoint(
-        const uint64_t index, MaterialFunc materialFunc,
-        const brayns::Matrix4f& transformation,
+        const uint64_t index, const brayns::Matrix4f& transformation,
         CompartmentReportPtr compartmentReport,
         ParallelModelContainer& model) const
     {
@@ -237,7 +201,8 @@ private:
         const auto radius = _morphologyAttributes.radiusMultiplier;
         const auto textureCoordinates = _getIndexAsTextureCoordinates(offset);
         const auto somaPosition = transformation.getTranslation();
-        const auto materialId = materialFunc(brain::neuron::SectionType::soma);
+        const auto materialId =
+            _getMaterialIdFromColorScheme(brain::neuron::SectionType::soma);
         model.addSphere(materialId,
                         {somaPosition, radius, 0.f, textureCoordinates});
         return somaPosition;
@@ -255,8 +220,7 @@ private:
      * @return Position of the soma
      */
     brayns::Vector3f _createRealisticSoma(
-        const servus::URI& uri, MaterialFunc materialFunc,
-        const brayns::Matrix4f& transformation,
+        const servus::URI& uri, const brayns::Matrix4f& transformation,
         ParallelModelContainer& model) const
     {
         brayns::Vector3f somaPosition;
@@ -313,7 +277,8 @@ private:
         const auto gridSize = _morphologyAttributes.metaballsGridSize;
         const auto threshold = _morphologyAttributes.metaballsThreshold;
         brayns::MetaballsGenerator metaballsGenerator;
-        const auto materialId = materialFunc(brain::neuron::SectionType::soma);
+        const auto materialId =
+            _getMaterialIdFromColorScheme(brain::neuron::SectionType::soma);
         metaballsGenerator.generateMesh(metaballs, gridSize, threshold,
                                         materialId, model.trianglesMeshes);
         return somaPosition;
@@ -419,35 +384,34 @@ private:
 
             // Function for connecting overlapping geometries with current
             // bifurcation
-            const auto connectGeometriesToBifurcation =
-                [&](const std::vector<size_t>& geometries) {
-                    const auto& bifGeom =
-                        sdfMorphologyData.geometries[bifurcationId];
+            const auto connectGeometriesToBifurcation = [&](
+                const std::vector<size_t>& geometries) {
+                const auto& bifGeom =
+                    sdfMorphologyData.geometries[bifurcationId];
 
-                    for (size_t geomIdx : geometries)
+                for (size_t geomIdx : geometries)
+                {
+                    // Do not blend yourself
+                    if (geomIdx == bifurcationId)
+                        continue;
+
+                    const auto& geom = sdfMorphologyData.geometries[geomIdx];
+                    const float dist0 =
+                        geom.p0.squared_distance(bifGeom.center);
+                    const float dist1 =
+                        geom.p1.squared_distance(bifGeom.center);
+                    const float radiusSum = geom.radius + bifGeom.radius;
+                    const float radiusSumSq = radiusSum * radiusSum;
+
+                    if (dist0 < radiusSumSq || dist1 < radiusSumSq)
                     {
-                        // Do not blend yourself
-                        if (geomIdx == bifurcationId)
-                            continue;
-
-                        const auto& geom =
-                            sdfMorphologyData.geometries[geomIdx];
-                        const float dist0 =
-                            geom.p0.squared_distance(bifGeom.center);
-                        const float dist1 =
-                            geom.p1.squared_distance(bifGeom.center);
-                        const float radiusSum = geom.radius + bifGeom.radius;
-                        const float radiusSumSq = radiusSum * radiusSum;
-
-                        if (dist0 < radiusSumSq || dist1 < radiusSumSq)
-                        {
-                            sdfMorphologyData.neighbours[bifurcationId].insert(
-                                geomIdx);
-                            sdfMorphologyData.neighbours[geomIdx].insert(
-                                bifurcationId);
-                        }
+                        sdfMorphologyData.neighbours[bifurcationId].insert(
+                            geomIdx);
+                        sdfMorphologyData.neighbours[geomIdx].insert(
+                            bifurcationId);
                     }
-                };
+                }
+            };
 
             // Connect all child sections
             for (const size_t sectionChild : mts.sectionChildren[section])
@@ -661,12 +625,11 @@ private:
      */
     void _addSomaGeometry(const brain::neuron::Soma& soma,
                           const brayns::Vector3f& translation, uint64_t offset,
-                          bool useSDFGeometries, MaterialFunc materialFunc,
-                          ParallelModelContainer& model,
+                          bool useSDFGeometries, ParallelModelContainer& model,
                           SDFMorphologyData& sdfMorphologyData) const
     {
         const size_t materialId =
-            materialFunc(brain::neuron::SectionType::soma);
+            _getMaterialIdFromColorScheme(brain::neuron::SectionType::soma);
         const auto somaPosition = soma.getCentroid() + translation;
         const auto somaRadius = _getCorrectedRadius(soma.getMeanRadius());
         const auto textureCoordinates = _getIndexAsTextureCoordinates(offset);
@@ -722,10 +685,9 @@ private:
         {
             if (isDone)
             {
-                // Since our cone pills already give us a sphere
-                // at the end points we don't need to add any
-                // sphere between segments except at the
-                // bifurcation
+                // Since our cone pills already give us a sphere at the end
+                // points we don't need to add any sphere between segments
+                // except at the bifurcation
 
                 const size_t idx =
                     _addSDFGeometry(sdfMorphologyData,
@@ -792,7 +754,7 @@ private:
      * @return Position of the soma
      */
     brayns::Vector3f _importMorphologyFromURI(
-        const servus::URI& uri, const uint64_t index, MaterialFunc materialFunc,
+        const servus::URI& uri, const uint64_t index,
         const brayns::Matrix4f& transformation,
         CompartmentReportPtr compartmentReport,
         ParallelModelContainer& model) const
@@ -827,8 +789,7 @@ private:
                 static_cast<size_t>(MorphologySectionType::soma))
         {
             _addSomaGeometry(morphology.getSoma(), translation, offset,
-                             useSDFGeometries, materialFunc, model,
-                             sdfMorphologyData);
+                             useSDFGeometries, model, sdfMorphologyData);
         }
 
         // Only the first one or two axon sections are reported, so find the
@@ -867,7 +828,8 @@ private:
             if (section.getType() == brain::neuron::SectionType::soma)
                 continue;
 
-            const auto materialId = materialFunc(section.getType());
+            const auto materialId =
+                _getMaterialIdFromColorScheme(section.getType());
             const auto& samples = section.getSamples();
             if (samples.empty())
                 continue;
@@ -1019,8 +981,43 @@ private:
         return somaPosition;
     }
 
-private:
+    size_t _getMaterialIdFromColorScheme(
+        const brain::neuron::SectionType& sectionType) const
+    {
+        if (_defaultMaterialId != brayns::NO_MATERIAL)
+            return _defaultMaterialId;
+
+        size_t materialId = 0;
+        switch (_morphologyAttributes.colorScheme)
+        {
+        case MorphologyColorScheme::neuron_by_segment_type:
+            switch (sectionType)
+            {
+            case brain::neuron::SectionType::soma:
+                materialId = 1;
+                break;
+            case brain::neuron::SectionType::axon:
+                materialId = 2;
+                break;
+            case brain::neuron::SectionType::dendrite:
+                materialId = 3;
+                break;
+            case brain::neuron::SectionType::apicalDendrite:
+                materialId = 4;
+                break;
+            default:
+                materialId = 0;
+                break;
+            }
+            break;
+        default:
+            materialId = 0;
+        }
+        return materialId;
+    }
+
     const MorphologyAttributes& _morphologyAttributes;
+    size_t _defaultMaterialId{brayns::NO_MATERIAL};
 };
 
 MorphologyLoader::MorphologyLoader(
@@ -1030,7 +1027,9 @@ MorphologyLoader::MorphologyLoader(
 {
 }
 
-MorphologyLoader::~MorphologyLoader() {}
+MorphologyLoader::~MorphologyLoader()
+{
+}
 
 std::set<std::string> MorphologyLoader::getSupportedDataTypes()
 {
@@ -1048,7 +1047,6 @@ brayns::ModelDescriptorPtr MorphologyLoader::importFromFile(
     const std::string& fileName, const size_t index,
     const size_t defaultMaterialId BRAYNS_UNUSED)
 {
-    const auto modelName = boost::filesystem::basename({fileName});
     auto model = _scene.createModel();
     brayns::Vector3f somaPosition =
         importMorphology(servus::URI(fileName), *model, index, {});
@@ -1070,10 +1068,15 @@ brayns::Vector3f MorphologyLoader::importMorphology(
 }
 
 brayns::Vector3f MorphologyLoader::_importMorphology(
-    const servus::URI& source, const uint64_t index, MaterialFunc materialFunc,
+    const servus::URI& source, const uint64_t index,
     const brayns::Matrix4f& transformation,
     CompartmentReportPtr compartmentReport, ParallelModelContainer& model) const
 {
-    return _impl->importMorphology(source, index, materialFunc, transformation,
+    return _impl->importMorphology(source, index, transformation,
                                    compartmentReport, model);
+}
+
+void MorphologyLoader::setDefaultMaterialId(const size_t materialId)
+{
+    _impl->setDefaultMaterialId(materialId);
 }

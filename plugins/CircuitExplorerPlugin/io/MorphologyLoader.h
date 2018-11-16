@@ -71,18 +71,19 @@ public:
         const servus::URI& source, brayns::Model& model, const size_t index,
         const brayns::Matrix4f& transformation) const;
 
+    void setDefaultMaterialId(const size_t materialId);
+
 private:
     using CompartmentReportPtr = std::shared_ptr<brion::CompartmentReport>;
     using MaterialFunc = std::function<size_t(brain::neuron::SectionType)>;
     brayns::Vector3f _importMorphology(const servus::URI& source,
                                        const uint64_t index,
-                                       MaterialFunc materialFunc,
                                        const brayns::Matrix4f& transformation,
                                        CompartmentReportPtr compartmentReport,
                                        ParallelModelContainer& model) const;
     friend class CircuitLoader;
     class Impl;
-    std::unique_ptr<const Impl> _impl;
+    std::unique_ptr<Impl> _impl;
 };
 
 #endif // MORPHOLOGY_LOADER_H

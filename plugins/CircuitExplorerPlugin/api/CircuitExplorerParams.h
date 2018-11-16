@@ -50,10 +50,10 @@ bool from_json(SaveModelToCache& modelSave, const std::string& payload);
 
 struct MaterialDescriptor
 {
-    size_t modelId;
-    size_t materialId;
-    std::vector<float> diffuseColor;
-    std::vector<float> specularColor;
+    std::vector<size_t> modelIds;
+    std::vector<size_t> materialIds;
+    std::vector<float> diffuseColors;
+    std::vector<float> specularColors;
     float specularExponent;
     float reflectionIndex;
     float opacity;

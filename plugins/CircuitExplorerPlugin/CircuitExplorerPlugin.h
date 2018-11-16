@@ -45,7 +45,7 @@ public:
     void preRender() final;
 
 private:
-    void _setMaterial(const MaterialDescriptor&);
+    void _setMaterials(const MaterialDescriptor&);
     void _setSynapseAttributes(const SynapseAttributes&);
     void _setCircuitAttributes(const CircuitAttributes&);
     void _setMorphologyAttributes(const MorphologyAttributes&);

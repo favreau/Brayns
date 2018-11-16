@@ -69,8 +69,8 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
     if (actionInterface)
     {
         actionInterface->registerNotification<MaterialDescriptor>(
-            "setMaterial",
-            [&](const MaterialDescriptor& param) { _setMaterial(param); });
+            "setMaterials",
+            [&](const MaterialDescriptor& param) { _setMaterials(param); });
 
         actionInterface->registerNotification<SynapseAttributes>(
             "setSynapsesAttributes", [&](const SynapseAttributes& param) {
@@ -105,63 +105,67 @@ void CircuitExplorerPlugin::preRender()
     _dirty = false;
 }
 
-void CircuitExplorerPlugin::_setMaterial(const MaterialDescriptor& md)
+void CircuitExplorerPlugin::_setMaterials(const MaterialDescriptor& md)
 {
-    try
+    for (const auto modelId : md.modelIds)
     {
-        auto modelDescriptor = _scene.getModel(md.modelId);
+        auto modelDescriptor = _scene.getModel(modelId);
         if (modelDescriptor)
         {
-            auto material =
-                modelDescriptor->getModel().getMaterial(md.materialId);
-            if (material)
-            {
-                material->setDiffuseColor({md.diffuseColor[0],
-                                           md.diffuseColor[1],
-                                           md.diffuseColor[2]});
-                material->setSpecularColor({md.specularColor[0],
-                                            md.specularColor[1],
-                                            md.specularColor[2]});
+            size_t id = 0;
+            for (const auto materialId : md.materialIds)
+                try
+                {
+                    auto material =
+                        modelDescriptor->getModel().getMaterial(materialId);
+                    if (material)
+                    {
+                        const size_t index = id * 3;
+                        material->setDiffuseColor(
+                            {md.diffuseColors[index],
+                             md.diffuseColors[index + 1],
+                             md.diffuseColors[index + 2]});
+                        material->setSpecularColor(
+                            {md.specularColors[index],
+                             md.specularColors[index + 1],
+                             md.specularColors[index + 2]});
 
-                material->setSpecularExponent(md.specularExponent);
-                material->setReflectionIndex(md.reflectionIndex);
-                material->setOpacity(md.opacity);
-                material->setRefractionIndex(md.refractionIndex);
-                material->setEmission(md.emission);
-                material->setGlossiness(md.glossiness);
-                material->setCastSimulationData(md.castSimulationData);
+                        material->setSpecularExponent(md.specularExponent);
+                        material->setReflectionIndex(md.reflectionIndex);
+                        material->setOpacity(md.opacity);
+                        material->setRefractionIndex(md.refractionIndex);
+                        material->setEmission(md.emission);
+                        material->setGlossiness(md.glossiness);
+                        material->setCastSimulationData(md.castSimulationData);
 
-                material->setShadingMode(brayns::MaterialShadingMode::none);
-                if (md.shadingMode == "diffuse")
-                    material->setShadingMode(
-                        brayns::MaterialShadingMode::diffuse);
-                else if (md.shadingMode == "electron")
-                    material->setShadingMode(
-                        brayns::MaterialShadingMode::electron);
-                else if (md.shadingMode == "cartoon")
-                    material->setShadingMode(
-                        brayns::MaterialShadingMode::cartoon);
-                else if (md.shadingMode == "electron-transparency")
-                    material->setShadingMode(
-                        brayns::MaterialShadingMode::electron_transparency);
+                        material->setShadingMode(
+                            brayns::MaterialShadingMode::none);
+                        if (md.shadingMode == "diffuse")
+                            material->setShadingMode(
+                                brayns::MaterialShadingMode::diffuse);
+                        else if (md.shadingMode == "electron")
+                            material->setShadingMode(
+                                brayns::MaterialShadingMode::electron);
+                        else if (md.shadingMode == "cartoon")
+                            material->setShadingMode(
+                                brayns::MaterialShadingMode::cartoon);
+                        else if (md.shadingMode == "electron-transparency")
+                            material->setShadingMode(
+                                brayns::MaterialShadingMode::
+                                    electron_transparency);
 
-                material->commit();
-            }
+                        material->commit();
+                    }
+                    ++id;
+                }
+                catch (const std::runtime_error& e)
+                {
+                    PLUGIN_INFO << e.what() << std::endl;
+                }
         }
         else
-            PLUGIN_ERROR << "Model " << md.modelId << " is not registered"
-                         << std::endl;
-        //        _dirty = true;
-    }
-    catch (const std::runtime_error& e)
-    {
-        PLUGIN_ERROR << e.what() << std::endl;
-    }
-    catch (...)
-    {
-        PLUGIN_ERROR
-            << "Unexpected exception occured in _updateMaterialFromJson"
-            << std::endl;
+            PLUGIN_INFO << "Model " << modelId << " is not registered"
+                        << std::endl;
     }
 }
 

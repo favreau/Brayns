@@ -78,19 +78,13 @@ STATICJSON_DECLARE_ENUM(brayns::GeometryQuality,
                         {"medium", brayns::GeometryQuality::medium},
                         {"high", brayns::GeometryQuality::high});
 
-STATICJSON_DECLARE_ENUM(
-    brayns::ColorScheme, {"none", brayns::ColorScheme::none},
-    {"neuron_by_id", brayns::ColorScheme::neuron_by_id},
-    {"neuron_by_type", brayns::ColorScheme::neuron_by_type},
-    {"neuron_by_segment_type", brayns::ColorScheme::neuron_by_segment_type},
-    {"neuron_by_layer", brayns::ColorScheme::neuron_by_layer},
-    {"neuron_by_mtype", brayns::ColorScheme::neuron_by_mtype},
-    {"neuron_by_etype", brayns::ColorScheme::neuron_by_etype},
-    {"neuron_by_target", brayns::ColorScheme::neuron_by_target},
-    {"protein_by_id", brayns::ColorScheme::protein_by_id},
-    {"protein_atoms", brayns::ColorScheme::protein_atoms},
-    {"protein_chains", brayns::ColorScheme::protein_chains},
-    {"protein_residues", brayns::ColorScheme::protein_residues});
+STATICJSON_DECLARE_ENUM(brayns::ColorScheme,
+                        {"none", brayns::ColorScheme::none},
+                        {"protein_by_id", brayns::ColorScheme::protein_by_id},
+                        {"protein_atoms", brayns::ColorScheme::protein_atoms},
+                        {"protein_chains", brayns::ColorScheme::protein_chains},
+                        {"protein_residues",
+                         brayns::ColorScheme::protein_residues});
 
 STATICJSON_DECLARE_ENUM(brayns::MemoryMode,
                         {"shared", brayns::MemoryMode::shared},

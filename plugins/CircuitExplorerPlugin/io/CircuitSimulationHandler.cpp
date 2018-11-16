@@ -40,7 +40,8 @@ CircuitSimulationHandler::CircuitSimulationHandler(
 {
     // Load simulation information from compartment reports
     _animationParameters.setStart(_compartmentReport->getStartTime());
-    _animationParameters.setEnd(_compartmentReport->getEndTime());
+    _animationParameters.setEnd(_compartmentReport->getEndTime() /
+                                _compartmentReport->getTimestep());
     _animationParameters.setDt(_compartmentReport->getTimestep());
     _animationParameters.setUnit(_compartmentReport->getTimeUnit());
 
@@ -64,9 +65,7 @@ CircuitSimulationHandler::CircuitSimulationHandler(
                 << std::endl;
 }
 
-CircuitSimulationHandler::~CircuitSimulationHandler()
-{
-}
+CircuitSimulationHandler::~CircuitSimulationHandler() {}
 
 bool CircuitSimulationHandler::isReady() const
 {
@@ -88,10 +87,12 @@ void* CircuitSimulationHandler::getFrameData(const uint32_t frame)
 
 void CircuitSimulationHandler::_triggerLoading(const uint32_t frame)
 {
-    uint32_t timestamp =
+    float timestamp =
         _animationParameters.getStart() + frame * _animationParameters.getDt();
-    timestamp = std::max(_animationParameters.getStart(), timestamp);
-    timestamp = std::min(_animationParameters.getEnd(), timestamp);
+    timestamp = std::max(static_cast<float>(_animationParameters.getStart()),
+                         timestamp);
+    timestamp =
+        std::min(static_cast<float>(_animationParameters.getEnd()), timestamp);
 
     if (_currentFrameFuture.valid())
         _currentFrameFuture.wait();

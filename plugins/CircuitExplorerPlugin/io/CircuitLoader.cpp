@@ -204,12 +204,6 @@ public:
                                         electrophysiologyTypes);
             }
 
-#if 0 // TODO!
-      // Attach simulation handler
-            if (simulationHandler)
-                model->setSimulationHandler(simulationHandler);
-#endif
-
             // Create materials
             model->createMissingMaterials(simulationHandler != nullptr);
 
@@ -519,9 +513,7 @@ CircuitLoader::CircuitLoader(
 {
 }
 
-CircuitLoader::~CircuitLoader()
-{
-}
+CircuitLoader::~CircuitLoader() {}
 
 std::set<std::string> CircuitLoader::getSupportedDataTypes()
 {

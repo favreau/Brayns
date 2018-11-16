@@ -224,17 +224,10 @@ enum class FrameBufferFormat
 enum class ColorScheme
 {
     none = 0,
-    neuron_by_id = 1,
-    neuron_by_type = 2,
-    neuron_by_segment_type = 3,
-    neuron_by_layer = 4,
-    neuron_by_mtype = 5,
-    neuron_by_etype = 6,
-    neuron_by_target = 7,
-    protein_by_id = 8,
-    protein_atoms = 9,
-    protein_chains = 10,
-    protein_residues = 11
+    protein_by_id = 1,
+    protein_atoms = 2,
+    protein_chains = 3,
+    protein_residues = 4
 };
 
 /** Geometry quality */

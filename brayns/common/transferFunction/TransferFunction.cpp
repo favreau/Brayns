@@ -26,7 +26,7 @@ namespace brayns
 {
 TransferFunction::TransferFunction()
 {
-    _diffuseColors.resize(256, {1.f, 0.f, 0.f, 0.5f});
+    _diffuseColors.resize(256, {0.f, 0.f, 0.f, 0.f});
     _emissionIntensities.resize(256, {0.f, 0.f, 0.f});
     _contributions.resize(256, 1.f);
     _valuesRange = {0, 255.f};
@@ -40,4 +40,4 @@ void TransferFunction::clear()
     _valuesRange = Vector2f();
     markModified();
 }
-}
+} // namespace brayns

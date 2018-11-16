@@ -257,10 +257,10 @@ brayns::ModelDescriptorPtr CircuitLoader::importCircuit(
  * @brief _getMaterialFromSectionType return a material determined by the
  * --color-scheme geometry parameter
  * @param index Index of the element to which the material will attached
- * @param material Material that is forced in case geometry parameters
- * do not apply
- * @param sectionType Section type of the geometry to which the material
- * will be applied
+ * @param material Material that is forced in case geometry parameters do not
+ * apply
+ * @param sectionType Section type of the geometry to which the material will be
+ * applied
  * @return Material ID determined by the geometry parameters
  */
 size_t CircuitLoader::_getMaterialFromCircuitAttributes(
@@ -373,7 +373,6 @@ bool CircuitLoader::_importMeshes(brayns::Model& model,
     size_t loadingFailures = 0;
 
     size_t meshIndex = 0;
-    // Loading meshes is currently sequential. TODO: Make it parallel!!!
     std::stringstream message;
     message << "Loading " << gids.size() << " meshes...";
     for (const auto& gid : gids)
@@ -419,44 +418,36 @@ bool CircuitLoader::_importMorphologies(
     message << "Loading " << uris.size() << " morphologies...";
     std::atomic_size_t current{0};
     std::exception_ptr cancelException;
-#pragma omp parallel
+    for (uint64_t morphologyIndex = 0; morphologyIndex < uris.size();
+         ++morphologyIndex)
     {
-#pragma omp for nowait
-        for (uint64_t morphologyIndex = 0; morphologyIndex < uris.size();
-             ++morphologyIndex)
+        ++current;
+
+        try
         {
-            ++current;
+            ParallelModelContainer modelContainer;
+            const auto& uri = uris[morphologyIndex];
 
-            try
-            {
-                ParallelModelContainer modelContainer;
-                const auto& uri = uris[morphologyIndex];
+            const auto materialId = _getMaterialFromCircuitAttributes(
+                morphologyIndex, brayns::NO_MATERIAL, targetGIDOffsets,
+                layerIds, morphologyTypes, electrophysiologyTypes, false);
 
-                const auto materialId = _getMaterialFromCircuitAttributes(
-                    morphologyIndex, brayns::NO_MATERIAL, targetGIDOffsets,
-                    layerIds, morphologyTypes, electrophysiologyTypes, false);
+            morphLoader.setDefaultMaterialId(materialId);
 
-                morphLoader.setDefaultMaterialId(materialId);
-
-                if (!morphLoader._importMorphology(
-                        uri, morphologyIndex, transformations[morphologyIndex],
-                        compartmentReport, modelContainer))
-#pragma omp atomic
-                    ++loadingFailures;
-#pragma omp critical
-                modelContainer.addSpheresToModel(model);
-#pragma omp critical
-                modelContainer.addCylindersToModel(model);
-#pragma omp critical
-                modelContainer.addConesToModel(model);
-#pragma omp critical
-                modelContainer.addSDFGeometriesToModel(model);
-            }
-            catch (...)
-            {
-                cancelException = std::current_exception();
-                morphologyIndex = uris.size();
-            }
+            if (!morphLoader._importMorphology(uri, morphologyIndex,
+                                               transformations[morphologyIndex],
+                                               compartmentReport,
+                                               modelContainer))
+                ++loadingFailures;
+            modelContainer.addSpheresToModel(model);
+            modelContainer.addCylindersToModel(model);
+            modelContainer.addConesToModel(model);
+            modelContainer.addSDFGeometriesToModel(model);
+        }
+        catch (...)
+        {
+            cancelException = std::current_exception();
+            morphologyIndex = uris.size();
         }
     }
 

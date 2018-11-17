@@ -159,13 +159,12 @@ inline void indirectShading(
 
                     // Returned color is the one material with weight according
                     // intensity and distance to intersection
-                    indirectShadingColor = localDiffuseColor * Ka;
-                    indirectShadingPower = 1.f / distanceToIntersection;
+                    indirectShadingColor = localDiffuseColor;
                 }
                 else
                 {
                     // Material does not emit light, occlusion is considered
-                    // according to surface localOpacity
+                    // according to surface opacity
                     indirectShadingColor = make_vec3f(1.f);
                     indirectShadingPower = -mat->d;
                 }
@@ -173,7 +172,7 @@ inline void indirectShading(
         else
         {
             // Material does not emit light, occlusion is considered
-            // according to surface localOpacity
+            // according to surface opacity
             indirectShadingColor = make_vec3f(geometry.color.w);
             indirectShadingPower = -geometry.color.w;
         }
@@ -342,10 +341,9 @@ inline vec4f getVolumeContribution(
                      gradient.z == 0.f)
                         ? 1.f
                         : abs(dot(safe_normalize(light.dir), gradient));
-                shadedColor =
-                    clamp(shadedColor +
-                              volumeSampleColor * cosNL * light.weight,
-                          make_vec3f(0.f), make_vec3f(1.f));
+                shadedColor = clamp(shadedColor + volumeSampleColor * cosNL *
+                                                      light.weight,
+                                    make_vec3f(0.f), make_vec3f(1.f));
 
                 // Specular
                 const vec3f reflectedNormal = normalize(
@@ -365,9 +363,9 @@ inline vec4f getVolumeContribution(
             float indirectIntensity;
             indirectShading(self, sample, point, gradient, dg, indirectColor,
                             indirectIntensity);
-            volumeSampleColor =
-                volumeSampleColor +
-                sampleOpacity * indirectColor * indirectIntensity;
+            volumeSampleColor = volumeSampleColor + sampleOpacity *
+                                                        indirectColor *
+                                                        indirectIntensity;
         }
 
         if (shadowsEnabled)
@@ -1044,7 +1042,7 @@ void AdvancedSimulationRenderer_renderSample(uniform Renderer* uniform _self,
                                              varying ScreenSample& sample)
 {
     uniform AdvancedSimulationRenderer* uniform self =
-        (uniform AdvancedSimulationRenderer * uniform)_self;
+        (uniform AdvancedSimulationRenderer * uniform) _self;
     sample.ray.time = infinity;
     sample.rgb = AdvancedSimulationRenderer_shadeRay(self, sample);
 }
@@ -1079,11 +1077,11 @@ export void AdvancedSimulationRenderer_set(
     const uniform float& volumeAlphaCorrection)
 {
     uniform AdvancedSimulationRenderer* uniform self =
-        (uniform AdvancedSimulationRenderer * uniform)_self;
+        (uniform AdvancedSimulationRenderer * uniform) _self;
 
     self->super.super.super.spp = spp;
     self->super.super.bgMaterial =
-        (uniform ExtendedOBJMaterial * uniform)bgMaterial;
+        (uniform ExtendedOBJMaterial * uniform) bgMaterial;
     self->super.super.lights = (const uniform Light* uniform* uniform)lights;
     self->super.super.numLights = numLights;
     self->super.super.timestamp = timestamp;
@@ -1096,9 +1094,9 @@ export void AdvancedSimulationRenderer_set(
 
     self->volumeSamplesPerRay = volumeSamplesPerRay;
 
-    self->super.colorMap = (uniform vec4f * uniform)colormap;
+    self->super.colorMap = (uniform vec4f * uniform) colormap;
     self->super.emissionIntensitiesMap =
-        (uniform vec3f * uniform)emissionIntensitiesMap;
+        (uniform vec3f * uniform) emissionIntensitiesMap;
     self->super.colorMapSize = colorMapSize;
     self->super.colorMapMinValue = colorMapMinValue;
     self->super.colorMapRange = colorMapRange;
@@ -1106,7 +1104,7 @@ export void AdvancedSimulationRenderer_set(
     self->super.simulationData = (uniform float* uniform)simulationData;
     self->super.simulationDataSize = simulationDataSize;
 
-    self->simulationModel = (uniform Model * uniform)simulationModel;
+    self->simulationModel = (uniform Model * uniform) simulationModel;
     self->detectionDistance = detectionDistance;
 
     self->samplingThreshold = samplingThreshold;

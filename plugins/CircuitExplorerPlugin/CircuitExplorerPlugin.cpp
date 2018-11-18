@@ -46,12 +46,12 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
 {
     auto& registry = _scene.getLoaderRegistry();
     REGISTER_LOADER(SynapseLoader,
-                    ([& scene = _scene, &params = _synapseAttributes ] {
+                    ([& scene = _scene, &params = _synapseAttributes] {
                         return std::make_unique<SynapseLoader>(scene, params);
                     }));
 
     REGISTER_LOADER(MorphologyLoader,
-                    ([& scene = _scene, &params = _morphologyAttributes ] {
+                    ([& scene = _scene, &params = _morphologyAttributes] {
                         return std::make_unique<MorphologyLoader>(scene,
                                                                   params);
                     }));
@@ -62,15 +62,19 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
                       &morphologyAttributes = _morphologyAttributes] {
                         return std::make_unique<CircuitLoader>(
                             scene, params.getApplicationParameters(),
-                            params.getAnimationParameters(),
-                            circuitAttributes, morphologyAttributes);
+                            params.getAnimationParameters(), circuitAttributes,
+                            morphologyAttributes);
                     }));
 
     if (actionInterface)
     {
         actionInterface->registerNotification<MaterialDescriptor>(
+            "setMaterial",
+            [&](const MaterialDescriptor& param) { _setMaterial(param); });
+
+        actionInterface->registerNotification<MaterialsDescriptor>(
             "setMaterials",
-            [&](const MaterialDescriptor& param) { _setMaterials(param); });
+            [&](const MaterialsDescriptor& param) { _setMaterials(param); });
 
         actionInterface->registerNotification<SynapseAttributes>(
             "setSynapsesAttributes", [&](const SynapseAttributes& param) {
@@ -105,7 +109,51 @@ void CircuitExplorerPlugin::preRender()
     _dirty = false;
 }
 
-void CircuitExplorerPlugin::_setMaterials(const MaterialDescriptor& md)
+void CircuitExplorerPlugin::_setMaterial(const MaterialDescriptor& md)
+{
+    auto modelDescriptor = _scene.getModel(md.modelId);
+    if (modelDescriptor)
+        try
+        {
+            auto material =
+                modelDescriptor->getModel().getMaterial(md.materialId);
+            if (material)
+            {
+                material->setDiffuseColor({md.diffuseColor[0],
+                                           md.diffuseColor[1],
+                                           md.diffuseColor[2]});
+                material->setSpecularColor({md.specularColor[0],
+                                            md.specularColor[1],
+                                            md.specularColor[2]});
+
+                material->setSpecularExponent(md.specularExponent);
+                material->setReflectionIndex(md.reflectionIndex);
+                material->setOpacity(md.opacity);
+                material->setRefractionIndex(md.refractionIndex);
+                material->setEmission(md.emission);
+                material->setGlossiness(md.glossiness);
+                material->setCastSimulationData(md.simulationDataCast);
+                material->setShadingMode(
+                    static_cast<brayns::MaterialShadingMode>(md.shadingMode));
+                material->commit();
+
+                _dirty = true;
+            }
+            else
+                PLUGIN_INFO << "Material " << md.materialId
+                            << " is not registered in model " << md.modelId
+                            << std::endl;
+        }
+        catch (const std::runtime_error& e)
+        {
+            PLUGIN_INFO << e.what() << std::endl;
+        }
+    else
+        PLUGIN_INFO << "Model " << md.modelId << " is not registered"
+                    << std::endl;
+}
+
+void CircuitExplorerPlugin::_setMaterials(const MaterialsDescriptor& md)
 {
     for (const auto modelId : md.modelIds)
     {
@@ -114,6 +162,7 @@ void CircuitExplorerPlugin::_setMaterials(const MaterialDescriptor& md)
         {
             size_t id = 0;
             for (const auto materialId : md.materialIds)
+            {
                 try
                 {
                     auto material =
@@ -130,38 +179,27 @@ void CircuitExplorerPlugin::_setMaterials(const MaterialDescriptor& md)
                              md.specularColors[index + 1],
                              md.specularColors[index + 2]});
 
-                        material->setSpecularExponent(md.specularExponent);
-                        material->setReflectionIndex(md.reflectionIndex);
-                        material->setOpacity(md.opacity);
-                        material->setRefractionIndex(md.refractionIndex);
-                        material->setEmission(md.emission);
-                        material->setGlossiness(md.glossiness);
-                        material->setCastSimulationData(md.castSimulationData);
-
+                        material->setSpecularExponent(md.specularExponents[id]);
+                        material->setReflectionIndex(md.reflectionIndices[id]);
+                        material->setOpacity(md.opacities[id]);
+                        material->setRefractionIndex(md.refractionIndices[id]);
+                        material->setEmission(md.emissions[id]);
+                        material->setGlossiness(md.glossinesses[id]);
+                        material->setCastSimulationData(
+                            md.simulationDataCasts[id]);
                         material->setShadingMode(
-                            brayns::MaterialShadingMode::none);
-                        if (md.shadingMode == "diffuse")
-                            material->setShadingMode(
-                                brayns::MaterialShadingMode::diffuse);
-                        else if (md.shadingMode == "electron")
-                            material->setShadingMode(
-                                brayns::MaterialShadingMode::electron);
-                        else if (md.shadingMode == "cartoon")
-                            material->setShadingMode(
-                                brayns::MaterialShadingMode::cartoon);
-                        else if (md.shadingMode == "electron-transparency")
-                            material->setShadingMode(
-                                brayns::MaterialShadingMode::
-                                    electron_transparency);
-
+                            static_cast<brayns::MaterialShadingMode>(
+                                md.shadingModes[id]));
                         material->commit();
                     }
-                    ++id;
                 }
                 catch (const std::runtime_error& e)
                 {
                     PLUGIN_INFO << e.what() << std::endl;
                 }
+                ++id;
+            }
+            _dirty = true;
         }
         else
             PLUGIN_INFO << "Model " << modelId << " is not registered"

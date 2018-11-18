@@ -50,21 +50,40 @@ bool from_json(SaveModelToCache& modelSave, const std::string& payload);
 
 struct MaterialDescriptor
 {
-    std::vector<size_t> modelIds;
-    std::vector<size_t> materialIds;
-    std::vector<float> diffuseColors;
-    std::vector<float> specularColors;
+    size_t modelId;
+    size_t materialId;
+    std::vector<float> diffuseColor;
+    std::vector<float> specularColor;
     float specularExponent;
     float reflectionIndex;
     float opacity;
     float refractionIndex;
     float emission;
     float glossiness;
-    bool castSimulationData;
-    std::string shadingMode;
+    bool simulationDataCast;
+    size_t shadingMode;
 };
 
 bool from_json(MaterialDescriptor& materialDescriptor,
+               const std::string& payload);
+
+struct MaterialsDescriptor
+{
+    std::vector<size_t> modelIds;
+    std::vector<size_t> materialIds;
+    std::vector<float> diffuseColors;
+    std::vector<float> specularColors;
+    std::vector<float> specularExponents;
+    std::vector<float> reflectionIndices;
+    std::vector<float> opacities;
+    std::vector<float> refractionIndices;
+    std::vector<float> emissions;
+    std::vector<float> glossinesses;
+    std::vector<bool> simulationDataCasts;
+    std::vector<size_t> shadingModes;
+};
+
+bool from_json(MaterialsDescriptor& materialsDescriptor,
                const std::string& payload);
 
 struct SynapseAttributes

@@ -91,18 +91,43 @@ bool from_json(MaterialDescriptor& param, const std::string& payload)
     try
     {
         auto js = nlohmann::json::parse(payload);
-        FROM_JSON(param, js, modelIds);
-        FROM_JSON(param, js, materialIds);
-        FROM_JSON(param, js, diffuseColors);
-        FROM_JSON(param, js, specularColors);
+        FROM_JSON(param, js, modelId);
+        FROM_JSON(param, js, materialId);
+        FROM_JSON(param, js, diffuseColor);
+        FROM_JSON(param, js, specularColor);
         FROM_JSON(param, js, specularExponent);
         FROM_JSON(param, js, reflectionIndex);
         FROM_JSON(param, js, opacity);
         FROM_JSON(param, js, refractionIndex);
         FROM_JSON(param, js, emission);
         FROM_JSON(param, js, glossiness);
-        FROM_JSON(param, js, castSimulationData);
+        FROM_JSON(param, js, simulationDataCast);
         FROM_JSON(param, js, shadingMode);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool from_json(MaterialsDescriptor& param, const std::string& payload)
+{
+    try
+    {
+        auto js = nlohmann::json::parse(payload);
+        FROM_JSON(param, js, modelIds);
+        FROM_JSON(param, js, materialIds);
+        FROM_JSON(param, js, diffuseColors);
+        FROM_JSON(param, js, specularColors);
+        FROM_JSON(param, js, specularExponents);
+        FROM_JSON(param, js, reflectionIndices);
+        FROM_JSON(param, js, opacities);
+        FROM_JSON(param, js, refractionIndices);
+        FROM_JSON(param, js, emissions);
+        FROM_JSON(param, js, glossinesses);
+        FROM_JSON(param, js, simulationDataCasts);
+        FROM_JSON(param, js, shadingModes);
     }
     catch (...)
     {

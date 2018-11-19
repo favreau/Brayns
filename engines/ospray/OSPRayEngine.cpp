@@ -379,6 +379,7 @@ void OSPRayEngine::_createCameras()
         }
         if (camera == "cylindricStereo")
         {
+            properties.setProperty(eyeSeparation);
             properties.setProperty(
                 {"stereoMode",
                  "Stereo mode",

@@ -253,6 +253,10 @@ void OSPRayEngine::_createRenderers()
         {
             properties.setProperty(
                 {"alphaCorrection", "Alpha correction", 0.5, {0.001, 1.}});
+            properties.setProperty({"simulationThreshold",
+                                    "Simulation Threshold",
+                                    0.0,
+                                    {0.0, 1.0}});
         }
         if (renderer == "advanced_simulation")
         {

@@ -46,7 +46,7 @@ public:
     void commit() final;
 
 private:
-    int _randomNumber;
+    float _simulationThreshold;
 };
 
-} // ::brayns
+} // namespace brayns

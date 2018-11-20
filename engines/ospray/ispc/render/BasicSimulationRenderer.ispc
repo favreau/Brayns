@@ -25,8 +25,8 @@ struct BasicSimulationRenderer
     SimulationRenderer super;
 
     // Shading attributes
-    int randomNumber;
     float alphaCorrection;
+    float simulationThreshold;
 };
 
 inline vec3f BasicSimulationRenderer_shadeRay(
@@ -95,51 +95,59 @@ inline vec3f BasicSimulationRenderer_shadeRay(
             }
 
             vec4f simulationContribution = make_vec4f(0.f);
+            bool ignoreIntersection = false;
             if (objMaterial->castSimulationData == 1)
             {
                 // Get simulation value from geometry
                 simulationContribution = getSimulationValue(&self->super, &dg);
+                ignoreIntersection =
+                    (simulationContribution.w < self->simulationThreshold);
             }
 
-            // Head-light shading
-            float cosNL =
-                (shadingMode == none ? 1.f
-                                     : max(0.f, dot(neg(ray.dir), dg.Ns)));
-
-            switch (shadingMode)
+            if (!ignoreIntersection)
             {
-            case electron:
-            case electron_transparency:
-                cosNL = 1.f - cosNL;
-                opacity *= (shadingMode == electron_transparency ? cosNL : 1.f);
-                break;
-            case cartoon:
-                const unsigned int angleAsInt =
-                    cosNL * DEFAULT_CARTOON_GRADIENT;
-                cosNL = (float)(angleAsInt) / (float)(DEFAULT_CARTOON_GRADIENT);
-                break;
-            case perlin:
-                const vec3f point = ray.org + ray.t * ray.dir;
-                float n = noise(point);
-                if (ray.t < dg.epsilon * 1.5e4f)
-                    n += worleyNoise(point, 2.f);
-                else
-                    n *= 2.f;
+                // Head-light shading
+                float cosNL =
+                    (shadingMode == none ? 1.f
+                                         : max(0.f, dot(neg(ray.dir), dg.Ns)));
 
-                n = clamp(n, 0.f, 1.f);
-                cosNL *= n;
-                break;
+                switch (shadingMode)
+                {
+                case electron:
+                case electron_transparency:
+                    cosNL = 1.f - cosNL;
+                    opacity *=
+                        (shadingMode == electron_transparency ? cosNL : 1.f);
+                    break;
+                case cartoon:
+                    const unsigned int angleAsInt =
+                        cosNL * DEFAULT_CARTOON_GRADIENT;
+                    cosNL =
+                        (float)(angleAsInt) / (float)(DEFAULT_CARTOON_GRADIENT);
+                    break;
+                case perlin:
+                    const vec3f point = ray.org + ray.t * ray.dir;
+                    float n = noise(point);
+                    if (ray.t < dg.epsilon * 1.5e4f)
+                        n += worleyNoise(point, 2.f);
+                    else
+                        n *= 2.f;
+
+                    n = clamp(n, 0.f, 1.f);
+                    cosNL *= n;
+                    break;
+                }
+
+                const vec3f color =
+                    cosNL * (Kd * (1.f - simulationContribution.w) +
+                             simulationContribution.w *
+                                 make_vec3f(simulationContribution));
+
+                colorContribution = make_vec4f(color, opacity);
+
+                // Compositing according to alpha correction
+                composite(colorContribution, pathColor, self->alphaCorrection);
             }
-
-            const vec3f color =
-                cosNL *
-                (Kd * (1.f - simulationContribution.w) +
-                 simulationContribution.w * make_vec3f(simulationContribution));
-
-            colorContribution = make_vec4f(color, opacity);
-
-            // Compositing according to alpha correction
-            composite(colorContribution, pathColor, self->alphaCorrection);
         }
 
         // Next ray
@@ -189,7 +197,7 @@ export void BasicSimulationRenderer_set(
     uniform vec3f* uniform emissionIntensitiesMap,
     const uniform int32 colorMapSize, const uniform float& colorMapMinValue,
     const uniform float& colorMapRange, const uniform float& alphaCorrection,
-    const uniform int& randomNumber)
+    const uniform float& simulationThreshold)
 {
     uniform BasicSimulationRenderer* uniform self =
         (uniform BasicSimulationRenderer * uniform) _self;
@@ -210,5 +218,5 @@ export void BasicSimulationRenderer_set(
     self->super.simulationDataSize = simulationDataSize;
 
     self->alphaCorrection = alphaCorrection;
-    self->randomNumber = randomNumber;
+    self->simulationThreshold = simulationThreshold;
 }

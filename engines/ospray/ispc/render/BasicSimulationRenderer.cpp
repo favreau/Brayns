@@ -34,7 +34,7 @@ void BasicSimulationRenderer::commit()
 {
     SimulationRenderer::commit();
 
-    _randomNumber = getParam1i("randomNumber", 0);
+    _simulationThreshold = getParam1f("simulationThreshold", 0.f);
 
     ispc::BasicSimulationRenderer_set(
         getIE(), (_bgMaterial ? _bgMaterial->getIE() : nullptr), spp,
@@ -47,7 +47,7 @@ void BasicSimulationRenderer::commit()
              ? (ispc::vec3f*)_transferFunctionEmissionData->data
              : nullptr),
         _transferFunctionSize, _transferFunctionMinValue,
-        _transferFunctionRange, _alphaCorrection, _randomNumber);
+        _transferFunctionRange, _alphaCorrection, _simulationThreshold);
 }
 
 BasicSimulationRenderer::BasicSimulationRenderer()
@@ -56,4 +56,4 @@ BasicSimulationRenderer::BasicSimulationRenderer()
 }
 
 OSP_REGISTER_RENDERER(BasicSimulationRenderer, basic_simulation);
-} // ::brayns
+} // namespace brayns

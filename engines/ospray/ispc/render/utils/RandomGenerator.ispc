@@ -1219,3 +1219,62 @@ varying RandomTEA* uniform createRandomNumberGenerator(
                            accumID);
     return rng;
 }
+
+inline float mix(const float x, const float y, const float a)
+{
+    return x * (1.f - a) + y * a;
+}
+
+inline float hash(float n)
+{
+    return frac(sin(n + 1.951f) * 43758.5453f);
+}
+
+float noise(const vec3f& x)
+{
+    // hash based 3d value noise
+    vec3f p = floor(x);
+    vec3f f = frac(x);
+
+    f = f * f * (make_vec3f(3.0f) - make_vec3f(2.0f) * f);
+    float n = p.x + p.y * 57.0f + 113.0f * p.z;
+    return mix(mix(mix(hash(n + 0.0f), hash(n + 1.0f), f.x),
+                   mix(hash(n + 57.0f), hash(n + 58.0f), f.x), f.y),
+               mix(mix(hash(n + 113.0f), hash(n + 114.0f), f.x),
+                   mix(hash(n + 170.0f), hash(n + 171.0f), f.x), f.y),
+               f.z);
+}
+
+inline vec3f mod(const vec3f& v, const int m)
+{
+    return make_vec3f(v.x - m * floor(v.x / m), v.y - m * floor(v.y / m),
+                      v.z - m * floor(v.z / m));
+}
+
+float cells(const vec3f& p, float cellCount)
+{
+    const vec3f pCell = p * cellCount;
+    float d = 1.0e10;
+    for (int xo = -1; xo <= 1; xo++)
+    {
+        for (int yo = -1; yo <= 1; yo++)
+        {
+            for (int zo = -1; zo <= 1; zo++)
+            {
+                vec3f tp = floor(pCell) + make_vec3f(xo, yo, zo);
+
+                tp = pCell - tp - noise(mod(tp, cellCount / 1));
+
+                d = min(d, dot(tp, tp));
+            }
+        }
+    }
+    d = min(d, 1.0f);
+    d = max(d, 0.0f);
+    return d;
+}
+
+float worleyNoise(const vec3f& p, float cellCount)
+{
+    return cells(p, cellCount);
+}

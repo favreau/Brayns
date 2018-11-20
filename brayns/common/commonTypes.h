@@ -12,7 +12,8 @@ enum MaterialShadingMode
     diffuse = 1,
     electron = 2,
     cartoon = 3,
-    electron_transparency = 4
+    electron_transparency = 4,
+    perlin = 5
 };
 
 #if __cplusplus

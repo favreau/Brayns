@@ -55,6 +55,7 @@ struct ShadingAttributes
     float refraction;
     float reflection;
     float opacity;
+    float glossiness;
     vec3f diffuseColor;
     vec3f specularColor;
     float specularExponent;
@@ -341,9 +342,10 @@ inline vec4f getVolumeContribution(
                      gradient.z == 0.f)
                         ? 1.f
                         : abs(dot(safe_normalize(light.dir), gradient));
-                shadedColor = clamp(shadedColor + volumeSampleColor * cosNL *
-                                                      light.weight,
-                                    make_vec3f(0.f), make_vec3f(1.f));
+                shadedColor =
+                    clamp(shadedColor +
+                              volumeSampleColor * cosNL * light.weight,
+                          make_vec3f(0.f), make_vec3f(1.f));
 
                 // Specular
                 const vec3f reflectedNormal = normalize(
@@ -363,9 +365,9 @@ inline vec4f getVolumeContribution(
             float indirectIntensity;
             indirectShading(self, sample, point, gradient, dg, indirectColor,
                             indirectIntensity);
-            volumeSampleColor = volumeSampleColor + sampleOpacity *
-                                                        indirectColor *
-                                                        indirectIntensity;
+            volumeSampleColor =
+                volumeSampleColor +
+                sampleOpacity * indirectColor * indirectIntensity;
         }
 
         if (shadowsEnabled)
@@ -518,6 +520,7 @@ inline void initializeShadingAttributes(
     attributes.reflection = 0.f;
     attributes.refraction = 1.f;
     attributes.opacity = 0.f;
+    attributes.glossiness = 0.f;
 }
 
 inline void setGeometryShadingAttributes(
@@ -560,6 +563,7 @@ inline void setGeometryShadingAttributes(
         // Glossiness
         if (mat->glossiness < 1.f)
         {
+            attributes.glossiness = mat->glossiness;
             const vec3f randomNormal =
                 (1.f - mat->glossiness) *
                 getRandomVector(self->super.super.super.fb->size.x, sample,
@@ -779,7 +783,9 @@ inline void processLightShading(DifferentialGeometry& dg,
 
         float cosNL = 1.f;
 
-        if (attributes.shadingMode == diffuse)
+        if (attributes.shadingMode == none)
+            attributes.specularColor = make_vec3f(0.f);
+        else
         {
             // Phong + Blinn shading
             cosNL = max(0.f, dot(lightDirection, attributes.normal));
@@ -789,8 +795,6 @@ inline void processLightShading(DifferentialGeometry& dg,
             attributes.specularColor = attributes.specularColor *
                                        powf(cosLR, attributes.specularExponent);
         }
-        else
-            attributes.specularColor = make_vec3f(0.f);
 
         attributes.diffuseColor = cosNL * attributes.diffuseColor;
         attributes.simulationColor = cosNL * attributes.simulationColor;
@@ -835,6 +839,27 @@ inline void processCartoonShading(varying ScreenSample& sample,
     attributes.shadingContribution = cosNL * attributes.diffuseColor;
     attributes.simulationColor = cosNL * attributes.simulationColor;
     attributes.specularColor = make_vec3f(0.f);
+}
+
+inline void processNoiseShading(DifferentialGeometry& dg,
+                                varying ScreenSample& sample,
+                                const varying Ray& ray,
+                                ShadingAttributes& attributes)
+{
+    processLightShading(dg, sample, ray, attributes);
+    if (ray.t < dg.epsilon * 1e5f)
+    {
+        vec3f point = ray.org + ray.t * ray.dir;
+        float n = noise(point);
+        if (ray.t < dg.epsilon * 1.5e4f)
+            n += worleyNoise(point, 2.f);
+        else
+            n *= 2.f;
+
+        n = clamp(n, 0.f, 1.f);
+        attributes.shadingContribution = n * attributes.diffuseColor;
+        attributes.simulationColor = n * attributes.simulationColor;
+    }
 }
 
 inline void processVolumeContribution(varying ScreenSample& sample,
@@ -967,6 +992,8 @@ inline vec3f AdvancedSimulationRenderer_shadeRay(
                     processCartoonShading(sample, attributes);
                 else if (attributes.shadingMode == electron_transparency)
                     processElectronTransparencyShading(sample, attributes);
+                else if (attributes.shadingMode == perlin)
+                    processNoiseShading(dg, sample, ray, attributes);
                 else
                     processLightShading(dg, sample, ray, attributes);
 
@@ -1042,7 +1069,7 @@ void AdvancedSimulationRenderer_renderSample(uniform Renderer* uniform _self,
                                              varying ScreenSample& sample)
 {
     uniform AdvancedSimulationRenderer* uniform self =
-        (uniform AdvancedSimulationRenderer * uniform) _self;
+        (uniform AdvancedSimulationRenderer * uniform)_self;
     sample.ray.time = infinity;
     sample.rgb = AdvancedSimulationRenderer_shadeRay(self, sample);
 }
@@ -1077,11 +1104,11 @@ export void AdvancedSimulationRenderer_set(
     const uniform float& volumeAlphaCorrection)
 {
     uniform AdvancedSimulationRenderer* uniform self =
-        (uniform AdvancedSimulationRenderer * uniform) _self;
+        (uniform AdvancedSimulationRenderer * uniform)_self;
 
     self->super.super.super.spp = spp;
     self->super.super.bgMaterial =
-        (uniform ExtendedOBJMaterial * uniform) bgMaterial;
+        (uniform ExtendedOBJMaterial * uniform)bgMaterial;
     self->super.super.lights = (const uniform Light* uniform* uniform)lights;
     self->super.super.numLights = numLights;
     self->super.super.timestamp = timestamp;
@@ -1094,9 +1121,9 @@ export void AdvancedSimulationRenderer_set(
 
     self->volumeSamplesPerRay = volumeSamplesPerRay;
 
-    self->super.colorMap = (uniform vec4f * uniform) colormap;
+    self->super.colorMap = (uniform vec4f * uniform)colormap;
     self->super.emissionIntensitiesMap =
-        (uniform vec3f * uniform) emissionIntensitiesMap;
+        (uniform vec3f * uniform)emissionIntensitiesMap;
     self->super.colorMapSize = colorMapSize;
     self->super.colorMapMinValue = colorMapMinValue;
     self->super.colorMapRange = colorMapRange;
@@ -1104,7 +1131,7 @@ export void AdvancedSimulationRenderer_set(
     self->super.simulationData = (uniform float* uniform)simulationData;
     self->super.simulationDataSize = simulationDataSize;
 
-    self->simulationModel = (uniform Model * uniform) simulationModel;
+    self->simulationModel = (uniform Model * uniform)simulationModel;
     self->detectionDistance = detectionDistance;
 
     self->samplingThreshold = samplingThreshold;

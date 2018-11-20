@@ -44,6 +44,9 @@ public:
         return "brayns::BasicSimulationRenderer";
     }
     void commit() final;
+
+private:
+    int _randomNumber;
 };
 
 } // ::brayns

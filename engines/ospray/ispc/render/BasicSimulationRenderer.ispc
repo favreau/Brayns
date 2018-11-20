@@ -25,6 +25,7 @@ struct BasicSimulationRenderer
     SimulationRenderer super;
 
     // Shading attributes
+    int randomNumber;
     float alphaCorrection;
 };
 
@@ -38,16 +39,13 @@ inline vec3f BasicSimulationRenderer_shadeRay(
 
     float zDepth = 0.f;
     int depth = 0;
-    float opacity = 0.f;
-    float pathOpacity = 0.f;
-
-    vec4f intersectionColor = make_vec4f(0.f);
-    vec4f colorContribution = make_vec4f(0.f);
 
     const uniform Material* previousMaterial = 0;
+    vec4f pathColor = make_vec4f(0.f);
 
-    while (pathOpacity < 1.f)
+    while (pathColor.w < 1.f)
     {
+        vec4f colorContribution;
         traceRay(self->super.super.super.model, ray);
 
         if (ray.geomID < 0)
@@ -56,8 +54,7 @@ inline vec3f BasicSimulationRenderer_shadeRay(
             colorContribution = skyboxMapping((Renderer*)self, ray,
                                               self->super.super.bgMaterial);
             colorContribution.w = 1.f;
-            composite(colorContribution, intersectionColor,
-                      self->alphaCorrection);
+            composite(colorContribution, pathColor, self->alphaCorrection);
             break;
         }
 
@@ -69,15 +66,19 @@ inline vec3f BasicSimulationRenderer_shadeRay(
                       DG_NG | DG_NS | DG_NORMALIZE | DG_FACEFORWARD |
                           DG_MATERIALID | DG_COLOR | DG_TEXCOORD);
 
-        // Material attributes
+        // Material management
         const uniform Material* material = dg.material;
 
-        if (previousMaterial != material)
+        if (material != previousMaterial)
         {
+            // Material attributes
             MaterialShadingMode shadingMode = diffuse;
             const uniform ExtendedOBJMaterial* objMaterial =
                 (const uniform ExtendedOBJMaterial*)material;
+
             vec3f Kd;
+            float opacity;
+
             if (!objMaterial)
             {
                 Kd = make_vec3f(dg.color);
@@ -93,22 +94,11 @@ inline vec3f BasicSimulationRenderer_shadeRay(
                 }
             }
 
-            if (depth == 0)
-            {
-                pathOpacity = opacity;
-                sample.z = ray.t;
-            }
-            colorContribution = make_vec4f(Kd, pathOpacity);
-
+            vec4f simulationContribution = make_vec4f(0.f);
             if (objMaterial->castSimulationData == 1)
             {
                 // Get simulation value from geometry
-                const vec4f simulationColor =
-                    getSimulationValue(&self->super, &dg);
-                colorContribution = make_vec4f(
-                    make_vec3f(colorContribution) * (1.f - simulationColor.w) +
-                        make_vec3f(simulationColor) * simulationColor.w,
-                    colorContribution.w);
+                simulationContribution = getSimulationValue(&self->super, &dg);
             }
 
             // Head-light shading
@@ -120,40 +110,57 @@ inline vec3f BasicSimulationRenderer_shadeRay(
             {
             case electron:
             case electron_transparency:
-                cosNL = (1.f - cosNL);
-                opacity = opacity *
-                          (shadingMode == electron_transparency ? cosNL : 1.f);
+                cosNL = 1.f - cosNL;
+                opacity *= (shadingMode == electron_transparency ? cosNL : 1.f);
                 break;
             case cartoon:
                 const unsigned int angleAsInt =
                     cosNL * DEFAULT_CARTOON_GRADIENT;
                 cosNL = (float)(angleAsInt) / (float)(DEFAULT_CARTOON_GRADIENT);
                 break;
+            case perlin:
+                const vec3f point = ray.org + ray.t * ray.dir;
+                float n = noise(point);
+                if (ray.t < dg.epsilon * 1.5e4f)
+                    n += worleyNoise(point, 2.f);
+                else
+                    n *= 2.f;
+
+                n = clamp(n, 0.f, 1.f);
+                cosNL *= n;
+                break;
             }
 
-            pathOpacity *= 1.f + opacity;
-            colorContribution =
-                make_vec4f(make_vec3f(colorContribution * cosNL), pathOpacity);
+            const vec3f color =
+                cosNL *
+                (Kd * (1.f - simulationContribution.w) +
+                 simulationContribution.w * make_vec3f(simulationContribution));
+
+            colorContribution = make_vec4f(color, opacity);
 
             // Compositing according to alpha correction
-            composite(colorContribution, intersectionColor,
-                      self->alphaCorrection);
+            composite(colorContribution, pathColor, self->alphaCorrection);
         }
-        previousMaterial = material;
 
         // Next ray
         ray.t0 = ray.t + dg.epsilon;
+        previousMaterial = material;
         ray.t = infinity;
         ray.primID = -1;
         ray.geomID = -1;
         ray.instID = -1;
+
+        // Depth
+        if (depth == 0)
+            sample.z = ray.t;
+
         ++depth;
     }
 
     // Alpha
-    sample.alpha = pathOpacity;
+    sample.alpha = pathColor.w;
 
-    return make_vec3f(intersectionColor);
+    return make_vec3f(pathColor);
 }
 
 void BasicSimulationRenderer_renderSample(uniform Renderer* uniform _self,
@@ -181,7 +188,8 @@ export void BasicSimulationRenderer_set(
     const uniform int64 simulationDataSize, uniform vec4f* uniform colormap,
     uniform vec3f* uniform emissionIntensitiesMap,
     const uniform int32 colorMapSize, const uniform float& colorMapMinValue,
-    const uniform float& colorMapRange, const uniform float& alphaCorrection)
+    const uniform float& colorMapRange, const uniform float& alphaCorrection,
+    const uniform int& randomNumber)
 {
     uniform BasicSimulationRenderer* uniform self =
         (uniform BasicSimulationRenderer * uniform) _self;
@@ -202,4 +210,5 @@ export void BasicSimulationRenderer_set(
     self->super.simulationDataSize = simulationDataSize;
 
     self->alphaCorrection = alphaCorrection;
+    self->randomNumber = randomNumber;
 }

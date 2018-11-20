@@ -34,6 +34,8 @@ void BasicSimulationRenderer::commit()
 {
     SimulationRenderer::commit();
 
+    _randomNumber = getParam1i("randomNumber", 0);
+
     ispc::BasicSimulationRenderer_set(
         getIE(), (_bgMaterial ? _bgMaterial->getIE() : nullptr), spp,
         (_simulationData ? (float*)_simulationData->data : nullptr),
@@ -45,7 +47,7 @@ void BasicSimulationRenderer::commit()
              ? (ispc::vec3f*)_transferFunctionEmissionData->data
              : nullptr),
         _transferFunctionSize, _transferFunctionMinValue,
-        _transferFunctionRange, _alphaCorrection);
+        _transferFunctionRange, _alphaCorrection, _randomNumber);
 }
 
 BasicSimulationRenderer::BasicSimulationRenderer()

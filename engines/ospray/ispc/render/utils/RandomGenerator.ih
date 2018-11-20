@@ -78,3 +78,16 @@ vec3f getConeSample(const vec3f& direction, varying RandomTEA* uniform rng,
 */
 varying RandomTEA* uniform createRandomNumberGenerator(
     const uniform Renderer* uniform self, varying ScreenSample& sample);
+
+inline float mix(const float x, const float y, const float a);
+
+inline float hash(float n);
+
+inline vec3f mod(const vec3f& v, const int m);
+
+// hash based 3d value noise
+float noise(const vec3f& x);
+
+float cells(const vec3f& p, float cellCount);
+
+float worleyNoise(const vec3f& p, float cellCount);

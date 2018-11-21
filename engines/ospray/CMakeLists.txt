@@ -100,7 +100,7 @@ include(ispc)
 # Enable/disable use of hardware randomizer
 option(BRAYNS_HARDWARE_RANDOMIZER_ENABLED "Enables hardware randomizer if supported by target CPU" OFF)
 if(BRAYNS_HARDWARE_RANDOMIZER_ENABLED)
-  set(ISPC_EXTRA_ARGS -DBRAYNS_ISPC_USE_HARDWARE_RANDOMIZER=ON)
+  add_definitions_ispc("-DBRAYNS_ISPC_USE_HARDWARE_RANDOMIZER=ON")
 endif()
 
 # Compile ispc code

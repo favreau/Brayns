@@ -19,6 +19,17 @@
 #include "math/sampling.ih"
 #include "ospray/SDK/camera/Camera.ih"
 
+#ifdef BRAYNS_ISPC_USE_HARDWARE_RANDOMIZER
+inline float getRandomValue()
+{
+    float r;
+    int nbMaxTries = 10;
+    while (nbMaxTries >= 0 && rdrand(&r) == false)
+        --nbMaxTries;
+    return r;
+}
+#endif
+
 struct PerspectiveCamera
 {
     Camera super;
@@ -43,9 +54,8 @@ struct PerspectiveCamera
     unsigned int numClipPlanes;
 };
 
-void PerspectiveCamera_initRay(uniform Camera* uniform _self,
-                                      varying Ray& ray,
-                                      const varying CameraSample& sample)
+void PerspectiveCamera_initRay(uniform Camera* uniform _self, varying Ray& ray,
+                               const varying CameraSample& sample)
 {
     uniform PerspectiveCamera* uniform self =
         (uniform PerspectiveCamera * uniform)_self;
@@ -72,7 +82,12 @@ void PerspectiveCamera_initRay(uniform Camera* uniform _self,
 
     if (self->super.doesDOF)
     {
-        const vec3f llp = uniformSampleDisk(self->scaledAperture, sample.lens);
+        float random = 1.f;
+#ifdef BRAYNS_ISPC_USE_HARDWARE_RANDOMIZER
+        random = getRandomValue();
+#endif
+        const vec3f llp =
+            uniformSampleDisk(random * self->scaledAperture, sample.lens);
         // transform local lens point to focal plane (dir_XX are prescaled in
         // this case)
         const vec3f lp =
@@ -85,8 +100,8 @@ void PerspectiveCamera_initRay(uniform Camera* uniform _self,
     float farClip = infinity;
     const varying vec3f direction = normalize(dir);
 
-    clipRay(self->clipPlanes, self->numClipPlanes, org, direction,
-            nearClip, farClip);
+    clipRay(self->clipPlanes, self->numClipPlanes, org, direction, nearClip,
+            farClip);
 
     const float time = Camera_shutterTime(_self, sample.time);
     setRay(ray, org, direction, nearClip, farClip, time);
@@ -115,7 +130,7 @@ export void PerspectiveCamera_set(
     const uniform vec4f clipPlanes[], const uniform unsigned int numClipPlanes)
 {
     uniform PerspectiveCamera* uniform self =
-       (uniform PerspectiveCamera * uniform)_self;
+        (uniform PerspectiveCamera * uniform)_self;
     self->org = org;
     self->dir_00 = dir_00;
     self->dir_du = dir_du;

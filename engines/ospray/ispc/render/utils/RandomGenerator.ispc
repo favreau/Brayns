@@ -23,6 +23,14 @@
 
 #include "RandomGenerator.ih"
 
+inline float rotate(float x, const float dx)
+{
+    x += dx;
+    if (x >= 1.f)
+        x -= 1.f;
+    return x;
+}
+
 #ifdef BRAYNS_ISPC_USE_HARDWARE_RANDOMIZER
 uniform bool seedInitialized = false;
 struct RNGState rngState;
@@ -40,8 +48,8 @@ inline float getRandomValue(varying ScreenSample&, const int)
     return r;
 }
 
-inline vec3f getRandomVector(varying ScreenSample& sample, const vec3f& normal,
-                             const int randomNumber)
+inline vec3f getRandomVector(const unsigned int, varying ScreenSample& sample,
+                             const vec3f& normal, const int randomNumber)
 {
     if (!seedInitialized)
     {
@@ -63,7 +71,6 @@ void getTangentVectors(const vec3f& normal, vec3f& tangent, vec3f& biTangent)
     biTangent = normalize(cross(tangent, normal));
     tangent = normalize(cross(biTangent, normal));
 }
-
 #else
 /**
 Random values were generated using the following python code:
@@ -1113,14 +1120,6 @@ uniform float randomDistribution[RANDOM_SET_SIZE][RANDOM_SET_SIZE] = {
      0.0945858634836, 0.995054874102,  0.565477371369,   0.526516256799,
      0.935170684975,  0.25889904757,   0.433976982045,   0.519519047234}};
 
-inline float rotate(float x, const float dx)
-{
-    x += dx;
-    if (x >= 1.f)
-        x -= 1.f;
-    return x;
-}
-
 float getRandomValue(varying ScreenSample& sample, const int randomNumber)
 {
     const int x = sample.sampleID.x % RANDOM_SET_SIZE;
@@ -1157,7 +1156,6 @@ inline vec3f getRandomVector(const unsigned int frameBufferWidth,
     const float cz = sqrt(ry);
     return normalize(cx * tangent + cy * biTangent + cz * normal);
 }
-#endif
 
 void getTangentVectors(const vec3f& normal, vec3f& tangent, vec3f& biTangent)
 {
@@ -1167,6 +1165,7 @@ void getTangentVectors(const vec3f& normal, vec3f& tangent, vec3f& biTangent)
     biTangent = normalize(cross(tangent, normal));
     tangent = normalize(cross(biTangent, normal));
 }
+#endif
 
 vec3f getRandomDir(varying RandomTEA* uniform rng, const vec3f biNorm0,
                    const vec3f biNorm1, const vec3f gNormal, const float rot_x,

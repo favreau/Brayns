@@ -50,8 +50,10 @@ private:
 
     float _shadows;
     float _softShadows;
+    int _softShadowsSamples;
     float _ambientOcclusionStrength;
     float _ambientOcclusionDistance;
+    int _ambientOcclusionSamples;
     int _randomNumber;
 
     ospray::Ref<ospray::Data> _simulationData;

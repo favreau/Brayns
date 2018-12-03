@@ -40,8 +40,10 @@ void AdvancedSimulationRenderer::commit()
 
     _shadows = getParam1f("shadows", 0.f);
     _softShadows = getParam1f("softShadows", 0.f);
+    _softShadowsSamples = getParam1i("softShadowsSamples", 1);
     _ambientOcclusionStrength = getParam1f("aoWeight", 0.f);
     _ambientOcclusionDistance = getParam1f("aoDistance", 1e20f);
+    _ambientOcclusionSamples = getParam1i("aoSamples", 1);
     _detectionDistance = getParam1f("detectionDistance", 15.f);
 
     _randomNumber = getParam1i("randomNumber", 0);
@@ -79,7 +81,8 @@ void AdvancedSimulationRenderer::commit()
     ispc::AdvancedSimulationRenderer_set(
         getIE(), (_simulationModel ? _simulationModel->getIE() : nullptr),
         (_bgMaterial ? _bgMaterial->getIE() : nullptr), _shadows, _softShadows,
-        _ambientOcclusionStrength, _ambientOcclusionDistance, _randomNumber,
+        _softShadowsSamples, _ambientOcclusionStrength,
+        _ambientOcclusionDistance, _ambientOcclusionSamples, _randomNumber,
         _timestamp, spp, _lightPtr, _lightArray.size(), _volumeSamplesPerRay,
         _simulationData ? (float*)_simulationData->data : NULL,
         simulationDataSize,

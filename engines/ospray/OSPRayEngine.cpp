@@ -265,11 +265,15 @@ void OSPRayEngine::_createRenderers()
             properties.setProperty(
                 {"aoWeight", "Ambient occlusion weight", 0., {0., 1.}});
             properties.setProperty(
+                {"aoSamples", "Ambient occlusion samples", 1, {0, 64}});
+            properties.setProperty(
                 {"detectionDistance", "Detection distance", 15.});
             properties.setProperty(
                 {"shadows", "Shadow intensity", 0., {0., 1.}});
             properties.setProperty(
                 {"softShadows", "Shadow softness", 0., {0., 1.}});
+            properties.setProperty(
+                {"softShadowsSamples", "Soft shadow samples", 1, {1, 64}});
             properties.setProperty({"samplingThreshold",
                                     "Threshold under which sampling is ignored",
                                     0.001,

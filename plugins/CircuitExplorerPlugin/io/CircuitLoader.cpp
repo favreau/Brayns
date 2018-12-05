@@ -159,7 +159,7 @@ brayns::ModelDescriptorPtr CircuitLoader::importCircuit(
                 auto handler = std::make_shared<CircuitSimulationHandler>(
                     _animationParameters,
                     bc.getReportSource(_circuitAttributes.report), allGids);
-                _scene.setSimulationHandler(handler);
+                _scene.setUserDataHandler(handler);
 
                 compartmentReport = handler->getCompartmentReport();
                 // Only keep simulated GIDs

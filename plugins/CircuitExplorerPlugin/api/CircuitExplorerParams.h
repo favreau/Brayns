@@ -139,4 +139,16 @@ struct CircuitAttributes
 bool from_json(CircuitAttributes& circuitAttributes,
                const std::string& payload);
 
+/** Connections per value */
+struct ConnectionsPerValue
+{
+    size_t modelId;
+    size_t frame;
+    double value;
+    double epsilon;
+};
+
+bool from_json(ConnectionsPerValue& connectionsPerValue,
+               const std::string& payload);
+
 #endif // CIRCUITVIEWERPARAMS_H

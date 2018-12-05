@@ -79,6 +79,7 @@ public:
         Returns the bounding box of the scene
     */
     const Boxd& getBounds() const { return _bounds; }
+
     /**
         Attaches a light source to the scene
         @param light Object representing the light source
@@ -239,13 +240,14 @@ public:
      */
     void buildEnvironmentMap();
 
-    /** Simulation handlers */
-    void setSimulationHandler(const AbstractUserDataHandlerPtr userDataHandler)
+    /** User data handlers */
+    void setUserDataHandler(const AbstractUserDataHandlerPtr userDataHandler)
     {
         _userDataHandler = userDataHandler;
     }
 
     AbstractUserDataHandlerPtr getUserDataHandler() { return _userDataHandler; }
+
 protected:
     void _computeBounds();
 

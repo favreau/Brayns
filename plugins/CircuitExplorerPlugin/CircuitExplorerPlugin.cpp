@@ -37,6 +37,8 @@
 #define REGISTER_LOADER(LOADER, FUNC) \
     registry.registerLoader({std::bind(&LOADER::getSupportedDataTypes), FUNC});
 
+#include "utils/delaunay.h"
+
 CircuitExplorerPlugin::CircuitExplorerPlugin(
     brayns::Scene& scene, brayns::ParametersManager& parametersManager,
     brayns::ActionInterface* actionInterface, int /*argc*/, char** /*argv*/)
@@ -98,6 +100,11 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
         actionInterface->registerNotification<CircuitAttributes>(
             "setCircuitAttributes", [&](const CircuitAttributes& param) {
                 _setCircuitAttributes(param);
+            });
+
+        actionInterface->registerNotification<ConnectionsPerValue>(
+            "setConnectionsPerValue", [&](const ConnectionsPerValue& param) {
+                _setConnectionsPerValue(param);
             });
     }
 }
@@ -299,6 +306,106 @@ void CircuitExplorerPlugin::_saveModelToCache(const SaveModelToCache& saveModel)
     else
         PLUGIN_ERROR << "Model " << saveModel.modelId << " is not registered"
                      << std::endl;
+}
+
+void CircuitExplorerPlugin::_setConnectionsPerValue(
+    const ConnectionsPerValue& cpv)
+{
+    auto handler = _scene.getUserDataHandler();
+    if (!handler)
+    {
+        BRAYNS_ERROR << "Scene has not user data handler" << std::endl;
+        return;
+    }
+
+    std::map<size_t, std::vector<brayns::Vector4f>> connections;
+    const float OFFSET_MAGIC = 1e6f;
+
+    auto modelDescriptor = _scene.getModel(cpv.modelId);
+    if (modelDescriptor)
+    {
+        auto& model = modelDescriptor->getModel();
+        for (const auto& spheres : model.getSpheres())
+        {
+            for (const auto& s : spheres.second)
+            {
+                const uint64 index =
+                    (uint64)(s.texture_coords.x() * OFFSET_MAGIC) << 32 |
+                    (uint32)(s.texture_coords.y() * OFFSET_MAGIC);
+
+                const float* data =
+                    static_cast<float*>(handler->getFrameData(cpv.frame));
+                const float value = data[index];
+                if (abs(value - cpv.value) < cpv.epsilon)
+                    connections[spheres.first].push_back(
+                        {s.center.x(), s.center.y(), s.center.z(), s.radius});
+            }
+        }
+
+        if (!connections.empty())
+        {
+            auto connectionModel = _scene.createModel();
+            bool addModel = false;
+
+            for (const auto& connection : connections)
+            {
+                connectionModel->createMaterial(connection.first,
+                                                std::to_string(
+                                                    connection.first));
+
+#if 0
+                for (size_t i = 0; i < connection.second.size(); ++i)
+                {
+                    const auto& a = connection.second[i];
+                    const brayns::Sphere sphere{{a.x(), a.y(), a.z()}, a.w()};
+                    connectionModel->addSphere(connection.first, sphere);
+                    const auto& b =
+                        connection.second[(i + 1) % connection.second.size()];
+                    const brayns::Cylinder cylinder{{a.x(), a.y(), a.z()},
+                                                    {b.x(), b.y(), b.z()},
+                                                    a.w()};
+                    connectionModel->addCylinder(connection.first, cylinder);
+                }
+#else
+                std::vector<delaunay::Vector2<float>> points;
+                for (const auto& c : connection.second)
+                    points.push_back({c.x(), c.y()});
+
+                delaunay::Delaunay<float> triangulation;
+                triangulation.triangulate(points);
+
+                const std::vector<delaunay::Edge<float>> edges =
+                    triangulation.getEdges();
+                for (size_t i = 0; i < edges.size(); ++i)
+                {
+                    brayns::Vector3f a{edges[i]._p1.x, edges[i]._p1.y, 0.f};
+                    brayns::Vector3f b{edges[i]._p2.x, edges[i]._p2.y, 0.f};
+                    const brayns::Cylinder cylinder{{a.x(), a.y(), a.z()},
+                                                    {b.x(), b.y(), b.z()},
+                                                    1.f};
+                    connectionModel->addCylinder(connection.first, cylinder);
+                    addModel = true;
+                }
+#endif
+            }
+
+            if (addModel)
+            {
+                auto modelDesc = std::make_shared<brayns::ModelDescriptor>(
+                    std::move(connectionModel),
+                    "Connection for value " + std::to_string(cpv.value));
+
+                _scene.addModel(modelDesc);
+                _dirty = true;
+            }
+        }
+        else
+            PLUGIN_INFO << "No connections added for value "
+                        << std::to_string(cpv.value) << std::endl;
+    }
+    else
+        PLUGIN_INFO << "Model " << cpv.modelId << " is not registered"
+                    << std::endl;
 }
 
 extern "C" brayns::ExtensionPlugin* brayns_plugin_create(brayns::PluginAPI* api,

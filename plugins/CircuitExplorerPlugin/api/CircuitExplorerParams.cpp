@@ -203,3 +203,20 @@ bool from_json(CircuitAttributes& param, const std::string& payload)
     }
     return true;
 }
+
+bool from_json(ConnectionsPerValue& param, const std::string& payload)
+{
+    try
+    {
+        auto js = nlohmann::json::parse(payload);
+        FROM_JSON(param, js, modelId);
+        FROM_JSON(param, js, frame);
+        FROM_JSON(param, js, value);
+        FROM_JSON(param, js, epsilon);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    return true;
+}

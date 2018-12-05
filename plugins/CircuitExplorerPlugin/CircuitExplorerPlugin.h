@@ -49,6 +49,7 @@ private:
     void _setMaterials(const MaterialsDescriptor&);
     void _setSynapseAttributes(const SynapseAttributes&);
     void _setCircuitAttributes(const CircuitAttributes&);
+    void _setConnectionsPerValue(const ConnectionsPerValue&);
     void _setMorphologyAttributes(const MorphologyAttributes&);
     void _loadModelFromCache(const LoadModelFromCache&);
     void _saveModelToCache(const SaveModelToCache&);

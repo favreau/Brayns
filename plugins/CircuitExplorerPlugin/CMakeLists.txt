@@ -12,6 +12,7 @@ endif()
 include(Common)
 
 common_find_package(Brion REQUIRED)
+common_find_package(CGAL)
 common_find_package_post()
 
 set(${PLUGIN_NAME}_SOURCES
@@ -37,6 +38,7 @@ set(${PLUGIN_NAME}_PUBLIC_HEADERS
 )
 
 set(${PLUGIN_NAME}_LINK_LIBRARIES
-  braynsParameters braynsPluginAPI vmmlib Brion Brain ${FREEIMAGE_LIBRARIES} ${HDF5_LIBRARIES})
+  braynsParameters braynsPluginAPI vmmlib Brion Brain
+  ${FREEIMAGE_LIBRARIES} ${HDF5_LIBRARIES} ${CGAL_LIBRARY} gmp)
 
 common_library(circuitExplorer)

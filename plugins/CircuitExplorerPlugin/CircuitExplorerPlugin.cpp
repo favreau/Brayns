@@ -34,10 +34,19 @@
 #include <brayns/parameters/ParametersManager.h>
 #include <brayns/pluginapi/PluginAPI.h>
 
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Random.h>
+#include <CGAL/Triangulation_vertex_base_with_info_3.h>
+#include <CGAL/convex_hull_3.h>
+
+typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef CGAL::Polyhedron_3<K> Polyhedron_3;
+typedef K::Point_3 Point_3;
+typedef K::Segment_3 Segment_3;
+typedef K::Triangle_3 Triangle_3;
+
 #define REGISTER_LOADER(LOADER, FUNC) \
     registry.registerLoader({std::bind(&LOADER::getSupportedDataTypes), FUNC});
-
-#include "utils/delaunay.h"
 
 CircuitExplorerPlugin::CircuitExplorerPlugin(
     brayns::Scene& scene, brayns::ParametersManager& parametersManager,
@@ -48,12 +57,12 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
 {
     auto& registry = _scene.getLoaderRegistry();
     REGISTER_LOADER(SynapseLoader,
-                    ([& scene = _scene, &params = _synapseAttributes] {
+                    ([& scene = _scene, &params = _synapseAttributes ] {
                         return std::make_unique<SynapseLoader>(scene, params);
                     }));
 
     REGISTER_LOADER(MorphologyLoader,
-                    ([& scene = _scene, &params = _morphologyAttributes] {
+                    ([& scene = _scene, &params = _morphologyAttributes ] {
                         return std::make_unique<MorphologyLoader>(scene,
                                                                   params);
                     }));
@@ -329,12 +338,12 @@ void CircuitExplorerPlugin::_setConnectionsPerValue(
         {
             for (const auto& s : spheres.second)
             {
+                const float* data =
+                    static_cast<float*>(handler->getFrameData(cpv.frame));
+
                 const uint64 index =
                     (uint64)(s.texture_coords.x() * OFFSET_MAGIC) << 32 |
                     (uint32)(s.texture_coords.y() * OFFSET_MAGIC);
-
-                const float* data =
-                    static_cast<float*>(handler->getFrameData(cpv.frame));
                 const float value = data[index];
                 if (abs(value - cpv.value) < cpv.epsilon)
                     connections[spheres.first].push_back(
@@ -353,50 +362,45 @@ void CircuitExplorerPlugin::_setConnectionsPerValue(
                                                 std::to_string(
                                                     connection.first));
 
-#if 0
-                for (size_t i = 0; i < connection.second.size(); ++i)
-                {
-                    const auto& a = connection.second[i];
-                    const brayns::Sphere sphere{{a.x(), a.y(), a.z()}, a.w()};
-                    connectionModel->addSphere(connection.first, sphere);
-                    const auto& b =
-                        connection.second[(i + 1) % connection.second.size()];
-                    const brayns::Cylinder cylinder{{a.x(), a.y(), a.z()},
-                                                    {b.x(), b.y(), b.z()},
-                                                    a.w()};
-                    connectionModel->addCylinder(connection.first, cylinder);
-                }
-#else
-                std::vector<delaunay::Vector2<float>> points;
+                std::vector<Point_3> points;
                 for (const auto& c : connection.second)
-                    points.push_back({c.x(), c.y()});
+                    points.push_back({c.x(), c.y(), c.z()});
 
-                delaunay::Delaunay<float> triangulation;
-                triangulation.triangulate(points);
-
-                const std::vector<delaunay::Edge<float>> edges =
-                    triangulation.getEdges();
-                for (size_t i = 0; i < edges.size(); ++i)
+                CGAL::Object obj;
+                // compute convex hull of non-collinear points
+                CGAL::convex_hull_3(points.begin(), points.end(), obj);
+                if (const Polyhedron_3* poly =
+                        CGAL::object_cast<Polyhedron_3>(&obj))
                 {
-                    brayns::Vector3f a{edges[i]._p1.x, edges[i]._p1.y, 0.f};
-                    brayns::Vector3f b{edges[i]._p2.x, edges[i]._p2.y, 0.f};
-                    const brayns::Cylinder cylinder{{a.x(), a.y(), a.z()},
-                                                    {b.x(), b.y(), b.z()},
-                                                    1.f};
-                    connectionModel->addCylinder(connection.first, cylinder);
-                    addModel = true;
+                    PLUGIN_INFO << "The convex hull contains "
+                                << poly->size_of_vertices() << " vertices"
+                                << std::endl;
+
+                    for (auto eit = poly->edges_begin();
+                         eit != poly->edges_end(); ++eit)
+                    {
+                        Point_3 a = eit->vertex()->point();
+                        Point_3 b = eit->opposite()->vertex()->point();
+                        const brayns::Cylinder cylinder(
+                            brayns::Vector3f(a.x(), a.y(), a.z()),
+                            brayns::Vector3f(b.x(), b.y(), b.z()), 2.f);
+                        connectionModel->addCylinder(connection.first,
+                                                     cylinder);
+                        addModel = true;
+                    }
                 }
-#endif
-            }
+                else
+                    PLUGIN_ERROR << "something else" << std::endl;
 
-            if (addModel)
-            {
-                auto modelDesc = std::make_shared<brayns::ModelDescriptor>(
-                    std::move(connectionModel),
-                    "Connection for value " + std::to_string(cpv.value));
+                if (addModel)
+                {
+                    auto modelDesc = std::make_shared<brayns::ModelDescriptor>(
+                        std::move(connectionModel),
+                        "Connection for value " + std::to_string(cpv.value));
 
-                _scene.addModel(modelDesc);
-                _dirty = true;
+                    _scene.addModel(modelDesc);
+                    _dirty = true;
+                }
             }
         }
         else

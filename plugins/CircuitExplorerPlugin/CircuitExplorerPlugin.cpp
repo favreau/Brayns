@@ -31,6 +31,7 @@
 #include <brayns/common/renderer/FrameBuffer.h>
 #include <brayns/common/scene/Model.h>
 #include <brayns/common/scene/Scene.h>
+#include <brayns/io/algorithms/MetaballsGenerator.h>
 #include <brayns/parameters/ParametersManager.h>
 #include <brayns/pluginapi/PluginAPI.h>
 
@@ -114,6 +115,11 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
         actionInterface->registerNotification<ConnectionsPerValue>(
             "setConnectionsPerValue", [&](const ConnectionsPerValue& param) {
                 _setConnectionsPerValue(param);
+            });
+        actionInterface->registerNotification<MetaballsFromSimulationValue>(
+            "setMetaballsPerSimulationValue",
+            [&](const MetaballsFromSimulationValue& param) {
+                _setMetaballsPerSimulationValue(param);
             });
     }
 }
@@ -383,7 +389,7 @@ void CircuitExplorerPlugin::_setConnectionsPerValue(
                         Point_3 b = eit->opposite()->vertex()->point();
                         const brayns::Cylinder cylinder(
                             brayns::Vector3f(a.x(), a.y(), a.z()),
-                            brayns::Vector3f(b.x(), b.y(), b.z()), 2.f);
+                            brayns::Vector3f(b.x(), b.y(), b.z()), 1.f);
                         connectionModel->addCylinder(connection.first,
                                                      cylinder);
                         addModel = true;
@@ -409,6 +415,89 @@ void CircuitExplorerPlugin::_setConnectionsPerValue(
     }
     else
         PLUGIN_INFO << "Model " << cpv.modelId << " is not registered"
+                    << std::endl;
+}
+
+void CircuitExplorerPlugin::_setMetaballsPerSimulationValue(
+    const MetaballsFromSimulationValue& mpsv)
+{
+    auto handler = _scene.getUserDataHandler();
+    if (!handler)
+    {
+        BRAYNS_ERROR << "Scene has not user data handler" << std::endl;
+        return;
+    }
+
+    std::map<size_t, std::vector<brayns::Vector4f>> connections;
+    const float OFFSET_MAGIC = 1e6f;
+
+    auto modelDescriptor = _scene.getModel(mpsv.modelId);
+    if (modelDescriptor)
+    {
+        auto& model = modelDescriptor->getModel();
+        for (const auto& spheres : model.getSpheres())
+        {
+            for (const auto& s : spheres.second)
+            {
+                const float* data =
+                    static_cast<float*>(handler->getFrameData(mpsv.frame));
+
+                const uint64 index =
+                    (uint64)(s.texture_coords.x() * OFFSET_MAGIC) << 32 |
+                    (uint32)(s.texture_coords.y() * OFFSET_MAGIC);
+                const float value = data[index];
+                if (abs(value - mpsv.value) < mpsv.epsilon)
+                    connections[spheres.first].push_back(
+                        {s.center.x(), s.center.y(), s.center.z(), s.radius});
+            }
+        }
+
+        if (!connections.empty())
+        {
+            auto connectionModel = _scene.createModel();
+
+            auto& triangles = connectionModel->getTrianglesMeshes();
+            for (const auto& connection : connections)
+            {
+                if (connection.second.empty())
+                    continue;
+
+                PLUGIN_INFO << "Material " << connection.first
+                            << ", number of balls: " << connection.second.size()
+                            << std::endl;
+
+                connectionModel->createMaterial(connection.first,
+                                                std::to_string(
+                                                    connection.first));
+
+                brayns::MetaballsGenerator metaballsGenerator;
+                metaballsGenerator.generateMesh(connection.second,
+                                                mpsv.gridSize, mpsv.threshold,
+                                                connection.first, triangles);
+            }
+
+            if (!triangles.empty())
+            {
+                auto modelDesc = std::make_shared<brayns::ModelDescriptor>(
+                    std::move(connectionModel),
+                    "Connection for value " + std::to_string(mpsv.value));
+
+                _scene.addModel(modelDesc);
+                PLUGIN_INFO << "Metaballs successfully added to the scene"
+                            << std::endl;
+
+                _dirty = true;
+            }
+            else
+                PLUGIN_INFO << "No mesh was created for value "
+                            << std::to_string(mpsv.value) << std::endl;
+        }
+        else
+            PLUGIN_INFO << "No connections added for value "
+                        << std::to_string(mpsv.value) << std::endl;
+    }
+    else
+        PLUGIN_INFO << "Model " << mpsv.modelId << " is not registered"
                     << std::endl;
 }
 

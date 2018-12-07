@@ -343,7 +343,6 @@ void MetaballsGenerator::_buildVerticesAndCubes(const Vector4fs& metaballs,
     _vertices.resize(incrementedSize * incrementedSize * incrementedSize);
 
     size_t x = 0;
-#pragma omp parallel for
     for (x = 0; x < incrementedSize; ++x)
     {
         for (size_t y = 0; y < incrementedSize; ++y)
@@ -378,7 +377,6 @@ void MetaballsGenerator::_buildVerticesAndCubes(const Vector4fs& metaballs,
     }
 
     _cubes.resize(gridSize * gridSize * gridSize);
-#pragma omp parallel for
     for (x = 0; x < gridSize; ++x)
     {
         for (size_t y = 0; y < gridSize; ++y)
@@ -431,7 +429,6 @@ void MetaballsGenerator::_buildTriangles(const Vector4fs& metaballs,
                                          const size_t defaultMaterialId,
                                          TrianglesMeshMap& triangles)
 {
-#pragma omp parallel
     for (const auto metaball : metaballs)
     {
         const auto radius = metaball.w();
@@ -439,7 +436,6 @@ void MetaballsGenerator::_buildTriangles(const Vector4fs& metaballs,
         const auto& ballPosition =
             Vector3f(metaball.x(), metaball.y(), metaball.z());
 
-#pragma omp parallel
         for (auto& vertex : _vertices)
         {
             const auto ballToPoint = vertex.position - ballPosition;

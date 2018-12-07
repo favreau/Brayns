@@ -151,4 +151,17 @@ struct ConnectionsPerValue
 bool from_json(ConnectionsPerValue& connectionsPerValue,
                const std::string& payload);
 
+/** Metaballs per simulation value */
+struct MetaballsFromSimulationValue
+{
+    size_t modelId;
+    size_t frame;
+    double value;
+    double epsilon;
+    size_t gridSize;
+    double threshold;
+};
+
+bool from_json(MetaballsFromSimulationValue& param, const std::string& payload);
+
 #endif // CIRCUITVIEWERPARAMS_H

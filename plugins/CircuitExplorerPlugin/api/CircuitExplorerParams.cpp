@@ -220,3 +220,22 @@ bool from_json(ConnectionsPerValue& param, const std::string& payload)
     }
     return true;
 }
+
+bool from_json(MetaballsFromSimulationValue& param, const std::string& payload)
+{
+    try
+    {
+        auto js = nlohmann::json::parse(payload);
+        FROM_JSON(param, js, modelId);
+        FROM_JSON(param, js, frame);
+        FROM_JSON(param, js, value);
+        FROM_JSON(param, js, epsilon);
+        FROM_JSON(param, js, gridSize);
+        FROM_JSON(param, js, threshold);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    return true;
+}

@@ -460,6 +460,7 @@ ModelDescriptorPtr ProteinLoader::importFromFile(
         material->setDiffuseColor({colorMap[materialId].R / 255.f,
                                    colorMap[materialId].G / 255.f,
                                    colorMap[materialId].B / 255.f});
+        material->setShadingMode(MaterialShadingMode::none);
         for (const auto& sphere : spheresPerMaterial.second)
             model->addSphere(materialId, sphere);
     }

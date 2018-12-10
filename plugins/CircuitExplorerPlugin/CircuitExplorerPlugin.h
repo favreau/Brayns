@@ -50,6 +50,7 @@ private:
     void _setSynapseAttributes(const SynapseAttributes&);
     void _setCircuitAttributes(const CircuitAttributes&);
     void _setConnectionsPerValue(const ConnectionsPerValue&);
+    void _setStepsGeometry(const StepsGeometry&);
     void _setMetaballsPerSimulationValue(const MetaballsFromSimulationValue&);
 
     void _setMorphologyAttributes(const MorphologyAttributes&);

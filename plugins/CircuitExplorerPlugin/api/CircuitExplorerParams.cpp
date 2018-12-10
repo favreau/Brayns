@@ -239,3 +239,19 @@ bool from_json(MetaballsFromSimulationValue& param, const std::string& payload)
     }
     return true;
 }
+
+bool from_json(StepsGeometry& param, const std::string& payload)
+{
+    try
+    {
+        auto js = nlohmann::json::parse(payload);
+        FROM_JSON(param, js, vertices);
+        FROM_JSON(param, js, indices);
+        FROM_JSON(param, js, caCount);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    return true;
+}

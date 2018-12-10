@@ -121,6 +121,9 @@ CircuitExplorerPlugin::CircuitExplorerPlugin(
             [&](const MetaballsFromSimulationValue& param) {
                 _setMetaballsPerSimulationValue(param);
             });
+        actionInterface->registerNotification<StepsGeometry>(
+            "setStepsGeometry",
+            [&](const StepsGeometry& param) { _setStepsGeometry(param); });
     }
 }
 
@@ -499,6 +502,58 @@ void CircuitExplorerPlugin::_setMetaballsPerSimulationValue(
     else
         PLUGIN_INFO << "Model " << mpsv.modelId << " is not registered"
                     << std::endl;
+}
+
+void CircuitExplorerPlugin::_setStepsGeometry(const StepsGeometry& sg)
+{
+    const size_t nbTriangles = sg.indices.size() / 4;
+    if (nbTriangles == 0)
+    {
+        PLUGIN_ERROR << "No triangles were created" << std::endl;
+        return;
+    }
+
+    PLUGIN_INFO << "Loading " << nbTriangles << " triangles" << std::endl;
+    auto connectionModel = _scene.createModel();
+    auto& trianglesMeshes = connectionModel->getTrianglesMeshes();
+
+    brayns::TrianglesMesh mesh;
+    mesh.indices.reserve(nbTriangles);
+    mesh.vertices.reserve(nbTriangles);
+
+    size_t maxCa{0};
+    for (const size_t ca : sg.caCount)
+        maxCa = std::max(maxCa, ca);
+
+    PLUGIN_INFO << "Ca range: 0 - " << maxCa << std::endl;
+
+    for (size_t i = 0; i < nbTriangles; ++i)
+    {
+        auto index = i * 4;
+        brayns::Vector3ui j{sg.indices[index], sg.indices[index + 1],
+                            sg.indices[index + 2]};
+        mesh.indices.push_back(j);
+
+        index = i * 3;
+        mesh.vertices.push_back({1000.f * (float)sg.vertices[index],
+                                 1000.f * (float)sg.vertices[index + 1],
+                                 1000.f * (float)sg.vertices[index + 2]});
+
+        const float x = 0.5f * (float)sg.caCount[i] / (float)maxCa;
+        mesh.colors.push_back({0.5f - x, 0.5f + x, 0.f, 1.f});
+    }
+
+    const size_t materialId = 0;
+    connectionModel->createMaterial(materialId, "Steps");
+    trianglesMeshes[materialId] = mesh;
+
+    auto modelDesc =
+        std::make_shared<brayns::ModelDescriptor>(std::move(connectionModel),
+                                                  "Steps");
+
+    _scene.addModel(modelDesc);
+    PLUGIN_INFO << "Model Steps successfully added to the scene" << std::endl;
+    _dirty = true;
 }
 
 extern "C" brayns::ExtensionPlugin* brayns_plugin_create(brayns::PluginAPI* api,

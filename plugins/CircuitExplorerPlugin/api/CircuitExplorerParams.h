@@ -164,4 +164,14 @@ struct MetaballsFromSimulationValue
 
 bool from_json(MetaballsFromSimulationValue& param, const std::string& payload);
 
+/** Steps Geometry */
+struct StepsGeometry
+{
+    std::vector<double> vertices;
+    std::vector<unsigned int> indices;
+    std::vector<unsigned int> caCount;
+};
+
+bool from_json(StepsGeometry& param, const std::string& payload);
+
 #endif // CIRCUITVIEWERPARAMS_H

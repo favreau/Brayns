@@ -77,6 +77,7 @@ public:
     }
     const std::string& getName() const { return _name; }
     void incrementAccumFrames() { ++_accumFrames; }
+    const size_t getAccumFrames() const { return _accumFrames; }
     size_t numAccumFrames() const { return _accumFrames; }
     freeimage::ImagePtr getImage();
 
@@ -87,4 +88,4 @@ protected:
     bool _accumulation{true};
     std::atomic_size_t _accumFrames{0};
 };
-}
+} // namespace brayns

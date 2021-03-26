@@ -20,8 +20,8 @@
 #include "VRPNPlugin.h"
 
 #include <brayns/common/log.h>
-#include <brayns/engine/Camera.h>
-#include <brayns/pluginapi/PluginAPI.h>
+#include <brayns/engineapi/Camera.h>
+#include <brayns/pluginapi/Plugin.h>
 
 namespace brayns
 {
@@ -68,7 +68,7 @@ void joystickCallback(void* userData, const vrpn_ANALOGCB joystick)
     states->axisX = joystick.channel[0];
     states->axisZ = joystick.channel[1];
 }
-}
+} // namespace
 
 VRPNPlugin::VRPNPlugin(const std::string& vrpnName)
     : _vrpnName(vrpnName)
@@ -142,16 +142,17 @@ void VRPNPlugin::_setupIdleTimer()
         uv_timer_init(uvLoop, _idleTimer.get());
         _idleTimer->data = this;
 
-        uv_timer_start(_idleTimer.get(),
-                       [](uv_timer_t* timer) {
-                           auto plugin = static_cast<VRPNPlugin*>(timer->data);
-                           plugin->resumeRenderingIfTrackerIsActive();
-                       },
-                       VRPN_IDLE_TIMEOUT_MS, VRPN_REPEAT_TIMEOUT_MS);
+        uv_timer_start(
+            _idleTimer.get(),
+            [](uv_timer_t* timer) {
+                auto plugin = static_cast<VRPNPlugin*>(timer->data);
+                plugin->resumeRenderingIfTrackerIsActive();
+            },
+            VRPN_IDLE_TIMEOUT_MS, VRPN_REPEAT_TIMEOUT_MS);
     }
 }
 #endif
-}
+} // namespace brayns
 
 extern "C" brayns::ExtensionPlugin* brayns_plugin_create(const int argc,
                                                          const char** argv)
